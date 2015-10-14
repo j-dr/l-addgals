@@ -1,0 +1,4 @@
+path = '../truth/'
+FBASE=
+OUTFILE=
+get_optimistic_bcc_training_set, path, fbase, outfile=outfile

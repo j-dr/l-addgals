@@ -1,0 +1,43 @@
+assign_colors.pro:                   deep_ubv=deep_ubv, dim=dim
+assign_colors.pro:IF(keyword_set(deep_ubv)) then begin
+assign_colors.pro:  reconstruct_from_coeff, zz, coeffs, deep_ubvdat, morig=msim, /johnson
+assign_colors.pro:  niceprintf, outfile, deep_ubvdat.omag(0), deep_ubvdat.omag(1), deep_ubvdat.omag(2), $
+assign_colors.pro:              deep_ubvdat.amag(0), deep_ubvdat.amag(1), deep_ubvdat.amag(2)
+create_catalog.pro:                    vista=vista, deep=deep,johnson=johnson, deep_ubv=deep_ubv,$
+create_catalog.pro:IF NOT keyword_set(deep_ubv) then deep_ubv=0
+create_catalog.pro:    deep_ubv=deep_ubv dim=dim
+create_catalog.pro:                 johnson=johnson, deep_ubv=deep_ubv,dim=dim
+create_catalog.pro:IF keyword_set(deep_ubv) then begin
+create_catalog.pro:  deep_ubvname=name+'_deep_ubv'
+create_catalog.pro:  IF keyword_set(dim) then deep_ubvname += '_dim'
+create_catalog.pro:  deep_ubvname += '.fit'
+create_catalog.pro:  gals_deep_ubv1 = create_struct('omag',fltarr(3), 'amag',fltarr(3))
+create_catalog.pro:  gals_deep_ubv = replicate(gals_deep_ubv1,N_ELEMENTS(gals))
+create_catalog.pro:  gals_deep_ubv.omag = gals.odeep_ubvmag
+create_catalog.pro:  gals_deep_ubv.amag = gals.adeep_ubvmag
+create_catalog.pro:  mwrfits, gals_deep_ubv, deep_ubvname, /create
+new_file_reader.pro:                     johnson=johnson, deep_ubv=deep_ubv,dim=dim
+new_file_reader.pro:IF keyword_set(deep_ubv) THEN $
+new_file_reader.pro:  s1=create_struct(s1,'odeep_ubvmag',fltarr(3),'adeep_ubvmag',fltarr(3))
+new_file_reader.pro:IF keyword_set(deep_ubv) THEN $
+new_file_reader.pro:  rdfloat, pathname+'gal_ginfo_deep_ubv.dat',deep_ubv_U,deep_ubv_B,deep_ubv_V,$
+new_file_reader.pro:           deep_ubv_R,deep_ubv_I,$
+new_file_reader.pro:           mdeep_ubv_U, mdeep_ubv_B, mdeep_ubv_V, mdeep_ubv_R, mdeep_ubv_I
+new_file_reader.pro:IF keyword_set(deep_ubv) then begin
+new_file_reader.pro:    deep_ubv_U = deep_ubv_U[ii]
+new_file_reader.pro:    deep_ubv_B = deep_ubv_B[ii]
+new_file_reader.pro:    deep_ubv_V = deep_ubv_V[ii]
+new_file_reader.pro:    mdeep_ubv_U = mdeep_ubv_U[ii]
+new_file_reader.pro:    mdeep_ubv_B = mdeep_ubv_B[ii]
+new_file_reader.pro:    mdeep_ubv_V = mdeep_ubv_V[ii]
+new_file_reader.pro:IF keyword_set(deep_ubv) then begin
+new_file_reader.pro:    str.odeep_ubvmag[0] = deep_ubv_U
+new_file_reader.pro:    str.odeep_ubvmag[1] = deep_ubv_B
+new_file_reader.pro:    str.odeep_ubvmag[2] = deep_ubv_V
+new_file_reader.pro:    str.adeep_ubvmag[0] = mdeep_ubv_U
+new_file_reader.pro:    str.adeep_ubvmag[1] = mdeep_ubv_B
+new_file_reader.pro:    str.adeep_ubvmag[2] = mdeep_ubv_V
+reconstruct_from_coeff.pro:	deep=deep, johnson=johnson, deep_ubv=deep_ubv
+reconstruct_from_coeff.pro:IF(keyword_set(deep_ubv)) then begin
+reconstruct_from_coeff.pro:  IF ((not keyword_set(des)) and (not keyword_set(vista)) and (not keyword_set(deep)) and (not keyword_set(johnson)) and (not keyword_set(deep_ubv))) then begin
+split_file.pro:survey_sfx = ['_des', '_vista', '_deep', '_johnson', '_deep_ubv']

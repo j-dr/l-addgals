@@ -1,0 +1,9 @@
+;;;for the PRIMUS XMM sample
+path = '/nfs/slac/g/ki/ki19/des/mbusha/catalogs/Aardvark/Catalog_v1.0/'
+truth_base = 'Aardvark_v1.0_truth'
+sdss_base = 'Aardvark_v1.0_sdss_mag'
+dir = '/nfs/slac/g/ki/ki19/des/mbusha/catalogs/Aardvark/Catalog_v1.0/photoz_tests/'
+obase = dir+['zCOSMOS', 'CMOC2', 'DEEP2', 'VVDS', 'PRIMUS_COSMOS', 'PRIMUS_DEEP2_1', 'PRIMUS_DEEP2_2', 'PRIMUS_XMM']
+sq_deg = [1.7, 0.4, 0.4, 4.0, 1.1, 0.7, 0.7, 3.4]
+frac = [0.18, 0.18, 0.43, 0.053, 0.48, 0.48, 0.48, 0.48]
+get_many_training_sets, path, truth_base, sdss_base, obase, sq_deg, frac

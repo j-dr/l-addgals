@@ -1,0 +1,6 @@
+#!/bin/bash
+NAME=$1
+OUT=$NAME.out
+ERR=$NAME.err
+#bsub -q kipac-ibq -J $NAME -oo $OUT -eo $ERR /afs/slac.stanford.edu/u/ki/mbusha/bin/idl_vm_run.py make_catalog.sav $NAME
+bsub -q long -J $NAME -oo $OUT -eo $ERR -n 4 ./go.sh

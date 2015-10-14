@@ -1,0 +1,3 @@
+.compile ./add_bcgs.pro
+name = 'hv_v1.00ja'
+create_catalog, name, g, h

@@ -1,0 +1,9 @@
+PATH=
+OUTPATH=
+TRUTH_BASE=
+SDSS_BASE=
+OUTFILE1=
+OUTFILE2=
+get_dr8_full_sky_training_set, path, outpath = outpath, $
+	truth_base = truth_base, sdss_base = sdss_base, $
+	outfile1=outfile1, outfile2=outfile2

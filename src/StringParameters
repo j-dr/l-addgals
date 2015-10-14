@@ -1,0 +1,20 @@
+simtype		GADGET2  
+
+simlabel 	PO_wedge
+
+datadir		/lustre/ki/pfs/mbusha/projects/LasDamas/Simulations/Carmen/02/analysis/LC/high_z_wedge/fixed/64_files/
+simulationfile	/lustre/ki/pfs/mbusha/projects/LasDamas/Simulations/Carmen/02/analysis/LC/high_z_wedge/fixed/64_files/PO_wedge_000
+rnnfile		/lustre/ki/pfs/mbusha/projects/LasDamas/Simulations/Carmen/02/analysis/LC/high_z_wedge/fixed/64_files/calcrnn_5e12/output/rnn_PO_wedge_000
+
+
+halofile	/lustre/ki/pfs/mbusha/projects/LasDamas/Simulations/Carmen/02/analysis/LC/high_z_wedge/fixed/64_files/rockstar/out_0.parents
+rnn_halofile	/lustre/ki/pfs/mbusha/projects/LasDamas/Simulations/Carmen/02/analysis/LC/high_z_wedge/fixed/64_files/calcrnn_halos_5e12/outputs/rnn_out_0.parents
+
+
+simnum 000
+
+flabel Carmen02_999
+out_path /nfs/slac/g/ki/ki11/des/mbusha/catalogs/Carmen/LC/v4.40/5e12/v03/031/hv_output/
+path /nfs/slac/g/ki/ki11/des/mbusha/catalogs/Carmen/LC/v4.40/5e12/v03/031/hv_output/
+denspdffile /u/ki/mbusha/projects/modules/idl/addgals/rdel/denspdf_Consuelo_scatter0.20_histograms_individual_params_068.txt
+lbcgfile /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/addgals/rdel/lbcg_m200_Consuelo_scatter0.20_histograms_068.txt

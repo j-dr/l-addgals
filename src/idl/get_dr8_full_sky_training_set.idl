@@ -1,0 +1,3 @@
+path = '/nfs/slac/g/ki/ki19/des/mbusha/catalogs/Aardvark/Catalog_v0.3/truth'
+outfile = '/nfs/slac/g/ki/ki18/des/mbusha/PO_Aardvark_DR8_training_set.fit'
+get_dr8_full_sky_training_set, path, outfile=outfile

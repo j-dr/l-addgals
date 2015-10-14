@@ -1,0 +1,21 @@
+IDL Version 6.3 (linux x86_64 m64). (c) 2006, Research Systems, Inc.
+Installation number: 12435.
+Licensed for use by: Exp Group K, Stanford Linear Accelerator Ctr
+
+% Compiled module: SIMPCTABLE.
+% Compiled module: DISPLAY_EXISTS.
+% Compiled module: CONVERT_COOPER_DATA.
+% Compiled module: MRDFITS.
+% Compiled module: FXPOSIT.
+% Compiled module: FXMOVE.
+% Compiled module: MRD_HREAD.
+% Compiled module: FXPAR.
+% Compiled module: GETTOK.
+% Compiled module: VALID_NUM.
+% Compiled module: MRD_SKIP.
+% Compiled module: MATCH.
+% Compiled module: MRD_STRUCT.
+MRDFITS: Binary table.  36 columns by  555072 rows.
+% Compiled module: IS_IEEE_BIG.
+% Compiled module: IEEE_TO_HOST.
+MRDFITS: Binary table.  62 columns by  2655632 rows.

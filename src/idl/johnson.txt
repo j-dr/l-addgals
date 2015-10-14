@@ -1,0 +1,54 @@
+assign_colors.pro:                   des=des, vista=vista, deep=deep,johnson=johnson,$
+assign_colors.pro:IF(keyword_set(johnson)) then begin
+assign_colors.pro:  reconstruct_from_coeff, zz, coeffs, Johnsondat, morig=msim, /johnson
+assign_colors.pro:  openw,outfile,path+'gal_ginfo_johnson.dat',/get_lun
+assign_colors.pro:  reconstruct_from_coeff, zz, coeffs, deep_ubvdat, morig=msim, /johnson
+assign_colors.pro:  openw,outfile,path+'gal_ginfo_johnson.dat',/get_lun
+create_catalog.pro:                    vista=vista, deep=deep,johnson=johnson, deep_ubv=deep_ubv,$
+create_catalog.pro:IF NOT keyword_set(johnson) then johnson=0
+create_catalog.pro:    declimit=declimit,des=des, vista=vista, deep=deep, johnson=johnson, $
+create_catalog.pro:                 johnson=johnson, deep_ubv=deep_ubv,dim=dim
+create_catalog.pro:IF keyword_set(johnson) then begin
+create_catalog.pro:  johnsonname=name+'_johnson'
+create_catalog.pro:  IF keyword_set(dim) then johnsonname += '_dim'
+create_catalog.pro:  johnsonname += '.fit'
+create_catalog.pro:  gals_johnson1 = create_struct('omag',fltarr(5), 'amag',fltarr(5))
+create_catalog.pro:  gals_johnson = replicate(gals_johnson1,N_ELEMENTS(gals))
+create_catalog.pro:  gals_johnson.omag = gals.ojohnsonmag
+create_catalog.pro:  gals_johnson.amag = gals.ajohnsonmag
+create_catalog.pro:  mwrfits, gals_johnson, johnsonname, /create
+new_file_reader.pro:                     johnson=johnson, deep_ubv=deep_ubv,dim=dim
+new_file_reader.pro:IF keyword_set(johnson) THEN $
+new_file_reader.pro:  s1=create_struct(s1,'ojohnsonmag',fltarr(5),'ajohnsonmag',fltarr(5))
+new_file_reader.pro:IF keyword_set(johnson) THEN $
+new_file_reader.pro:  rdfloat, pathname+'gal_ginfo_johnson.dat',johnson_U,johnson_B,johnson_V,$
+new_file_reader.pro:           johnson_R,johnson_I,$
+new_file_reader.pro:           mjohnson_U, mjohnson_B, mjohnson_V, mjohnson_R, mjohnson_I
+new_file_reader.pro:IF keyword_set(johnson) then begin
+new_file_reader.pro:    johnson_U = johnson_U[ii]
+new_file_reader.pro:    johnson_B = johnson_B[ii]
+new_file_reader.pro:    johnson_V = johnson_V[ii]
+new_file_reader.pro:    johnson_R = johnson_R[ii]
+new_file_reader.pro:    johnson_I = johnson_I[ii]
+new_file_reader.pro:    mjohnson_U = mjohnson_U[ii]
+new_file_reader.pro:    mjohnson_B = mjohnson_B[ii]
+new_file_reader.pro:    mjohnson_V = mjohnson_V[ii]
+new_file_reader.pro:    mjohnson_R = mjohnson_R[ii]
+new_file_reader.pro:    mjohnson_I = mjohnson_I[ii]
+new_file_reader.pro:IF keyword_set(johnson) then begin
+new_file_reader.pro:    str.ojohnsonmag[0] = johnson_U
+new_file_reader.pro:    str.ojohnsonmag[1] = johnson_B
+new_file_reader.pro:    str.ojohnsonmag[2] = johnson_V
+new_file_reader.pro:    str.ojohnsonmag[3] = johnson_R
+new_file_reader.pro:    str.ojohnsonmag[4] = johnson_I
+new_file_reader.pro:    str.ajohnsonmag[0] = mjohnson_U
+new_file_reader.pro:    str.ajohnsonmag[1] = mjohnson_B
+new_file_reader.pro:    str.ajohnsonmag[2] = mjohnson_V
+new_file_reader.pro:    str.ajohnsonmag[3] = mjohnson_R
+new_file_reader.pro:    str.ajohnsonmag[4] = mjohnson_I
+reconstruct_from_coeff.pro:	deep=deep, johnson=johnson, deep_ubv=deep_ubv
+reconstruct_from_coeff.pro:IF(keyword_set(johnson)) then begin
+reconstruct_from_coeff.pro:;  filterlist=['johnson_U.par', 'johnson_B.par', 'johnson_V.par']
+reconstruct_from_coeff.pro:  filterlist=['johnson_U.par', 'johnson_B.par', 'johnson_V.par']
+reconstruct_from_coeff.pro:  IF ((not keyword_set(des)) and (not keyword_set(vista)) and (not keyword_set(deep)) and (not keyword_set(johnson)) and (not keyword_set(deep_ubv))) then begin
+split_file.pro:survey_sfx = ['_des', '_vista', '_deep', '_johnson', '_deep_ubv']

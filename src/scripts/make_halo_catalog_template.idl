@@ -1,0 +1,7 @@
+PATH=
+OUTNAME1=
+OUTNAME2=
+OUTNAME3=
+OUTBASE=
+make_full_bcc_halo_catalog, path, outname1, outname2, outname3, outbase
+

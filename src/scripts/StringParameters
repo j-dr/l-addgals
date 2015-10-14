@@ -1,0 +1,17 @@
+simtype		GADGET2  
+
+simlabel 	snapshot_Lightcone
+
+datadir		/kaka/
+
+simnum 000
+
+flabel Buzzard_4000
+out_path /nfs/slac/g/ki/ki21/cosmo/jderose/addgals/catalogs/Buzzard/Lb4000_v1.1/95/017//hv_output/
+path /nfs/slac/g/ki/ki21/cosmo/jderose/addgals/catalogs/Buzzard/Lb4000_v1.1/95/017//hv_output/
+denspdffile /u/ki/mbusha/projects/modules/idl/addgals/rdel/denspdf_Consuelo02_AGES_rescale_078.dat
+lbcgfile /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/addgals/rdel/lbcg_m200_Consuelo_scatter0.20_histograms_060.txt
+simulationfile  /nfs/slac/g/ki/ki21/cosmo/jderose/simulations/lightcone/Buzzard/Lb4000/snapshot_Lightcone_000_healpix_95
+rnnfile         /nfs/slac/g/ki/ki21/cosmo/jderose/simulations/rnn/Buzzard/Lb4000/rnn_snapshot_Lightcone_000_healpix_95
+halofile  /nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb4000/Octants_01/rockstar/out_0.parents
+rnn_halofile         /nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb4000/Octants_01/calcrnn_halos/outputs/rnn_out_0.parents

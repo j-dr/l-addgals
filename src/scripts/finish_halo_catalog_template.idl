@@ -1,0 +1,9 @@
+PATH=
+INBASE=
+OUTNAME=
+zmin = 0.0
+zmax = 2.0
+mmin = 0.0
+readcol, '~/projects/development/final_healpix_cells.txt', pixnum, format = 'a'
+make_bcc_halo_catalog, path, inbase, outname, pixnum, zmin=zmin, zmax=zmax, mmin=mmin
+

@@ -1,0 +1,96 @@
+IDL Version 7.1.1 (linux x86_64 m64). (c) 2009, ITT Visual Information Solutions
+Installation number: 12435.
+Licensed for use by: KIPAC/SLAC
+
+% Compiled module: SIMPCTABLE.
+% Compiled module: DISPLAY_EXISTS.
+% Compiled module: ARRSCL.
+% Compiled module: NTOSTR.
+% Compiled module: MYUSERSYM.
+% Compiled module: SETUPPLOT.
+% Compiled module: PSLAYOUT.
+% Compiled module: DEFSYMBOLS.
+% Compiled module: MATCH.
+% Compiled module: BEGPLOT.
+% BEGPLOT: Plotting directed to file ~/temp/Fox_wps_v2.ps
+% Compiled module: COMPARE_WP.
+% Compiled module: READ_WP.
+% Compiled module: RDFLOAT.
+% Compiled module: NUMLINES.
+% NUMLINES: You should be using the IDL built-in FILE_LINES() instead of
+             numlines().
+% Compiled module: STRSPLIT.
+% RDFLOAT: 14 lines of data read
+% Compiled module: OPLOTERROR.
+% Compiled module: SETDEFAULTVALUE.
+% Compiled module: CGQUERY.
+% Compiled module: CGPLOT.
+% Compiled module: SETDECOMPOSEDSTATE.
+% Compiled module: DECOMPOSEDCOLOR.
+% Compiled module: CGDEFAULTCOLOR.
+% Compiled module: GETDECOMPOSEDSTATE.
+% Compiled module: COLORSAREIDENTICAL.
+% Compiled module: CGCOLOR.
+% Compiled module: CGDEFCHARSIZE.
+% NUMLINES: You should be using the IDL built-in FILE_LINES() instead of
+             numlines().
+% RDFLOAT: 14 lines of data read
+% Compiled module: LEGEND.
+% NUMLINES: You should be using the IDL built-in FILE_LINES() instead of
+             numlines().
+% RDFLOAT: 14 lines of data read
+% NUMLINES: You should be using the IDL built-in FILE_LINES() instead of
+             numlines().
+% READF: End of file encountered. Unit: 101
+         File: /nfs/slac/g/ki/ki22/cosmo/jderose/addgals/catalogs/Fox_test_2/
+         hv_output/wp_calc/wp_mt19_all.dat
+% Error occurred at: RDFLOAT           106
+   /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/astrolib/pro/rdflo
+  at.pro
+%                    READ_WP             3
+   /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/cosmology/wp/read_
+  wp.pro
+%                    COMPARE_WP         34
+   /nfs/slac/g/ki/ki22/cosmo/jderose/addgals/scripts/validation/wp_tools/wp_s
+  napshot/compare_wp.pro
+%                    $MAIN$          
+% Execution halted at: READ_WP             3
+   /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/cosmology/wp/read_
+  wp.pro
+% Compiled module: ENDPLOT.
+% ENDPLOT: Closing current plot file ~/temp/Fox_wps_v2.ps
+
+end
+ ^
+% Syntax error.
+  At: /nfs/slac/g/ki/ki22/cosmo/jderose/addgals/scripts/validation/wp_tools/wp_snapshot/compare_fox_wps.pro, Line 12
+
+------------------------------------------------------------
+Sender: LSF System <lsf@orange091>
+Subject: Job 118527: </afs/slac/g/ki/software/idl/idl71/bin/idl compare_fox_wps.pro> in cluster <slac> Done
+
+Job </afs/slac/g/ki/software/idl/idl71/bin/idl compare_fox_wps.pro> was submitted from host <ki-ls10> by user <jderose> in cluster <slac>.
+Job was executed on host(s) <orange091>, in queue <kipac-ibq>, as user <jderose> in cluster <slac>.
+</u/ki/jderose> was used as the home directory.
+</u/ki/jderose/ki22/addgals/scripts/validation/wp_tools/wp_snapshot> was used as the working directory.
+Started at Tue Sep 16 13:38:12 2014
+Results reported on Tue Sep 16 13:38:15 2014
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+/afs/slac/g/ki/software/idl/idl71/bin/idl compare_fox_wps.pro
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :               0.83 sec.
+    Total Requested Memory : -
+    Delta Memory :           -
+    (Delta: the difference between Total Requested Memory and Max Memory.)
+
+The output (if any) is above this job summary.
+
