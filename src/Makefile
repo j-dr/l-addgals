@@ -9,6 +9,8 @@ ANN_LIB = -L./ann/lib  #replace with your ANN library
 ANN_INC = -I./ann/include #replace with your ANN include
 NR_LIB = -L./recipes #replace with your NumRec
 NR_INC = -I./recipes #replace with you NumRec
+KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
+KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/inc
 
 HEALPIX_LIB =
 HEALPIX_INC =
@@ -28,13 +30,13 @@ RM = rm -f
 LD = /usr/bin/ld
 
 #directories to look for include files
-INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC}
+INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC}
 
 #directories to look for libraries
-LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB}
+LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB} ${KCORRECT_LIB}
 
 #libraries to link
-LOADLIBES = -lANN -lrecipes -lchealpix
+LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
