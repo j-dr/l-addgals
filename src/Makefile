@@ -8,9 +8,9 @@ END_FLAG = -DBIGENDIAN
 ANN_LIB = -L./ann/lib  #replace with your ANN library
 ANN_INC = -I./ann/include #replace with your ANN include
 NR_LIB = -L./recipes #replace with your NumRec
-NR_INC = -I./recipes #replace with you NumRec
+NR_INC = -I./recipes #replace with your NumRec
 KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
-KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/inc
+KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
 
 HEALPIX_LIB =
 HEALPIX_INC =
@@ -162,21 +162,14 @@ OBJS_SPLINE = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy
 EXEC1 = gethalos
 OBJS1 = gethalos.o particle.o  read_cube.o read_gadget_multi.o read_MGS.o getgadgethalos.o mystring.o  singleton.o read.o read_warren.o getwhids.o functions.o
 
-
 EXEC2 = lens
 OBJS2 = lens.o particle.o  read_cube.o functions.o mystring.o  singleton.o read.o read_warren.o kernel.o read_clusters.o
-
 
 EXEC3 = pdfxi
 OBJS3 = pdfxi.o particle.o read_cube.o linreg.o assigngals.new.o read.o read_warren.o functions.o singleton.o mystring.o cf_fit.o vec3.o xilike.o galaxy.o neighbor_pranavkh.o likelihood.o wp.o utils.o covariance.o chainel.o findClosest.mbusha.o read_MGS.o read_gadget_multi.o random.o
 
 EXEC6 = get_dm
 OBJS6 = get_dm.o particle.o read_cube.o mystring.o utils.o read.o read_warren.o galaxy.o functions.o singleton.o
-#linreg.o assigngals.o read.o read_warren.o read.o functions.o singleton.o mystring.cc cf_fit.o vec3.o xilike.o galaxy.o neighbor.o likelihood.o wp.o utils.o
-
-#pdf_to_xi.o 
-#correlation.o
-#computelik.o
 
 EXEC4 = lf
 OBJS4 = lf.o galaxy.o functions.o
@@ -187,12 +180,15 @@ OBJS5 = fit_wrapper.o cf_fit.o linreg.o
 EXEC7 = cf_wrapper
 OBJS7 = cf_wrapper.o linreg.o cf.o vec3.o
 
-
 EXEC8 = cov_file
 OBJS8 = cov_file.o chainel.o
 
+EXEC9 = kcorrect_utils
+OBJS9 = kcorrect_utils.o
+
 EXEC_TEST = test_gasdev
 OBJS_TEST = test_gasdev.o
+
 
 ### TARGETS ###
 
@@ -225,14 +221,14 @@ $(EXEC5): $(OBJS5)
 $(EXEC6): $(OBJS6)
 	$(CXX) -o $(EXEC6) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
-
 $(EXEC7): $(OBJS7)
 	$(CXX) -o $(EXEC7) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
-
-
 $(EXEC8): $(OBJS8)
 	$(CXX) -o $(EXEC8) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+
+$(EXEC9): $(OBJS9)
+	$(CXX) -o $(EXEC9) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
 $(EXEC_TEST): $(OBJS_TEST)
 	$(CXX) -o $(EXEC_TEST) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
