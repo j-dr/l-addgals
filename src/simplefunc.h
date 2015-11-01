@@ -13,8 +13,8 @@ template <class T> inline T abs(T x) {
   else return 0-x;
 }
 
-#define max(a,b) ((a)>(b)?(a):(b))
-#define min(a,b) ((a)<(b)?(a):(b))
+//#define max(a,b) ((a)>(b)?(a):(b))
+//#define min(a,b) ((a)<(b)?(a):(b))
 #define PRNTV(x) std::cout << #x " = " << x << "\n";
 #define PRNT(f,x) std::cout <<"[" <<f<<"] "<< #x " = " << x << "\n";
 #define MSG(x) std::cout <<x<<endl;
