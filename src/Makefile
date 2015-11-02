@@ -1,14 +1,15 @@
 #compiler
 CXX = /usr/bin/g++ 
+CC = ${CXX}
 OPT = -O3 -ffast-math #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
 WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated #-Wno-long-double
 END_FLAG = -DBIGENDIAN
 #END_FLAG = -DLITTLEENDIAN
 
-ANN_LIB = -L./ann/lib  #replace with your ANN library
-ANN_INC = -I./ann/include #replace with your ANN include
-NR_LIB = -L./recipes #replace with your NumRec
-NR_INC = -I./recipes #replace with your NumRec
+ANN_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/lib  #replace with your ANN library
+ANN_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/include #replace with your ANN include
+NR_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
+NR_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
 KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
 KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
 
@@ -184,7 +185,7 @@ EXEC8 = cov_file
 OBJS8 = cov_file.o chainel.o
 
 EXEC9 = kcorrect_utils
-OBJS9 = kcorrect_utils.o
+OBJS9 = kcorrect_utils.o cosmology.o
 
 EXEC_TEST = test_gasdev
 OBJS_TEST = test_gasdev.o
@@ -237,7 +238,7 @@ dep:
 	makedepend -- $(INCL) -- $(SRCS)
 
 clean:
-	$(RM) $(EXECNAME) $(EXEC1) $(EXEC2) $(EXEC3) *.o core.*
+	$(RM) $(EXECNAME) $(EXEC1) $(EXEC2) $(EXEC3) $(EXEC9) *.o core.*
 
 cleanup:
 	$(RM) $(EXECNAME) $(EXEC1) *.o *~ core.* *.bak
