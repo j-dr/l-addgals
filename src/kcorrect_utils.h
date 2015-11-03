@@ -1,11 +1,14 @@
 #ifndef kcorrect_utils_h
 #define kcorrect_utils_h
+#include "cosmology.h"
 #include <cmath>
 #include <istream>
 #include <utility>
 #include <iterator>
 #include <vector>
 #include <functional>
+
+extern Cosmology cosmo;
 
 typedef std::pair<int,int> indpair;
 bool paircomp (indpair l, indpair r)
