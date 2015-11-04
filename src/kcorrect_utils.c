@@ -10,9 +10,8 @@
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
-Cosmology cosmo(0.286, 0.82, 0.7);
+Cosmology cosmo(0.3, 0.82, 0.7);
 using namespace std;
-
 
 static int nz=1000;
 static int nk,nv,nl,maxn;
@@ -33,12 +32,6 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   char vfile[FILESIZE],lfile[FILESIZE],path[FILESIZE];
   char vmatrixfile[FILESIZE],lambdafile[FILESIZE];
 
-  cout<<"First few coefficients: "<<endl;
-  for (i=0;i<5;i++){
-    cout<<coeff[i]<<", ";
-  }
-  cout<<endl;
-
   //Read in templates
   strcpy(vfile,"vmatrix.default.dat");
   strcpy(lfile,"lambda.default.dat");
@@ -47,13 +40,11 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   sprintf(vmatrixfile, "%s/%s", path, vfile);
   sprintf(lambdafile, "%s/%s", path, lfile);
 
-  cout<<"Reading in vmatrix"<<endl;
   k_read_ascii_table(&vmatrix,&ndim,&sizes,vmatrixfile);
   nl=sizes[1];
   nv=sizes[0];
   FREEVEC(sizes);
 
-  cout<<"Reading in lambda file"<<endl;
   k_read_ascii_table(&lambda,&ndim,&sizes,lambdafile);
   if(sizes[0]!=nl+1) {
     fprintf(stderr,"vmatrix and lambda files incompatible (nl==%d vs sizes[0]=%d).\n",nl,sizes[0]);
@@ -64,11 +55,12 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   //Load filters
   cout<<"Loading filters from "<<filterfile<<endl;
   k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
-  cout<<"Allocating memory for projection table"<<endl;
+  cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
 
   //Create matrix of projections of templates onto filters (rmatrix)
   rmatrix=(float *) malloc(nz*nv*nk*sizeof(float));
   zvals=(float *) malloc(nz*sizeof(float));
+
   cout<<"Creating projection table"<<endl;
   for(i=0;i<nz;i++)
     zvals[i]=zmin+(zmax-zmin)*((float)i+0.5)/(float)nz;
@@ -86,9 +78,8 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 
 }
 
-void match_coeff(vector<int> &sed_ids, double* coeffs)
+void match_coeff(vector<int> &sed_ids, float* coeffs)
 {
-  cout<<"Matching coeffs"<<endl;
   static int ntemps=5;
   int n;
   string filename = "../training/cooper/combined_dr6_cooper.dat";
@@ -100,99 +91,100 @@ void match_coeff(vector<int> &sed_ids, double* coeffs)
 
   vector<magtuple> sdsscoeffs;
   vector<int>::iterator it;
-
   copy(istream_iterator<magtuple>(coeff_file),
 	    istream_iterator<magtuple>(),
 	    back_inserter(sdsscoeffs));
-  cout.precision(15);
-  cout<<"First few sdss coefficients: "<<endl;
+
   for (n=0;n<ntemps;n++){
-    cout<<setprecision(numeric_limits<double>::digits10+1)
+    cout<<setprecision(numeric_limits<float>::digits10+1)
 	<<sdsscoeffs[0].bands[n]<<", ";
   }
   cout<<endl;
-
   
   for (it = sed_ids.begin(); it!=sed_ids.end(); it++)
     {
       for (n=0; n<ntemps; ++n) {
-	coeffs[(it-sed_ids.begin())*ntemps+n] = sdsscoeffs[*it].bands[n];
+	coeffs[(it-sed_ids.begin())*ntemps+n] = sdsscoeffs[*it-1].bands[n];
       }
     }
-  cout<<"Done matching coeffs"<<endl;
-  cout<<"First few matches: "<<endl;
-  for (n=0;n<5;n++){
-    cout<<coeffs[n]<<", ";
-  }
-  cout<<endl;
-
 }
 
-void k_calculate_magnitudes(vector<double> &coeff, vector<double> &redshift,
+void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 			    float zmin, float zmax, float band_shift,
-			    char filterfile[], vector<double> &omag,
-			    vector<double> &amag)
+			    char filterfile[], vector<float> &omag,
+			    vector<float> &amag)
 {
   cout<<"Calculating magnitudes"<<endl;
   int i;
   int ngal = redshift.size();
   int nband = omag.size()/ngal;
-  cout<<"Number of bands: "<<nband<<endl;
-  vector<double> kcorrection(omag.size());
+  float zeropoint = 22.5;
+  vector<float> kcorrection(omag.size());
+  vector<float> rf_z(ngal);
+  fill(rf_z.begin(), rf_z.end(), band_shift);
 
   //observer frame maggies
-  reconstruct_maggies((float*)&coeff[0], (float*)&redshift[0], ngal, zmin,
-                      zmax, 0.0, filterfile, (float*)&omag[0]);
+  reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
+                      zmax, 0.0, filterfile, &omag[0]);
 
   //rest frame maggies
-  reconstruct_maggies((float*)&coeff[0], (float*)&redshift[0], ngal, zmin,
-                      zmax, band_shift, filterfile, (float*)&amag[0]);
+  reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin,
+                      zmax, 0.0, filterfile, &amag[0]);
 
   cout<<"Calculating kcorrections"<<endl;
   //calculate k-correction in mags
-  transform(omag.begin(), omag.end(), amag.begin(), 
-	    kcorrection.begin(), magop<double>());
+  transform(amag.begin(), amag.end(), omag.begin(), 
+	    kcorrection.begin(), magop<float>());
 
   cout<<"Calculating apparent magnitudes"<<endl;
   //calculate apparent magnitudes
   transform(omag.begin(), omag.end(), omag.begin(),
-	    bind1st(appmagnitude<double>(),22.5));
+	    bind2nd(appmagnitude<float>(),zeropoint));
+
+  cout<<"First few apparent mags: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<omag[i]<<", ";
+  }
+  cout<<endl;
 
   cout<<"Calculating absolute magnitudes"<<endl;
   //calculate absolute magnitudes without kcorrection
-
-  vector<double>::iterator it;
+  
+  vector<float>::iterator it;
+  absmagnitude<float> absmagn;
   for (it=redshift.begin(); it!=redshift.end(); it++){
     for (i=0; i<nband; i++){
-      amag[nband*(it-redshift.begin())+i] = AbsMag(omag[nband*(it-redshift.begin())+i],*it);
+      amag[nband*(it-redshift.begin())+i] = absmagn(omag[nband*(it-redshift.begin())+i],*it);
     }
   }
 
-	//transform(omag.begin(), omag.end(), redshift.begin(),
-	//	    amag.begin(), AbsMag);
+  cout<<"First few absolute mags: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<amag[i]<<", ";
+  }
+  cout<<endl;
 
   cout<<"Adding kcorrection"<<endl;
   //add k-correction to absolute magnitudes
   transform(amag.begin(), amag.end(), kcorrection.begin(),
-	    amag.begin(), plus<double>());
+	    amag.begin(), plus<float>());
 
   cout<<"Done calculating magnitudes"<<endl;
-
 }
 
-void assign_colors(vector<double> &reference_mag, vector<int> &sed_ids, 
-		   vector<double> &redshift, float zmin, float zmax,
+void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids, 
+		   vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
-		   vector<double> &omag, vector<double> &amag){
+		   vector<float> &omag, vector<float> &amag){
   int i;
   int ngal = reference_mag.size();
   int ntemp = 5;
-  double sdss_bandshift = 0.1;
+  float sdss_bandshift = 0.1;
+  float ab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
-  vector<double> coeff(ngal*ntemp);
-  vector<double> deltam(ngal);
+  vector<float> coeff(ngal*ntemp);
+  vector<float> deltam(ngal);
 
-  //sprintf(sdss_filterfile,"%s/data/templates/sdss_filters.dat",getenv("KCORRECT_DIR"));
   strcpy(sdss_filterfile, "./sdss_filter.txt");
 
   //Match the correct coefficients to each galaxy
@@ -205,7 +197,7 @@ void assign_colors(vector<double> &reference_mag, vector<int> &sed_ids,
 
   //determine shift needed to get reference_mag from sdss_amag
   transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
-	    deltam.begin(), minus<double>());
+	    deltam.begin(), minus<float>());
     
   //calculate observed and abs mags in desired output bands without shift
   //calculated from SDSS bands
@@ -213,7 +205,7 @@ void assign_colors(vector<double> &reference_mag, vector<int> &sed_ids,
 			 filterfile, omag, amag);
   
   //apply SDSS shift to app and abs mags (same for all bands)
-  vector<double>::iterator it;
+  vector<float>::iterator it;
   for (it=deltam.begin();it!=deltam.end();it++){
     for (i=0;i<nbands;i++){
       omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it);
@@ -222,9 +214,9 @@ void assign_colors(vector<double> &reference_mag, vector<int> &sed_ids,
   }
 
   //transform(omag.begin(), omag.end(), deltam.begin(), omag.begin(), 
-  //	    plus<double>());
+  //	    plus<float>());
   //transform(amag.begin(), amag.end(), deltam.begin(), amag.begin(), 
-  //	    plus<double>());
+  //	    plus<float>());
 
 }
 
@@ -249,8 +241,9 @@ int main(int argc, char **argv)
   
   zmin = 0.0;
   zmax = 0.5;
+  //zmax=2.0;
   band_shift = 0.1;
-  nbands = 5;
+  nbands = 6;
   strcpy(filterfile, "./des_filters.txt");
 
   copy(istream_iterator<ginfo>(ginfo_file),
@@ -259,10 +252,10 @@ int main(int argc, char **argv)
 
   int ngal = sdss_ginfo.size();
   vector<int> sed_ids(ngal);
-  vector<double> redshift(ngal);
-  vector<double> refmag(ngal);
-  vector<double> omag(ngal*nbands);
-  vector<double> amag(ngal*nbands);
+  vector<float> redshift(ngal);
+  vector<float> refmag(ngal);
+  vector<float> omag(ngal*nbands);
+  vector<float> amag(ngal*nbands);
   vector<ginfo>::iterator itr;
 
   for (itr=sdss_ginfo.begin();itr<sdss_ginfo.end();++itr)
@@ -283,18 +276,24 @@ int main(int argc, char **argv)
   //write out magnitudes
   ofstream omag_file("./des_omagtest.txt");
   ofstream amag_file("./des_amagtest.txt");
-  vector<double>::iterator ditr;
+  vector<float>::iterator ditr;
 
   for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
     {
       omag_file << *ditr;
-      if ((ditr!=omag.begin()) && ((ditr-omag.begin())%nbands==0)) omag_file << "\n";
+      if ((ditr-omag.begin()+1)%nbands==0)
+	{
+	  omag_file << "\n";
+	} else omag_file << " ";
     }
 
   for (ditr=amag.begin(); ditr!=amag.end(); ++ditr)
     {
       amag_file << *ditr;
-      if ((ditr!=amag.begin()) && ((ditr-omag.begin())%nbands==0)) amag_file << "\n";
+      if ((ditr-amag.begin()+1)%nbands==0)
+	{
+	  amag_file << "\n";
+	} else amag_file << " ";
     }
 
 }
