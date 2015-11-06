@@ -18,13 +18,13 @@ return l.first<r.first;
 
 struct magtuple
 {
-  double bands[5];
+  float bands[5];
 };
 
 struct ginfo
 {
   int id, central;
-  double refmag, redshift;
+  float refmag, redshift;
 };
 
 std::istream & operator>>(std::istream & is, magtuple & in)
@@ -52,20 +52,24 @@ template <class T> struct appmagnitude : std::binary_function <T,T,T> {
   T operator() (const T& maggie, const T& zeropoint) const {return zeropoint-2.5*log10(maggie/1.0e-9);}
 };
 
+template <class T> struct absmagnitude : std::binary_function <T,T,T> {
+  T operator() (const T& appmag, const T& redshift) const {return appmag-z2dm(redshift,0.3,0.7);}
+};
+
 void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
 			 float zmax, float band_shift, char filterfile[], float *maggies);
 
-void match_coeff(std::vector<int> &sed_ids, double *coeffs);
+void match_coeff(std::vector<int> &sed_ids, float *coeffs);
 
-void k_calculate_magnitudes(std::vector<double> &coeff, std::vector<double> &redshift,
-			    float zmin, float zmax, float band_shift,
-			    char filterfile[], std::vector<double> &omag,
-			    std::vector<double> &amag);
+void k_calculate_magnitudes(std::vector<float> &coeff, std::vector<float> &redshift,
+			    float zmin, float zmax, float band_shift, int nband,
+			    char filterfile[], std::vector<float> &omag,
+			    std::vector<float> &amag);
 
-void assign_colors(std::vector<double> &reference_mag, std::vector<int> &sed_ids, 
-		   std::vector<double> &redshift, float zmin, float zmax,
+void assign_colors(std::vector<float> &reference_mag, std::vector<int> &sed_ids, 
+		   std::vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
-		   std::vector<double> &omag, std::vector<double> &amag);
+		   std::vector<float> &omag, std::vector<float> &amag);
 
 
 #endif

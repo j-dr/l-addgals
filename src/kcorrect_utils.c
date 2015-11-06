@@ -111,13 +111,12 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
 
 void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 			    float zmin, float zmax, float band_shift,
-			    char filterfile[], vector<float> &omag,
+			    int nband, char filterfile[], vector<float> &omag,
 			    vector<float> &amag)
 {
   cout<<"Calculating magnitudes"<<endl;
   int i;
   int ngal = redshift.size();
-  int nband = omag.size()/ngal;
   float zeropoint = 22.5;
   vector<float> kcorrection(omag.size());
   vector<float> rf_z(ngal);
@@ -135,6 +134,12 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   //calculate k-correction in mags
   transform(amag.begin(), amag.end(), omag.begin(), 
 	    kcorrection.begin(), magop<float>());
+
+  cout<<"First few kcorrections: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<kcorrection[i]<<", ";
+  }
+  cout<<endl;
 
   cout<<"Calculating apparent magnitudes"<<endl;
   //calculate apparent magnitudes
@@ -158,16 +163,16 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
     }
   }
 
+  cout<<"Subtracting kcorrection"<<endl;
+  //add k-correction to absolute magnitudes
+  transform(amag.begin(), amag.end(), kcorrection.begin(),
+	    amag.begin(), minus<float>());
+
   cout<<"First few absolute mags: "<<endl;
   for (i=0; i<nband; i++){
     cout<<amag[i]<<", ";
   }
   cout<<endl;
-
-  cout<<"Adding kcorrection"<<endl;
-  //add k-correction to absolute magnitudes
-  transform(amag.begin(), amag.end(), kcorrection.begin(),
-	    amag.begin(), plus<float>());
 
   cout<<"Done calculating magnitudes"<<endl;
 }
@@ -193,16 +198,24 @@ void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids,
   //calculate SDSS r-band abs mags to determine magnitude shifts to apply
   //to kcorrect outputs for other bands
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
-			 sdss_filterfile, omag, amag);
+			 1, sdss_filterfile, omag, amag);
 
   //determine shift needed to get reference_mag from sdss_amag
   transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
 	    deltam.begin(), minus<float>());
+
+  cout<<"10-100 deltam"<<endl;
+  for (i=10;i<100;i++){
+    cout<<deltam[i]<<", ";
+    if ((i-10+1)%6==0) cout<<endl;
+  }
+  cout<<endl;
+  
     
   //calculate observed and abs mags in desired output bands without shift
   //calculated from SDSS bands
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, band_shift,
-			 filterfile, omag, amag);
+			 nbands, filterfile, omag, amag);
   
   //apply SDSS shift to app and abs mags (same for all bands)
   vector<float>::iterator it;
@@ -240,8 +253,8 @@ int main(int argc, char **argv)
   }
   
   zmin = 0.0;
-  zmax = 0.5;
-  //zmax=2.0;
+  //zmax = 0.5;
+  zmax=2.0;
   band_shift = 0.1;
   nbands = 6;
   strcpy(filterfile, "./des_filters.txt");
