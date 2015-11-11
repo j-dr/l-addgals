@@ -89,16 +89,22 @@ void parse_config(std::vector<std::string> config, prefstruct& out) {
 	firstWord = str.erase(str.find_first_of(" "),str.find_first_not_of(" "));
       }
       secondWord = str.substr(kend+1);
-
+      secondWord = secondWord.substr(0, secondWord.find("#"));
       //remove whitespace
       firstWord.erase(std::remove_if(firstWord.begin(), firstWord.end(), isspace), firstWord.end());
       secondWord.erase(std::remove_if(secondWord.begin(), secondWord.end(), isspace), secondWord.end());
       std::transform(firstWord.begin(),firstWord.end(),firstWord.begin(), ::toupper);
 
+      std::cout << "firstWord: " << firstWord << std::endl;
+      std::cout << "secondWord: " << secondWord << std::endl;
+
       if(firstWord == "NELEM")
 	out.nelem = atoi(secondWord.c_str());
-      if(firstWord == "SMINMAG")
+      if(firstWord == "SMINMAG"){
+	std::cout << "SMINMAG: " << secondWord << std::endl;
 	out.sminmag = atof(secondWord.c_str());
+	std::cout << "out.sminmag: " << out.sminmag << std::endl;
+      }
       if(firstWord == "SREFMAG")
 	out.srefmag = atof(secondWord.c_str());
       if(firstWord == "SMAXMAG")

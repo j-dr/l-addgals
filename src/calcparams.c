@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include "calcparams.h"
+#include "shapes.h"
 #include "efunc.h"
 #include "gno.h"
-#include "shapes.h"
 
 /*!\brief Compute ellipticity pdf parameters
  * \param mag magnitude at which the pdf parameters are computed
@@ -20,7 +20,9 @@ calceparams(double mag, eparam *p)
 {
     int status = 0;
     float sigma_p;
-
+    std::cout << "eminmag, emaxmag, erefmag, mag: "
+      << prefs.eminmag << " " << prefs.emaxmag << " "
+      << prefs.erefmag << " " << mag << std::endl;
     if (mag < prefs.eminmag) {
 	mag = prefs.eminmag;
 	status = 1;
@@ -55,6 +57,10 @@ int
 calcsparams(double mag, sparam *p)
 {
     int status = 0;
+
+    std::cout << "sminmag, smaxmag, srefmag, mag: "
+      << prefs.sminmag << " " << prefs.smaxmag << " "
+      << prefs.srefmag << " " << mag << std::endl;
 
     if (mag < prefs.sminmag) {
 	mag = prefs.sminmag;
