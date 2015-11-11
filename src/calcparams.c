@@ -2,7 +2,11 @@
  * \brief Compute ellipticity pdf parameters
  */
 
-#include "mockshapes.h"
+#include <iostream>
+#include "calcparams.h"
+#include "efunc.h"
+#include "gno.h"
+#include "shapes.h"
 
 /*!\brief Compute ellipticity pdf parameters
  * \param mag magnitude at which the pdf parameters are computed
@@ -31,9 +35,8 @@ calceparams(double mag, eparam *p)
     sigma_p = prefs.sigma_0 + mag * (prefs.sigma_1 + mag * 
 				     (prefs.sigma_2 + mag * prefs.sigma_3));
     if (sigma_p <= 0 || sigma_p > 3) {
-	msg_message(MSG_ERROR, 0, 
-		    "Value for sigma_p (%f) outside allowed range at magnitude %f", 
-		    sigma_p, mag);
+      std::cout<<"Value for sigma_p" << sigma_p <<
+	"outside allowed range at magnitude "<< mag << std::endl;
 	status = -1;
     }
     p->a = sigma_p * pow(p->b, 1. / p->b);
@@ -71,9 +74,8 @@ calcsparams(double mag, sparam *p)
 				       (prefs.alpha_3 + mag * 
 					prefs.alpha_4))); 
     if (p->alpha <= 0) {
-	msg_message(MSG_ERROR, 0,
-		    "Value for alpha (%f) outside allowed range at magnitude %f", 
-		    p->alpha, mag);
+      std::cout<<"Value for alpha "<<p->alpha<<
+	" outside allowed range at magnitude "<<mag<<std::endl; 
 	status = -1;
     }
     p->kappa = prefs.kappa_0 + mag * (prefs.kappa_1 + mag * 

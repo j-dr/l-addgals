@@ -1,6 +1,5 @@
 #include "efunc.h"
-
-#include "message.h"
+#include "shapes.h"
 
 /* Because the ellipticity distribution is terminated at |e| < 1, the
    dispersion is a bit too low when drawing it from an analytic model
@@ -9,6 +8,8 @@
    correction. Use the Hetterscheidt et al. bias factor of 1/0.85.
  */
 #define FUDGE (1.14/0.85)
+
+prefstruct prefs;
 
 void
 rng_efunc(const gsl_rng *rng, void *params, double *e1, double *e2)

@@ -1,9 +1,9 @@
 /*!\file gno.c
  * \brief Generalized Normal Distribution
  */
+#include <iostream>
 #include "gno.h"
-
-#include "message.h"
+#include "shapes.h"
 
 /*!\brief Compute the pdf of the GNO distribution at a given location 
  * \param x position at which the pdf is computed
@@ -19,16 +19,15 @@ pdfgno(double x, void *params)
     p = (sparam *)params;
 
     if (p->alpha <= 0) {
-	msg_message(MSG_ERROR, 0,
-		    "Illegal value for distribution scale alpha: %lf\n", 
-		    p->alpha);
-	return -1;
+      std::cout<<"Illegal value for distribution scale alpha: "<<
+	p->alpha<<std::endl;
+      return -1;
     }
     if (p->kappa == 0)
-	y = (x - p->xi) / p->alpha;
+      y = (x - p->xi) / p->alpha;
     else
-	y = -1. / p->kappa * log(1 - p->kappa * (x - p->xi) / p->alpha);
-
+      y = -1. / p->kappa * log(1 - p->kappa * (x - p->xi) / p->alpha);
+    
     return 1. / (p->alpha * sqrt(2 * M_PI)) * exp((p->kappa * y - y*y/2.));
 }
 
@@ -50,10 +49,9 @@ cdfgno(double x, void *params)
     p = (sparam *)params;
 
     if (p->alpha <= 0) {
-	msg_message(MSG_ERROR, 0,
-		    "Illegal value for distribution scale alpha: %lf\n", 
-		    p->alpha);
-	return -1;
+      std::cout<<"Illegal value for distribution scale alpha: "<<
+	p->alpha<<std::endl;
+      return -1;
     }
 
     F.function = &pdfgno;
@@ -140,9 +138,9 @@ ran_gno(const gsl_rng *rng, void *params)
 	iter++;
 	status = gsl_root_fsolver_iterate(s);
 	if (status > 0) {
-	    msg_message(MSG_ERROR, 0, "Error in gsl_root_fsolver_iterate: %s",
-			gsl_strerror(status));
-	    return -99;
+	  std::cout<<"Error in gsl_root_fsolver_iterate: "<<
+	    gsl_strerror(status)<<std::endl;;
+	  return -99;
 	}
 	r = gsl_root_fsolver_root(s);
 	x_lo = gsl_root_fsolver_x_lower(s);
@@ -154,6 +152,6 @@ ran_gno(const gsl_rng *rng, void *params)
     if (status == GSL_SUCCESS)
 	return r;
     else
-	msg_message(MSG_ERROR, 0, "Could not obtain GNO random deviate");
+      std::cout<< "Could not obtain GNO random deviate"<<std::endl;
     return -99;
 }
