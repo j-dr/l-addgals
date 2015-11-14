@@ -33,73 +33,68 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
   
   for (i=0; i<nband; i++)
     {
-      f1lim[i] = pow(10, (limmags[i]-zeropoint[i])/(-2.5));
+      f1lim[i] = pow(10.0, (limmags[i]-zeropoint[i])/(-2.5));
+      if (f1lim[i] < 120.0/exptime[i]) {
+	  f1lim[i] = 120.0/exptime[i];
+      }
       fsky1[i] = pow(f1lim[i],2)*exptime[i]/pow(nsigma,2) - f1lim[i];
       iexptime[i] = 1/exptime[i];
-      if (fsky1[i] < 0.001) {
-	  fsky1[i] = 0.001;
-	}
     }
+
+  cout<<"f1lim: ";
+  for(i=0;i<nband;i++){
+    cout<<f1lim[i]<<" ";
+  }
+  cout<<endl;
+
+  cout<<"fsky1: ";
+  for(i=0;i<nband;i++){
+    cout<<fsky1[i]<<" ";
+  }
+  cout<<endl;
+
 
   for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++)
     {
       i = itr-mag.begin();
       b = i%nband;
-      flux[i] = exptime[b] * pow( 10, 0.4 * ( *itr-zeropoint[b] ) );
-      fluxerr[i] = sqrt( fsky1[b] * exptime[b] + flux[i]);
+      flux[i] = exptime[b] * pow( 10, -0.4 * ( *itr-zeropoint[b] ) );
+      fluxerr[i] = exp( log( sqrt( fsky1[b] * exptime[b] + flux[i] ) )
+			+ lnscat[b] * gsl_ran_gaussian(rng, 1.0) );
       flux[i] += fluxerr[i] * gsl_ran_gaussian(rng, 1.0);
-      fluxerr[i] += exp( log( fluxerr[i] + lnscat[b] * gsl_ran_gaussian(rng, 1.0) ) );
       flux[i] = flux[i] * iexptime[b];
       fluxerr[i] = fluxerr[i] * iexptime[b];
-      omag[i] = zeropoint[b] - 2.5*log10(flux[i]/1.0e-9);
+      omag[i] = zeropoint[b] - 2.5 * log10( flux[i] );
       omagerr[i] = 1.086*fluxerr[i]/flux[i];
+      if ((omag[i]>99.0) | (omag[i]!=omag[i])) {
+	omag[i] = 99.0;
+	omagerr[i] = 99.0;
+      }
     }
 }
 
-void add_des_photometric_errors(float maglim[], int nband, vector<float> &mag,
-				vector<float> &flux, vector<float> &fluxerr, 
-				vector<float> &omag, vector<float> &omagerr,
-				vector<bool> &good)
+void observe_des_y5(vector<float> &mag, vector<float> &flux, 
+		    vector<float> &fluxerr, vector<float> &omag,
+		    vector<float> &omagerr, vector<bool> &good)
 {
-  const float nk[] = {4.6, 12.9, 17.7, 45.1, 14.9}; //flux for sky at 24th magnitude
-  float es[] = {9.95, 10.01, 8.02, 6.18, 0.812}; //flux for a 24th magnitude galaxy
-  float exposure_time[nband];
-  float zps[nband];
-  gsl_rng *rng;
-  long int seed;
-  seed = (long int)time(NULL);
-  rng = gsl_rng_alloc(gsl_rng_ranlxd2);
-  gsl_rng_set(rng, seed);
-  const float apperture = 1.5;   //angular size of a typical galaxy
-  const float pixel = 0.27;      //angular size of a detector pixel
-  const float apperture_area = M_PI * pow( apperture / 2.0, 2 );
-  const float pixels_area = pow( pixel, 2 );
-  const int npixels = apperture_area / pixels_area;
-  int i,b;
+  float maglim[] = {24.956,24.453,23.751,23.249,21.459};
+  float maglim_cut[] = {25.5, 25.0, 24.4, 23.9, 22.0};
+  float zeropoint[] = {22.5, 22.5, 22.5, 22.5, 22.5};
+  float exptime[] = {14467.00,12471.00,6296.00,5362.00,728.00};
+  float lnscat[] = {0.2,0.2,0.2,0.2,0.2};
+  float delta_maglim = 2.0;
+  int nband = 5;
+  int ngal = mag.size()/nband;
+  int i, b;
 
-  //maglim = [24.0, 24.0, 24.0, 24.0, 24.0, 24.0]
-  
-  for (i=0; i<nband; i++)
-    {
-      zps[i] = 24. + 2.5 * log10( es[i] );  //zero-point for flux calculation of a galaxy
-      es[i] = pow(10, 0.4 * ( zps[i] - maglim[i] ) );  //recalibrate our 10-sigma fluxes to detection limits
-      exposure_time[i] = pow( 10.0 / es[i], 2 ) * ( nk[i] * npixels + es[i] );
-    }
+  apply_uniform_errormodel(exptime, maglim, lnscat, nband, zeropoint,
+			   10.0, mag, flux, fluxerr, omag, omagerr);
 
-  for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++)
+  for (vector<float>::iterator itr=omag.begin(); itr!=omag.end(); itr++)
     {
-      i = itr-mag.begin();
-      b = i%nband;
-      flux[i] = pow( 10.0, -0.4 * (*itr - zps[b]) ) * exposure_time[b];
-      fluxerr[i] = sqrt( nk[b] * exposure_time[b] * npixels + flux[i] );
-      flux[i] += gsl_ran_gaussian(rng, 1.0) * fluxerr[i];
-      if (flux[i] < 0){
-	omag[i] = 99.0;
-      }	else {
-	omag[i] = zps[b] - 2.5 * log10( flux[i] / exposure_time[i] );
-      }
-      omagerr[i] = 2.5 * log10( 1.0 + fluxerr[i] / flux[i] );
-      good[i] =  good[i] | (omag[i] > maglim[b]) ? true : false;
+      i = (itr-omag.begin())/nband;
+      b = (itr-omag.begin())%nband;
+      good[i] = good[i] | (*itr <= (maglim_cut[b] + delta_maglim));
     }
 }
 
@@ -107,7 +102,6 @@ int main(int argc, char *argv[])
 {
   int i, ngal;
   int nband = 5;
-  float maglim[] = {24.0, 24.0, 24.0, 24.0, 24.0};
   ifstream mag_file(argv[1]);
   vector<float> mag;
   
@@ -127,11 +121,23 @@ int main(int argc, char *argv[])
   vector<float> omagerr(ngal*nband);
   vector<bool> good(ngal, false);
   
-  add_des_photometric_errors(maglim, nband, mag, flux, fluxerr, 
-			     omag, omagerr, good);
-
+  observe_des_y5(mag, flux, fluxerr, omag, omagerr, good);
+  
+  ofstream inmag_file("./des_inmag.txt");
   ofstream error_file("./des_errortest.txt");
+  ofstream allmag_file("./des_allmagtest.txt");
   vector<float>::iterator ditr;
+
+  for (ditr=mag.begin(); ditr!=mag.end(); ++ditr)
+    {
+      i = ditr - mag.begin();
+      inmag_file << *ditr;
+
+      if ( (i+1) % nband == 0 )
+	{
+	  inmag_file << "\n";
+	} else inmag_file << " ";
+    }
 
   for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
     {
@@ -146,4 +152,19 @@ int main(int argc, char *argv[])
 	  error_file << "\n";
 	} else error_file << " ";
     }
+
+  for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
+    {
+      i = ditr - omag.begin();
+      //if ( !good[i/nband] ) continue;
+
+      allmag_file << flux[i] << " " << fluxerr[i] << " " 
+		 << *ditr << " " << omagerr[i] << endl;
+
+      if ( (i+1) % nband == 0 )
+	{
+	  allmag_file << "\n";
+	} else allmag_file << " ";
+    }
+
 }
