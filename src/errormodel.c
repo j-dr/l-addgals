@@ -12,14 +12,15 @@ using namespace std;
 //Given simulated observed des magnitudes, apply an error model
 //given exposure time, limiting mags, lnscatter constant over the sky 
 //Returns:
-//flux observed flux with errors included
-//fluxerr observed flux errors
-//omag observed magnitudes with errors included
-//omagerr observed magnitude errors
-void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], int nband, 
-			      float zeropoint[], float nsigma, vector<float> &mag, 
-			      vector<float> &flux, vector<float> &fluxerr, 
-			      vector<float> &omag, vector<float> &omagerr)
+//flux    -- observed flux with errors included
+//fluxerr -- observed flux errors
+//omag    -- observed magnitudes with errors included
+//omagerr -- observed magnitude errors
+void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
+			      int nband, float zeropoint[], float nsigma, 
+			      vector<float> &mag, vector<float> &flux, 
+			      vector<float> &fluxerr, vector<float> &omag, 
+			      vector<float> &omagerr)
 {
   int i,b;
   float f1lim[nband];
@@ -41,19 +42,6 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
       iexptime[i] = 1/exptime[i];
     }
 
-  cout<<"f1lim: ";
-  for(i=0;i<nband;i++){
-    cout<<f1lim[i]<<" ";
-  }
-  cout<<endl;
-
-  cout<<"fsky1: ";
-  for(i=0;i<nband;i++){
-    cout<<fsky1[i]<<" ";
-  }
-  cout<<endl;
-
-
   for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++)
     {
       i = itr-mag.begin();
@@ -66,7 +54,7 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
       fluxerr[i] = fluxerr[i] * iexptime[b];
       omag[i] = zeropoint[b] - 2.5 * log10( flux[i] );
       omagerr[i] = 1.086*fluxerr[i]/flux[i];
-      if ((omag[i]>99.0) | (omag[i]!=omag[i])) {
+      if ((omag[i]>99.0) || (omag[i]!=omag[i])) {
 	omag[i] = 99.0;
 	omagerr[i] = 99.0;
       }
@@ -75,7 +63,7 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
 
 void observe_des_y5(vector<float> &mag, vector<float> &flux, 
 		    vector<float> &fluxerr, vector<float> &omag,
-		    vector<float> &omagerr, vector<bool> &good)
+		    vector<float> &omagerr)
 {
   float maglim[] = {24.956,24.453,23.751,23.249,21.459};
   float maglim_cut[] = {25.5, 25.0, 24.4, 23.9, 22.0};
@@ -85,17 +73,33 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
   float delta_maglim = 2.0;
   int nband = 5;
   int ngal = mag.size()/nband;
+  int count = 0;
+  bool good=false;
   int i, b;
+
+  for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++)
+    {
+      i = (itr-mag.begin())/nband;
+      b = (itr-mag.begin())%nband;
+      good = good || (*itr <= (maglim_cut[b] + delta_maglim));
+      if (b==(nband-1)) {
+	if (good) {
+	  copy(itr-nband+1, itr+1, mag.begin()+count);
+	  count+=nband;
+	}
+	good = false;
+      }
+    }
+
+  mag.resize(count);
+  flux.resize(count);
+  fluxerr.resize(count);
+  omag.resize(count);
+  omagerr.resize(count);
 
   apply_uniform_errormodel(exptime, maglim, lnscat, nband, zeropoint,
 			   10.0, mag, flux, fluxerr, omag, omagerr);
 
-  for (vector<float>::iterator itr=omag.begin(); itr!=omag.end(); itr++)
-    {
-      i = (itr-omag.begin())/nband;
-      b = (itr-omag.begin())%nband;
-      good[i] = good[i] | (*itr <= (maglim_cut[b] + delta_maglim));
-    }
 }
 
 int main(int argc, char *argv[])
@@ -117,33 +121,18 @@ int main(int argc, char *argv[])
   ngal = mag.size() / nband;
   vector<float> flux(ngal*nband);
   vector<float> fluxerr(ngal*nband);
-  vector<float> omag(ngal*nband);
+  vector<float> omag(ngal*nband,-99);
   vector<float> omagerr(ngal*nband);
-  vector<bool> good(ngal, false);
   
-  observe_des_y5(mag, flux, fluxerr, omag, omagerr, good);
+  observe_des_y5(mag, flux, fluxerr, omag, omagerr);
   
-  ofstream inmag_file("./des_inmag.txt");
   ofstream error_file("./des_errortest.txt");
-  ofstream allmag_file("./des_allmagtest.txt");
+  ofstream magcut_file("./des_magcut.txt");
   vector<float>::iterator ditr;
-
-  for (ditr=mag.begin(); ditr!=mag.end(); ++ditr)
-    {
-      i = ditr - mag.begin();
-      inmag_file << *ditr;
-
-      if ( (i+1) % nband == 0 )
-	{
-	  inmag_file << "\n";
-	} else inmag_file << " ";
-    }
 
   for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
     {
-      i = ditr - omag.begin();
-      if ( !good[i/nband] ) continue;
-
+      i = ditr-omag.begin();
       error_file << flux[i] << " " << fluxerr[i] << " " 
 		 << *ditr << " " << omagerr[i] << endl;
 
@@ -153,18 +142,14 @@ int main(int argc, char *argv[])
 	} else error_file << " ";
     }
 
-  for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
+  for (ditr=mag.begin(); ditr!=mag.end(); ++ditr)
     {
-      i = ditr - omag.begin();
-      //if ( !good[i/nband] ) continue;
-
-      allmag_file << flux[i] << " " << fluxerr[i] << " " 
-		 << *ditr << " " << omagerr[i] << endl;
+      i = ditr-mag.begin();
+      magcut_file << *ditr;
 
       if ( (i+1) % nband == 0 )
 	{
-	  allmag_file << "\n";
-	} else allmag_file << " ";
+	  magcut_file << "\n";
+	} else magcut_file << " ";
     }
-
 }
