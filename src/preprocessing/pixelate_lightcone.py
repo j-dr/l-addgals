@@ -201,24 +201,25 @@ def read_unprocessed_cell(filebase, pix, zbin):
     return npart, pos, vel, ids
 
 
-def read_processed_cell(filebase, pix, zbin, refine, read_pos=True, \
+def read_processed_cell(filebase, zbin, filenside=64, read_pos=True, \
                             read_vel=True, read_ids=True):
 
-    hdrfmt = 'iqf'
+    hdrfmt = 'fqf'
     idxfmt = np.dtype(np.int64)
     to_read = [read_pos, read_vel, read_ids]
     fmt = [np.dtype(np.float32), np.dtype(np.float32), np.dtype(np.int64)]
     item_per_row = [3,3,1]
     data = []
+    filenpix  = 12*filenside**2
 
-    with open(filebase+'_{0}_{1}'.format(pix,zbin), 'rb') as fp:
+    with open(filebase+'_{0}'.format(zbin), 'rb') as fp:
         #read the header
         h = list(struct.unpack(hdrfmt, \
                 fp.read(struct.calcsize(hdrfmt))))
         npart = h[1]
         data.append(h)
         #read the peano index
-        idx = np.fromstring(fp.read(8*refine**2), idxfmt)
+        idx = np.fromstring(fp.read(8*filenpix), idxfmt)
         data.append(idx)
 
         for i, r in enumerate(to_read):
@@ -253,54 +254,53 @@ def nest2peano(pix, order):
   return result + ((face2peanoface[face])<<(2*order));
 
 
-def process_redshift_hpix_cell(filebase, hpix, zbin, header, filenside=64):
+def process_redshift_cell(filebase, zbin, header, filenside=64):
 
     partnside = 4096
-    partorder = int(np.log2(4096))
-
-    npart, pos, vel, ids = read_unprocessed_cell(filebase, hpix, zbin)
-    pix = hp.vec2pix(partnside, pos[:,0], pos[:,1], pos[:,2], nest=True)
-    peano = nest2peano(pix, partorder)
+    partorder = int(np.log2(partnside))
+    fileorder = int(np.log2(filenside))
+    coarsenpix = 12*filenside**2
+    coarsepix = np.arange(coarsenpix)
     
+    #order pixels by peano indices
+    peano = nest2peano(coarsepix, fileorder)
     pidx = peano.argsort()
-    pos = pos[pidx,:]
-    vel = vel[pidx,:]
-    ids = ids[pidx]
+    coarsepix = coarsepix[pidx]
+
     peano = peano[pidx]
-    pix = pix[pidx]
-    del pidx
+    idx = np.zeros(12*filenside**2, dtype=np.int64)
 
-    pinc = peano[1:]-peano[:-1]
-    idx, = np.where(pinc!=0)
-    pnpart = idx[1:]-idx[:-1]
+    hdrfmt = 'fqf'
+    npart = 0
+    with open(filebase+'_{0}'.format(zbin), 'wb') as fp:
+        fp.write(struct.pack(hdrfmt, header['L_b'], npart, header['M_p']))
+        fp.write(struct.pack('q'*coarsenpix, *idx))
 
-    upix, uidx = np.unique(pix, return_index=True)
-    upix = upix[np.argsort(uidx)]
+        for i, hpix in enumerate(coarsepix):
+            try:
+                npart, pos, vel, ids = read_unprocessed_cell(filebase, hpix, zbin)
+            except:
+                continue
 
-    refine = partnside//filenside
-    pidx = np.zeros(refine**2)
-    pidx[upix[:-1]%refine**2] = pnpart
-    pidx[upix[-1]%refine**2] = (npart-idx[-1]-1)
+            idx[i] = npart
+            pix = hp.vec2pix(partnside, pos[:,0], pos[:,1], pos[:,2], nest=True)
+            peano = nest2peano(pix, partorder)
+            del pix
+            
+            pidx = peano.argsort()
+            pos = pos[pidx,:]
+            vel = vel[pidx,:]
+            ids = ids[pidx]
+            del pidx, peano
+            
+            #write sorted particles
+            fp.write(struct.pack('f'*3*npart, *pos.flatten()))
+            #write sorted velocities
+            fp.write(struct.pack('f'*3*npart, *vel.flatten()))
+            #write sorted inds
+            fp.write(struct.pack('q'*npart, *ids))
 
-    with open(filebase+'_{0}_{1}'.format(hpix,zbin), 'wb') as fp:
-        #write box size, total n particles, particle mass
-        fp.write(struct.pack('iqf', header['L_b'], npart, header['M_p']))
-        #write index into fine pixels
-        fp.write(struct.pack('q'*refine**2, *pidx))
-        #write sorted particles
-        fp.write(struct.pack('f'*3*npart, *pos.flatten()))
-        #write sorted velocities
-        fp.write(struct.pack('f'*3*npart, *vel.flatten()))
-        #write sorted inds
-        fp.write(struct.pack('q'*npart, *ids))
+        fp.seek(0)
+        fp.write(struct.pack(hdrfmt, header['L_b'], np.sum(idx), header['M_p']))
+        fp.write(struct.pack('q'*coarsenpix, *idx))
 
-
-
-def map_lightcone_to_cells(lightconefiles, outbase, filenside=64, rmin=0, rmax=4000, rstep=25):
-    
-    for f in lightconefiles:
-        write_to_redshift_hpix_cells(f, outbase, filenside, rmin, rmax, rstep)
-        
-
-        
-    
