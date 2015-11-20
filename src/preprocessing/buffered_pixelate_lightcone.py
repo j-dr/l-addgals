@@ -353,13 +353,14 @@ def combine_radial_buffer_pair(file1, file2):
     b1 = file1.split('.')[-1]
     b2 = file2.split('.')[-1]
     wf = '.'.join(file1.split('.')[:-1].append('join'+b1+b2))
+    hdrfmt = 'fqf'
 
     with open(file1, 'rb') as rp1:
         with open(file2, 'rb') as rp2:
             h1, idx1 = read_radial_bin(rp1)
             h2, idx2 = read_radial_bin(rp2)
             h = h1
-            h[0] += h2[0]
+            h[1] += h2[1]
             idx = idx1+idx2
             with open(wf, 'wb') as wf:
                 wf.write(struct.pack(hdrfmt, h[0], h[1], h[2]))
@@ -401,7 +402,6 @@ def combine_radial_buffer_pair(file1, file2):
             buff.write()
 
 
-
 def process_radial_cell(files, filenside=64):
 
     if len(files)%2!=0:
@@ -411,10 +411,9 @@ def process_radial_cell(files, filenside=64):
 
     for fp in files:
         
-        
 
-def read_processed_cell(filebase, zbin, filenside=64, read_pos=True, \
-                            read_vel=True, read_ids=True):
+def read_radial_bin(filebase, zbin, filenside=64, read_pos=False, \
+                        read_vel=False, read_ids=False):
 
     hdrfmt = 'fqf'
     idxfmt = np.dtype(np.int64)
@@ -424,19 +423,23 @@ def read_processed_cell(filebase, zbin, filenside=64, read_pos=True, \
     data = []
     filenpix  = 12*filenside**2
 
-    with open(filebase+'_{0}'.format(zbin), 'rb') as fp:
-        #read the header
-        h = list(struct.unpack(hdrfmt, \
-                fp.read(struct.calcsize(hdrfmt))))
-        npart = h[1]
-        data.append(h)
-        #read the peano index
-        idx = np.fromstring(fp.read(8*filenpix), idxfmt)
-        data.append(idx)
+    if not hasattr(filename, 'read'):
+        fp = open(filename, 'rb')
+    else:
+        fp = filename
 
-        for i, r in enumerate(to_read):
-            if r:
-                data.append(np.fromstring(fp.read(npart*item_per_row[i]*fmt[i].itemsize), fmt[i]))
+    #read the header
+    h = list(struct.unpack(hdrfmt, \
+            fp.read(struct.calcsize(hdrfmt))))
+    npart = h[1]
+    data.append(h)
+    #read the peano index
+    idx = np.fromstring(fp.read(8*filenpix), idxfmt)
+    data.append(idx)
+
+    for i, r in enumerate(to_read):
+        if r:
+            data.append(np.fromstring(fp.read(npart*item_per_row[i]*fmt[i].itemsize), fmt[i]))
 
     return data
 
