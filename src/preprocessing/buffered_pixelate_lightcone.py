@@ -362,9 +362,9 @@ def combine_radial_buffer_pair(file1, file2):
             h = h1
             h[1] += h2[1]
             idx = idx1+idx2
-            with open(wf, 'wb') as wf:
-                wf.write(struct.pack(hdrfmt, h[0], h[1], h[2]))
-                wf.write(idx.tobytes())
+            with open(wf, 'wb') as wp:
+                wp.write(struct.pack(hdrfmt, h[0], h[1], h[2]))
+                wp.write(idx.tobytes())
 
             #write particles
             buff = Buffer(wf, dtype='f4')
@@ -401,16 +401,14 @@ def combine_radial_buffer_pair(file1, file2):
             
             buff.write()
 
+    return wf
 
 def process_radial_cell(files, filenside=64):
 
-    if len(files)%2!=0:
-        files.append(None)
-
-    files = files.reshape(len(files)//2, 2)
-
-    for fp in files:
-        
+    while len(files)>1:
+        files.append(combine_radial_buffer_pair(files[0], files[1]))
+        files.remove(files[0])
+        files.remove(files[1])
 
 def read_radial_bin(filebase, zbin, filenside=64, read_pos=False, \
                         read_vel=False, read_ids=False):
