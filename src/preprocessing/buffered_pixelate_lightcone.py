@@ -4,8 +4,8 @@ from collections import namedtuple
 import numpy as np
 import healpy as hp
 import struct
-
 import time
+
 TZERO = None
 def tprint(info):
     global TZERO
@@ -134,7 +134,7 @@ class Buffer(object):
     def write(self, idx=None):
         if self.ncurr > 0:
             #tprint("    writing to file '%s'" % self.fname)
-            with open(self.fname+'.{0}'.format(dumpcount), 'w+b') as fp:
+            with open(self.fname, 'w+b') as fp:
                 fp.seek(0,2)
                 fp.write(self.buff[0:self.ncurr].tobytes())
             
@@ -170,7 +170,7 @@ class RBuffer(object):
     def __init__(self,fname,nmax=8000000,filenside=16):
         self.pbuff = np.zeros(nmax*3,dtype='f4')
         self.vbuff = np.zeros(nmax*3,dtype='f4')
-        self.ibuff = np.zeros(nmax,dtype='i8')
+        self.ibuff = np.zeros(nmax,dtype='u8')
         self.pidx = np.zeros(12*filenside**2,dtype='i8')
 
         self.ncurr = 0
@@ -178,11 +178,12 @@ class RBuffer(object):
         self.fname = fname
         self.nmax = nmax
         self.filenside = filenside
+        self.fileorder = int(np.log2(filenside))
 
     def sort_by_peano(self):
         pix = hp.vec2pix(self.filenside, self.pbuff[::3], \
                          self.pbuff[1::3], self.pbuff[2::3], nest=True)
-        peano = nest2peano(pix)
+        peano = nest2peano(pix, self.fileorder)
         pidx = np.argsort(peano)
         pix = pix[pidx]
         
@@ -191,10 +192,10 @@ class RBuffer(object):
             self.vbuff[i::3] = self.vbuff[i::3][pidx]
             self.ibuff = self.ibuff[pidx]
 
-        pidx = pidx[1:]-pidx[:-1]
-        pidx, = np.where(pidx!=0)+1
+        pidx = pix[pidx[1:]]-pix[pidx[:-1]]
+        pidx = np.where(pidx!=0)[0]+1
         nidx = [0]
-        nidx = nidx.extend(list(pidx))
+        nidx.extend(list(pidx))
         pidx = np.array(nidx)
         self.pidx[pix[pidx]][:-1] = pidx[1:]-pidx[:-1]
         self.pidx[pix[pidx]][-1] = len(pix)-pidx[-1]
@@ -203,8 +204,8 @@ class RBuffer(object):
         self.sort_by_peano()
 
         if self.ncurr > 0:
-            #tprint("    writing to file '%s'" % self.fname)
-            with open(self.fname+'.{0}'.format(dumpcount), 'w+b') as fp:
+            #tprint("    writing to file '%s'" % self.fname+'.{0}'.format(self.dumpcount))
+            with open(self.fname+'.{0}'.format(self.dumpcount), 'w+b') as fp:
                 fp.write(self.pidx.tobytes())
                 fp.write(self.pbuff[0:3*self.ncurr].tobytes())
                 fp.write(self.vbuff[0:3*self.ncurr].tobytes())
@@ -221,7 +222,6 @@ class RBuffer(object):
         loc = 0
         nnew = len(ids)
         assert nnew*3==len(pos)
-
         while nnew + self.ncurr > self.nmax:
             npos = self.nmax - self.ncurr
             if npos > nnew:
@@ -250,7 +250,8 @@ class RBuffer(object):
 
 
 
-def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, rmin=0, rmax=4000, rstep=25):
+def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=1000000, 
+                                 rmin=0, rmax=4000, rstep=25):
     """
     Read in gadget particle block, and write to the correct healpix/redshift
     cell files
@@ -287,7 +288,6 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, rmin=0, rmax=
         pos = pos[idx,:]
         vel = vel[idx,:]
         ids = ids[idx]
-        pix = pix[idx]
         bins = bins[idx]
         del idx
         
@@ -306,19 +306,17 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, rmin=0, rmax=
         nwrit = 0
         for i, start in enumerate(idx):
             if i==(len(idx)-1):
-                end = len(bin)
+                end = len(bins)
             else:
                 end = idx[i+1]
 
             rind = bins[start]
-
             deltan = end - start
             nwrit += deltan
             
             if rind not in buffs:
-                buffs[rind] = RBuffer(outbase+'_{0}'.format(bins[start]['ridx']),
-                                      nmax=100000)
-                
+                buffs[rind] = RBuffer(outbase+'_{0}'.format(bins[start]),
+                                      nmax=buffersize)
             buffs[rind].add(pos[start:end,:].flatten(), vel[start:end,:].flatten(),
                             ids[start:end])
             
@@ -330,11 +328,12 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, rmin=0, rmax=
     for rind in buffs.keys():
         tprint('    bin %03d of %03d' % (rind,len(rbins)))
         buffs[rind].write()
+        tprint('    Buffer for bin %03d of %03d dumped %03d times' % (rind,len(rbins),buffs[rind].dumpcount))
         del buffs[rind]
             
-def read_unprocessed_cell(filebase, pix, zbin):
+def read_unprocessed_cell(filebase, zbin):
     
-    with open(filebase+'_{0}_{1}.pos'.format(pix,zbin), 'rb') as fp:
+    with open(filebase+'_{0}'.format(zbin), 'rb') as fp:
         fmt = np.dtype(np.float32)
         npart = np.fromstring(fp.read(8), np.int64)[0]
         pos = np.fromstring(fp.read(npart*3*fmt.itemsize), fmt).reshape((npart,3))
@@ -349,6 +348,70 @@ def read_unprocessed_cell(filebase, pix, zbin):
 
     return npart, pos, vel, ids
 
+def combine_radial_buffer_pair(file1, file2):
+
+    b1 = file1.split('.')[-1]
+    b2 = file2.split('.')[-1]
+    wf = '.'.join(file1.split('.')[:-1].append('join'+b1+b2))
+
+    with open(file1, 'rb') as rp1:
+        with open(file2, 'rb') as rp2:
+            h1, idx1 = read_radial_bin(rp1)
+            h2, idx2 = read_radial_bin(rp2)
+            h = h1
+            h[0] += h2[0]
+            idx = idx1+idx2
+            with open(wf, 'wb') as wf:
+                wf.write(struct.pack(hdrfmt, h[0], h[1], h[2]))
+                wf.write(idx.tobytes())
+
+            #write particles
+            buff = Buffer(wf, dtype='f4')
+            fmt = np.dtype(np.float32)
+            for i in range(len(idx1)):
+                if idx1[i]:
+                    d = np.fromstring(rp1.read(idx1[i]*3*fmt.itemsize),fmt)
+                    buff.add(d)
+                if idx2[i]:
+                    d = np.fromstring(rp2.read(idx2[i]*3*fmt.itemsize),fmt)
+                    buff.add(d)
+
+            #write velocities
+            for i in range(len(idx1)):
+                if idx1[i]:
+                    d = np.fromstring(rp1.read(idx1[i]*3*fmt.itemsize),fmt)
+                    buff.add(d)
+                if idx2[i]:
+                    d = np.fromstring(rp2.read(idx2[i]*3*fmt.itemsize),fmt)
+                    buff.add(d)
+
+            buff.write()
+            
+            #write ids
+            buff = Buffer(wf, dtype='i8')
+            fmt = np.dtype(np.int64)
+            for i in range(len(idx1)):
+                if idx1[i]:
+                    d = np.fromstring(rp1.read(idx1[i]*fmt.itemsize),fmt)
+                    buff.add(d)
+                if idx2[i]:
+                    d = np.fromstring(rp2.read(idx2[i]*fmt.itemsize),fmt)
+                    buff.add(d)
+            
+            buff.write()
+
+
+
+def process_radial_cell(files, filenside=64):
+
+    if len(files)%2!=0:
+        files.append(None)
+
+    files = files.reshape(len(files)//2, 2)
+
+    for fp in files:
+        
+        
 
 def read_processed_cell(filebase, zbin, filenside=64, read_pos=True, \
                             read_vel=True, read_ids=True):
