@@ -410,7 +410,7 @@ def process_radial_cell(files, filenside=64):
     files = files.reshape(len(files)//2, 2)
 
     for fp in files:
-        
+        combine_radial_buffer_pair(fp*)
 
 def read_radial_bin(filebase, zbin, filenside=64, read_pos=False, \
                         read_vel=False, read_ids=False):
