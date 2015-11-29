@@ -180,17 +180,16 @@ class RBuffer(object):
         self.nwritten = 0
         self.fname = fname
         self.nmax = nmax
-        self.filenside = filenside
-        self.fileorder = int(np.log2(filenside))
+        self.filenside = header[2]
+        self.fileorder = int(np.log2(self.filenside))
         self.header = header
-        self.hdrfmt = 'fqf'
+        self.hdrfmt = 'fqif'
 
     def sort_by_peano(self):
         pix = hp.vec2pix(self.filenside, self.pbuff[:3*self.ncurr:3], \
                          self.pbuff[1:3*self.ncurr:3], self.pbuff[2:3*self.ncurr:3], nest=True)
         peano = nest2peano(pix, self.fileorder)
         pidx = np.argsort(peano)
-        tprint(pidx)
         pix = pix[pidx]
         for i in range(3):
             self.pbuff[i:3*self.ncurr:3] = self.pbuff[i:3*self.ncurr:3][pidx]
@@ -265,12 +264,11 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=10
     rbins2 = rbins*rbins
     
     buffs = {}
-    header = [1050.0, 0, 3.16]
+    header = [1050.0, 0, filenside, 3.16]
         
     nfiles = len(filepaths)
     
     for fnum,filepath in enumerate(filepaths):
-        tprint("doing file '%s'" % filepath)
         tprint('    file %6d of %6d' % (fnum+1,nfiles))
         hdr, pos, vel, ids = readGadgetSnapshot(filepath,
                                                 read_pos=True,
@@ -341,8 +339,7 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=10
     tprint('    Total number of particles written, read: {0}, {1}'.format(nwrit, len(bins)))
 
 def combine_radial_buffer_pair(file1, file2):
-    tprint('    {0}'.format(file1))
-    tprint('    {0}'.format(file2))
+
     b1 = file1.split('.')[-1]
     b2 = file2.split('.')[-1]
     ws = file1.split('.')[:-1]
@@ -358,10 +355,10 @@ def combine_radial_buffer_pair(file1, file2):
             h[1] += h2[1]
             idx = idx1+idx2
             nadd = 0
-            tprint('    Sum of index, npart from header: {0}, {1}'.format(np.sum(idx), h[1]))
+
             assert(np.sum(idx) == h[1])
             with open(wf, 'wb') as wp:
-                wp.write(struct.pack(hdrfmt, h[0], h[1], h[2]))
+                wp.write(struct.pack(hdrfmt, *h))
                 wp.write(idx.tobytes())
 
             #write particles
@@ -376,10 +373,10 @@ def combine_radial_buffer_pair(file1, file2):
                     d = np.fromstring(rp2.read(int(idx2[i]*3*fmt.itemsize)),fmt)
                     buff.add(d)
                     nadd += len(d)//3
-            tprint('    Number of particles added to buffer, number read: {0}, {1}'.format(nadd, h[1]))
+
             assert(nadd == h[1])
             buff.write()
-            tprint('    Number written, Number read: {0}, {1}'.format(buff.nwritten//6, h[1]))            
+
             #write velocities
             for i in range(len(idx1)):
                 if idx1[i]:
@@ -390,7 +387,7 @@ def combine_radial_buffer_pair(file1, file2):
                     buff.add(d)
 
             buff.write()
-            tprint('    Number written, Number read: {0}, {1}'.format(buff.nwritten//6, h[1]))
+
             assert(buff.nwritten//6 == h[1])
             #write ids
             buff = Buffer(wf, dtype='u8')
@@ -428,7 +425,7 @@ def process_radial_cell(basepath, rbin, filenside=16):
 def read_radial_bin(filename, filenside=16, read_pos=False, \
                         read_vel=False, read_ids=False):
 
-    hdrfmt = 'fqf'
+    hdrfmt = 'fqif'
     idxfmt = np.dtype('u8')
     to_read = [read_pos, read_vel, read_ids]
     fmt = [np.dtype(np.float32), np.dtype(np.float32), np.dtype(np.uint64)]
@@ -445,7 +442,7 @@ def read_radial_bin(filename, filenside=16, read_pos=False, \
     #read the header
     h = list(struct.unpack(hdrfmt, \
             fp.read(struct.calcsize(hdrfmt))))
-    tprint('    header: {0}'.format(h))
+
     npart = h[1]
     data.append(h)
     #read the peano index
@@ -454,9 +451,6 @@ def read_radial_bin(filename, filenside=16, read_pos=False, \
 
     for i, r in enumerate(to_read):
         if r:
-            print(fmt[i])
-            print(fmt[i].itemsize)
-            print(item_per_row[i])
             data.append(np.fromstring(fp.read(int(npart*item_per_row[i]*fmt[i].itemsize)), fmt[i]))
 
     if opened:
