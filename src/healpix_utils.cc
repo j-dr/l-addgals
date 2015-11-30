@@ -41,34 +41,12 @@ void ring2peanoindex(long pix, long order1_, long order2_, vector<long> pidx)
 {
   int nmap = 12 * 2 << ( 2 * order2_ );
   vector<long> hopix( 2 << ( order2_ - order1_ ) );
-  vector<long> hopeano( 2 << ( order2_ - order1_ ) );
-  vector<long> homap( nmap );
-  vector<long> peano( nmap );
-  vector<pair<long,long>> ppair( nmap );
-  int i;
-  for (i = 0; i < nmap; i++)
-    {
-      homap[i] = i;
-    }
 
   pix = ring2nest( pix, order1_ );
   higher_nest( pix, order1_, order2_, &hopix[0] );
 
-  transform( hopix.begin(), hopix.end(), hopeano.begin(), 
+  transform( hopix.begin(), hopix.end(), pidx.begin(), 
 	     bind( nest2peano( _1, order2_ ) ) );
-  transform( homap.begin(), homap.end(), peano.begin(), 
-	     bind( nest2peano( _1, order2_ ) ) );
-
-  
-  for (i = 0; i < nmap; i++)
-    {
-      ppair[i].first = peano[i];
-      ppair[i].second = i;
-    }
-
-  sort(ppair.begin(), ppair.end(), pairCompare);
-  
-  
 }
 
 long nest2ring(long pix, long order_)
