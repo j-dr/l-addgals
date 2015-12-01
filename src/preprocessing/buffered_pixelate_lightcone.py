@@ -8,6 +8,7 @@ import healpy as hp
 import struct
 import time
 import os
+import sys
 
 TZERO = None
 def tprint(info):
@@ -259,17 +260,22 @@ def write_to_redshift_cells_buff(filepaths, outbase, cosmology, filenside=16, bu
     Read in gadget particle block, and write to the correct healpix/redshift
     cell files
     """
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    rank = comm.Get_rank()
 
     rbins = np.linspace(rmin,rmax,(rmax-rmin)//rstep+1)
     rbins2 = rbins*rbins
     
     buffs = {}
-    header = [1050.0, 0, filenside, 3.16, *cosmology]
+    header = [1050.0, 0, filenside, 3.16, cosmology[0], cosmology[1], cosmology[2]]
         
     nfiles = len(filepaths)
     
+    
     for fnum,filepath in enumerate(filepaths):
         tprint('    file %6d of %6d' % (fnum+1,nfiles))
+        block = filepath.split('/')[-1].split('.')[-1]
         hdr, pos, vel, ids = readGadgetSnapshot(filepath,
                                                 read_pos=True,
                                                 read_vel=True,
@@ -319,7 +325,7 @@ def write_to_redshift_cells_buff(filepaths, outbase, cosmology, filenside=16, bu
             nwrit += deltan
             
             if rind not in buffs:
-                buffs[rind] = RBuffer(outbase+'_{0}'.format(bins[start]), header,
+                buffs[rind] = RBuffer(outbase+'_{0}_{1}'.format(bins[start], block), header,
                                       nmax=buffersize)
             buffs[rind].add(pos[start:end,:].flatten(), vel[start:end,:].flatten(),
                             ids[start:end])
@@ -508,3 +514,9 @@ def process_all_radial_bins(outbase, rmin, rmax, rstep=25.0):
     for r in chuncks[rank]:
         process_radial_cell(basepath, r)
 
+
+if __name__ == '__main__':
+    
+    filelist = sys.argv[1]
+    rmin = sys.argv[2]
+    rmax 
