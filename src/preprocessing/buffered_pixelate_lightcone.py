@@ -173,7 +173,7 @@ class RBuffer(object):
         self.pbuff = np.zeros(nmax*3,dtype='f4')
         self.vbuff = np.zeros(nmax*3,dtype='f4')
         self.ibuff = np.zeros(nmax,dtype='u8')
-        self.pidx = np.zeros(12*filenside**2,dtype='u8')
+        self.pidx = np.zeros(12*filenside**2,dtype='u4')
 
         self.ncurr = 0
         self.dumpcount = 0
@@ -183,7 +183,7 @@ class RBuffer(object):
         self.filenside = header[2]
         self.fileorder = int(np.log2(self.filenside))
         self.header = header
-        self.hdrfmt = 'fqif'
+        self.hdrfmt = 'fIIdddd'
 
     def sort_by_peano(self):
         pix = hp.vec2pix(self.filenside, self.pbuff[:3*self.ncurr:3], \
@@ -201,10 +201,9 @@ class RBuffer(object):
         pidx = np.where(pidx!=0)[0]+1
         nidx = [0]
         nidx.extend(list(pidx))
-        pidx = np.array(nidx, dtype='u8')
+        pidx = np.array(nidx, dtype='u4')
         nparts = np.hstack([pidx[1:]-pidx[:-1], np.array([len(pix)-pidx[-1]])])
         self.pidx[pix[pidx]] = nparts
-        #self.header[1] = np.sum(nparts)
         self.header[1] = len(pix)
 
     def write(self):
@@ -253,7 +252,7 @@ class RBuffer(object):
             self.ncurr += nleft
 
 
-def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=1000000, 
+def write_to_redshift_cells_buff(filepaths, outbase, cosmology, filenside=16, buffersize=1000000, 
                                  rmin=0, rmax=4000, rstep=25):
     """
     Read in gadget particle block, and write to the correct healpix/redshift
@@ -264,7 +263,7 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=10
     rbins2 = rbins*rbins
     
     buffs = {}
-    header = [1050.0, 0, filenside, 3.16]
+    header = [1050.0, 0, filenside, 3.16, *cosmology]
         
     nfiles = len(filepaths)
     
@@ -303,7 +302,7 @@ def write_to_redshift_cells_buff(filepaths, outbase, filenside=16, buffersize=10
         idx = list(idx+1)
         nidx = [0]
         nidx.extend(idx)
-        idx = np.array(nidx,dtype='u8')
+        idx = np.array(nidx,dtype='u4')
         
         #Write to disk
         nwrit = 0
@@ -345,7 +344,7 @@ def combine_radial_buffer_pair(file1, file2):
     ws = file1.split('.')[:-1]
     ws.append('join'+b1+b2)
     wf = '.'.join(ws)
-    hdrfmt = 'fqf'
+    hdrfmt = 'fIIdddd'
 
     with open(file1, 'rb') as rp1:
         with open(file2, 'rb') as rp2:
@@ -391,7 +390,7 @@ def combine_radial_buffer_pair(file1, file2):
             assert(buff.nwritten//6 == h[1])
             #write ids
             buff = Buffer(wf, dtype='u8')
-            fmt = np.dtype(np.uint64)
+            fmt = np.dtype(np.uint32)
             for i in range(len(idx1)):
                 if idx1[i]:
                     d = np.fromstring(rp1.read(int(idx1[i]*fmt.itemsize)),fmt)
@@ -425,8 +424,8 @@ def process_radial_cell(basepath, rbin, filenside=16):
 def read_radial_bin(filename, filenside=16, read_pos=False, \
                         read_vel=False, read_ids=False):
 
-    hdrfmt = 'fqif'
-    idxfmt = np.dtype('u8')
+    hdrfmt = 'fIIdddd'
+    idxfmt = np.dtype('u4')
     to_read = [read_pos, read_vel, read_ids]
     fmt = [np.dtype(np.float32), np.dtype(np.float32), np.dtype(np.uint64)]
     item_per_row = [3,3,1]
@@ -472,7 +471,7 @@ def nest2peano(pix, order):
   
   face = pix>>(2*order)
   path = face2path[face]
-  result = np.zeros(len(pix), dtype=np.int64);
+  result = np.zeros(len(pix), dtype=np.int32);
   shifts = np.arange(0, 2*order-1, 2)
 
   for shift in shifts[::-1]:
