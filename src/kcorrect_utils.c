@@ -92,8 +92,8 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
   vector<magtuple> sdsscoeffs;
   vector<int>::iterator it;
   copy(istream_iterator<magtuple>(coeff_file),
-	    istream_iterator<magtuple>(),
-	    back_inserter(sdsscoeffs));
+       istream_iterator<magtuple>(),
+       back_inserter(sdsscoeffs));
 
   for (n=0;n<ntemps;n++){
     cout<<setprecision(numeric_limits<float>::digits10+1)

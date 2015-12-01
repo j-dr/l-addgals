@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cmath>
 
 #include "biniostream.h"
 #include "point.h"
@@ -17,6 +18,7 @@
 #include "constants.h"
 #include "gadget.h"
 #include "ReadParameters.h"
+#include "healpix_utils.h"
 
 static const int MMAXINT=32767;
 
@@ -655,4 +657,145 @@ vector <Particle *> ReadGadgetParticles(int &nread){
 
   return particles;
 
+}
+
+struct io_header {
+  float BoxSize
+  unsigned long npart;      /*!< npart[1] gives the number of particles in the present file, other particle types are ignored */
+  unsigned int nside;
+  double mass;          /*!< mass[1] gives the particle mass */
+
+  double Omega0;           /*!< matter density */
+  double OmegaLambda;      /*!< vacuum energy density */
+  double HubbleParam;      /*!< little 'h' */
+};
+
+unsigned int getFileNside()
+{
+  std::ostringstream convert;
+  convert << datadir << simlabel << "_000_0";
+  std::string fname = convert.str();
+  std::ifstream pfile(fname.c_str());
+  struct io_header header;
+
+  if (pfile.fail()) {
+    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+    exit (2031);  
+  }
+
+  pfile.read((char *)(&header), sizeof(struct io_header));
+
+  return header.nside;
+}
+
+void getRadialBins(int &minrb, int &maxrb)
+{
+  float r_zmin = cosmo.RofZ(ZREDMIN);
+  float r_zmax = cosmo.RofZ(ZREDMAX);
+  
+  minrb = r_zmin/25;
+  maxrb = r_zmax/25;
+}
+
+long getNparts(int minrb, int maxrb, long order_, vector<long> &pidx)
+{
+  int i,r,count;
+  long nparts,np,j;
+  int npix = 12*(2<<(2*order_));
+  vector<long> idx(npix);
+  std::string fname;
+  struct io_header header;
+  
+  // Only using first two octants
+  for (i=0; i<2; i++)
+    {
+      for (r=minrb; r<=maxrb; r++)
+	{
+	  std::ostringstream convert;
+	  convert << datadir << simlabel << "00" << i << "_" << r;
+	  fname = convert.str()
+	  std::ifstream pfile(fname.c_str());
+
+	  if (pfile.fail()) {
+	    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+	    exit (2031);
+	  }
+
+	  pfile.read((char *)(&header), sizeof(struct io_header));
+	  count = 0;
+
+	  for (j=0; j<npix; j++)
+	    {
+	      pfile.read((char *)(&np), sizeof(long));
+	      if (j!=pidx[count]) continue;
+	      nparts += np;
+	      count += 1;
+	    }	  
+	}
+    }
+  return nparts;
+}
+
+vector <Particle *> ReadGadgetLCCell()
+{
+  int minrb, maxrb;
+  int i, r;
+  int filenside, temp;
+  int order1_ = 0, order2_ = 0;
+  long nparts, headersize;
+  std::string fname;
+  struct io_header header;
+  
+  struct triple{
+    float x;
+    float y;
+    float z;
+  } cart;
+
+  getRadialBins(&minrb, &maxrb);
+  filenside = getFileNSide();
+
+  while(temp = nSide >> 1) order1_++;
+  while(temp = filenside >> 1) order2++;
+
+  vector<long> idx(12*(2<<(2*order2_)));
+  vector<long> pidx(2<<(2*(order2_-order1_)));
+
+  ring2peanoindex(PixelNum, order1_, order2_, pidx);
+  nparts = getNparts(minrb, maxrb, order2_, pidx);
+
+  vectors<Particles *> parts(nparts);
+  
+  // Only using first two octants
+  long accum = 0;
+  for (i=0; i<2; i++)
+    {
+      for (r=minrb; r<=maxrb; r++)
+	{
+	  std::ostringstream convert;
+	  convert << datadir << simlabel << "00" << i << "_" << r;
+	  fname = convert.str()
+	  std::ifstream pfile(fname.c_str());
+
+	  if (pfile.fail()) {
+	    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+	    exit (2031);
+	  }
+
+	  pfile.read((char *)(&header), sizeof(struct io_header));
+	  pfile.read((char *)(&idx[0]), sizeof(long)*12*(2<<(2*order2_)));
+	  partial_sum(idx.begin(), idx.end(), idx.begin());
+	  
+	  headersize = sizeof(io_header) + sizeof(long)*12*(2<<(2*order2_));
+	  
+	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	    {
+	      fseek ( pfile , sizeof(long)*(*itr)+headersize , SEEK_SET );
+	      pfile.read((char *)&cart, sizeof(struct cart));
+	      parts[accum].x = cart.x;
+	      parts[accum].y = cart.y;
+	      parts[accum].z = cart.z;
+	    }
+	}
+    }
 }
