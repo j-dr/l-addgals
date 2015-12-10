@@ -559,7 +559,41 @@ int main(void){
 	      <<h->Ra()<<" "<<h->Dec()<<" "<<h->Zred()<<" "<<h->Ngal()<<endl;
   }
 #endif
+#ifdef BCC
+  //Eventually need to add u
+  int nbands = 5;
+  int nelem = 3;
+  int ntemp = 5;
+  char filterfile[2000];
+  vector<float> mr(galaxies.size());
+  vector<float> z(galaxies.size());
+  vector<int> id(galaxies.size());
+  vector<float> coeff(galaxies.size()*ntemp);
+  vector<float> tmag(galaxies.size()*nbands);
+  vector<float> amag(galaxies.size()*nbands);
+  read_out_galaxy_info(galaxies, galseds, ids, mr, z, id);
+  match_coeff(ids, &coeffs[0]);
 
+  strcpy(filterfile, "./des_filters.txt");
+  assign_colors(mr, coeff, z, ZREDMIN-0.05, ZREDMAX+0.05,
+		0.1, nbands, filterfile, tmag, amag);
+
+  vector<float> omag(galaxies.size()*nbands);
+  vector<float> omagerr(galaxies.size()*nbands);
+  vector<float> flux(galaxies.size()*nbands);
+  vector<float> fluxerr(galaxies.size()*nbands);
+  vector<bool> idx(galaxies.size(), true);
+
+  observe_des_y5(tmag, flux, fluxerr, omag, omagerr, idx);
+
+  vector<float> e(galaxies.size()*2);
+  vector<float> s(galaxies.size());
+  generate_shapes(omag, e, s, nelem, nbands);
+
+  write_bcc_catalogs();
+
+#endif
+  
   MSG("[hv] Printing galaxies in volume");
   cout<<galaxies.size()<<endl;
 
