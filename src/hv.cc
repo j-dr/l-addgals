@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include "hv2.h"
 #include "hv.h"
+#include "kcorrect_utils.h"
+#include "errormodel.h"
+#include "shapes.h"
 #include "fivetuple.h"
 #include "ReadParameters.h"
 #include "global_vars.h"
@@ -589,19 +592,17 @@ int main(void){
   vector<float> e(galaxies.size()*2);
   vector<float> s(galaxies.size());
   generate_shapes(omag, e, s, nelem, nbands);
-
-  write_bcc_catalogs();
-
-#endif
   
+  write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
+		     omag, omagerr, flux, fluxerr, e, s,
+		     idx, halos, sed_ids, coeffs, outgfn, 
+		     outghfn)
+#else
   MSG("[hv] Printing galaxies in volume");
   cout<<galaxies.size()<<endl;
-
-  //Write our output files.  
   print_galaxies(galaxies, particles, halos, galseds, sed_ids, nndist, nndist_percent, outpfn, outdfn, outgfn, outghfn, outgzfn, outrfn);
 
+#endif
 
   MSG("Exiting normally");
-
-
 }

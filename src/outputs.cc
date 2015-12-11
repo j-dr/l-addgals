@@ -2,6 +2,7 @@
 #include <cassert> 
 #include <unistd.h>     //for sleep()
 #include <fstream>
+#include <CCfits/CCfits>
 #include "galaxy.h"
 
 int GalaxyZBin(float zRed);
@@ -269,14 +270,16 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[35] = "E";
 
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
-    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep);
+    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
+    central(keep), haloid(keep), empty(keep,-1);
   
   //Go through the galaxies and get the info we want
   int count=0;
+  int hcount=0;
   for (int i=0; i<size; i++)
     {
       if (!idx[i]) continue;
-
+      int hid = p->Hid();
       ra[count] = galaxies[i]->Ra();
       dec[count] = galaxies[i]->Dec();
       id[count] = galaxies[i]->particle->Gid();
@@ -289,7 +292,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       z[count] = galaxies[i]->Z();
       central[count] = galaxies[i]->Central()
       sdssr[count] = mr[i];
-
+      haloid[count] = halos[hid]->Id();
     }
   static string ttablename("TRUTH");
   Table* newTable;
@@ -309,38 +312,36 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(colname[3]).write(coeff,1);
     newTable->column(colname[4]).write(tmag,1);
     newTable->column(colname[5]).write(omag,1);
-    newTable->column(colname[4]).write(flux,1);
-    newTable->column(colname[5]).write(ivar,1);
-    newTable->column(colname[4]).write(omagerr,1);
-    newTable->column(colname[5]).write(amag,1);
-    newTable->column(colname[4]).write(ra,1);
-    newTable->column(colname[5]).write(dec,1);
-    newTable->column(colname[4]).write(z,1);
-    newTable->column(colname[5]).write(haloid,1);
-    newTable->column(colname[4]).write(rhalo,1);
-    newTable->column(colname[5]).write(m200,1);
-    newTable->column(colname[4]).write(ngals,1);
-    newTable->column(colname[5]).write(r200,1);
-    newTable->column(colname[4]).write(central,1);
-    newTable->column(colname[5]).write(ra,1);
-    newTable->column(colname[4]).write(dec,1);
-    newTable->column(colname[5]).write(e,1);
-    newTable->column(colname[4]).write(gamma1,1);
-    newTable->column(colname[5]).write(gamma2,1);
-    newTable->column(colname[4]).write(kappa,1);
-    newTable->column(colname[5]).write(mu,1);
-    newTable->column(colname[4]).write(mr,1);
-    newTable->column(colname[5]).write(s,1);
-    newTable->column(colname[4]).write(dec,1);
-    newTable->column(colname[5]).write(e,1);
-    newTable->column(colname[4]).write(px,1);
-    newTable->column(colname[5]).write(py,1);
-    newTable->column(colname[4]).write(pz,1);
-    newTable->column(colname[5]).write(vx,1);
-    newTable->column(colname[4]).write(vy,1);
-    newTable->column(colname[5]).write(vz,1);
-    newTable->column(colname[4]).write(e,1);
-    newTable->column(colname[5]).write(s,1);
+    newTable->column(colname[6]).write(flux,1);
+    newTable->column(colname[7]).write(ivar,1);
+    newTable->column(colname[8]).write(omagerr,1);
+    newTable->column(colname[9]).write(amag,1);
+    newTable->column(colname[10]).write(ra,1);
+    newTable->column(colname[11]).write(dec,1);
+    newTable->column(colname[12]).write(z,1);
+    newTable->column(colname[13]).write(haloid,1);
+    newTable->column(colname[14]).write(empty,1);
+    newTable->column(colname[15]).write(empty,1);
+    newTable->column(colname[16]).write(empty,1);
+    newTable->column(colname[17]).write(empty,1);
+    newTable->column(colname[18]).write(central,1);
+    newTable->column(colname[19]).write(ra,1);
+    newTable->column(colname[20]).write(dec,1);
+    newTable->column(colname[21]).write(e,1);
+    newTable->column(colname[22]).write(gamma1,1);
+    newTable->column(colname[23).write(gamma2,1);
+    newTable->column(colname[24]).write(kappa,1);
+    newTable->column(colname[25]).write(mu,1);
+    newTable->column(colname[26]).write(mr,1);
+    newTable->column(colname[27]).write(s,1);
+    newTable->column(colname[28]).write(px,1);
+    newTable->column(colname[29]).write(py,1);
+    newTable->column(colname[30]).write(pz,1);
+    newTable->column(colname[31]).write(vx,1);
+    newTable->column(colname[32]).write(vy,1);
+    newTable->column(colname[33]).write(vz,1);
+    newTable->column(colname[34]).write(e,1);
+    newTable->column(colname[35]).write(s,1);
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");
@@ -351,7 +352,5 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     printf("Caught Save Error: Column Write\n");
     exit(1);
   }    
-
-  //Write the halo information
 
 }
