@@ -908,8 +908,8 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
 	  int ih = hids[this_ih].key;
 	  if(H[ih]->InVol())
 	    {
-	      //cout<<"Error!  Didn't readin particle "<<hids[this_ih].value<<" that should be the center for halo "<<hids[this_ih].key<<endl;
-	      //cout<<"Just making up a new particle to go here."<<endl;
+	      cout<<"Error!  Didn't readin particle "<<hids[this_ih].value<<" that should be the center for halo "<<hids[this_ih].key<<endl;
+	      cout<<"Just making up a new particle to go here."<<endl;
 	    }
 	  float xfac = 1./(sim.LengthUnit());
 	  Point xx(H[ih]->X()*xfac,H[ih]->Y()*xfac,H[ih]->Z()*xfac);

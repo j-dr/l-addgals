@@ -10,8 +10,8 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[],
 			      std::vector<float> &omagerr);
 
 void observe_des_y5(std::vector<float> &mag, std::vector<float> &flux, 
-		    std::vector<float> &fluxerr, std::vector<float> &omag,
-		    std::vector<float> &omagerr, std::vector<bool> &idx)
+		    std::vector<float> &ivar, std::vector<float> &omag,
+		    std::vector<float> &omagerr, std::vector<bool> &idx);
 
 
 #endif

@@ -19,7 +19,7 @@ using namespace std;
 void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[], 
 			      int nband, float zeropoint[], float nsigma, 
 			      vector<float> &mag, vector<float> &flux, 
-			      vector<float> &fluxerr, vector<float> &omag, 
+			      vector<float> &ivar, vector<float> &omag, 
 			      vector<float> &omagerr)
 {
   int i,b;
@@ -47,23 +47,24 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[],
       i = itr-mag.begin();
       b = i%nband;
       flux[i] = exptime[b] * pow( 10, -0.4 * ( *itr-zeropoint[b] ) );
-      fluxerr[i] = exp( log( sqrt( fsky1[b] * exptime[b] + flux[i] ) )
+      ivar[i] = exp( log( sqrt( fsky1[b] * exptime[b] + flux[i] ) )
 			+ lnscat[b] * gsl_ran_gaussian(rng, 1.0) );
-      flux[i] += fluxerr[i] * gsl_ran_gaussian(rng, 1.0);
+      flux[i] += ivar[i] * gsl_ran_gaussian(rng, 1.0);
       flux[i] = flux[i] * iexptime[b];
-      fluxerr[i] = fluxerr[i] * iexptime[b];
+      ivar[i] = ivar[i] * iexptime[b];
       omag[i] = zeropoint[b] - 2.5 * log10( flux[i] );
-      omagerr[i] = 1.086*fluxerr[i]/flux[i];
+      omagerr[i] = 1.086*ivar[i]/flux[i];
       if ((omag[i]>99.0) || (omag[i]!=omag[i])) {
 	omag[i] = 99.0;
 	omagerr[i] = 99.0;
       }
+      ivar[i] = 1/(ivar[i] * iexptime[b]);
     }
 }
 
 void observe_des_y5(vector<float> &mag, vector<float> &flux, 
-		    vector<float> &fluxerr, vector<float> &omag,
-		    vector<float> &omagerr)
+		    vector<float> &ivar, vector<float> &omag,
+		    vector<float> &omagerr, vector<bool> &idx)
 {
   float maglim[] = {24.956,24.453,23.751,23.249,21.459};
   float maglim_cut[] = {25.5, 25.0, 24.4, 23.9, 22.0};
@@ -89,19 +90,21 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
 	}
 	good = false;
       }
+      idx[i] = good;
     }
 
   mag.resize(count);
   flux.resize(count);
-  fluxerr.resize(count);
+  ivar.resize(count);
   omag.resize(count);
   omagerr.resize(count);
 
   apply_uniform_errormodel(exptime, maglim, lnscat, nband, zeropoint,
-			   10.0, mag, flux, fluxerr, omag, omagerr);
+			   10.0, mag, flux, ivar, omag, omagerr);
 
 }
 
+#ifndef BCC
 int main(int argc, char *argv[])
 {
   int i, ngal;
@@ -123,8 +126,9 @@ int main(int argc, char *argv[])
   vector<float> fluxerr(ngal*nband);
   vector<float> omag(ngal*nband,-99);
   vector<float> omagerr(ngal*nband);
+  vector<bool> idx(ngal);
   
-  observe_des_y5(mag, flux, fluxerr, omag, omagerr);
+  observe_des_y5(mag, flux, fluxerr, omag, omagerr, idx);
   
   ofstream error_file("./des_errortest.txt");
   ofstream magcut_file("./des_magcut.txt");
@@ -153,3 +157,4 @@ int main(int argc, char *argv[])
 	} else magcut_file << " ";
     }
 }
+#endif

@@ -41,7 +41,10 @@
 #endif
  float minrnn, maxrnn;
 #ifdef SHAM_TEST
-  string sham_file;
+ string sham_file;
+#endif
+#ifdef BCC
+ int LCNUM;
 #endif
  double sim_redshift;
   
@@ -88,6 +91,9 @@ void fillParameters(ParameterDatabase* pd)
         SCATTER = pd->findParameterValue("SCATTER");
 	REDSHIFT_FIT = 0;
         //REDSHIFT_FIT = pd->findParameterValue("GlobalFit");
+#ifdef BCC
+	LCNUM = pd->findParameterValue("LCNUM");
+#endif
 	GLOBAL_FIT=1;
 	if(GLOBAL_FIT){
 		cm0 = pd->findParameterValue("cm0");

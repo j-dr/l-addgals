@@ -1,5 +1,4 @@
 #include "kcorrect_utils.h"
-#include "kcorrect.h"
 #include "cosmo.h"
 #include <math.h>
 #include <cstring>
@@ -10,7 +9,9 @@
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
+#ifndef BCC
 Cosmology cosmo(0.3, 0.82, 0.7);
+#endif
 using namespace std;
 
 static int nz=1000;
@@ -22,6 +23,14 @@ static float *zvals=NULL;
 static float *filter_lambda=NULL;
 static float *filter_pass=NULL;
 static int *filter_n=NULL;
+
+std::istream & operator>>(std::istream & is, magtuple & in)
+{
+  is >> in.bands[0] >> in.bands[1] >> in.bands[2] >>
+    in.bands[3] >> in.bands[4];
+
+  return is;
+}
 
 void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
 			 float zmax, float band_shift, char filterfile[], float *maggies)
@@ -177,7 +186,7 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   cout<<"Done calculating magnitudes"<<endl;
 }
 
-void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids, 
+void assign_colors(vector<float> &reference_mag, vector<float> &coeff, 
 		   vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
 		   vector<float> &omag, vector<float> &amag){
@@ -187,13 +196,8 @@ void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids,
   float sdss_bandshift = 0.1;
   float ab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
-  vector<float> coeff(ngal*ntemp);
   vector<float> deltam(ngal);
-
   strcpy(sdss_filterfile, "./sdss_filter.txt");
-
-  //Match the correct coefficients to each galaxy
-  match_coeff(sed_ids, &coeff[0]);
 
   //calculate SDSS r-band abs mags to determine magnitude shifts to apply
   //to kcorrect outputs for other bands
@@ -211,7 +215,6 @@ void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids,
   }
   cout<<endl;
   
-    
   //calculate observed and abs mags in desired output bands without shift
   //calculated from SDSS bands
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, band_shift,
@@ -226,12 +229,9 @@ void assign_colors(vector<float> &reference_mag, vector<int> &sed_ids,
     }
   }
 
-  //transform(omag.begin(), omag.end(), deltam.begin(), omag.begin(), 
-  //	    plus<float>());
-  //transform(amag.begin(), amag.end(), deltam.begin(), amag.begin(), 
-  //	    plus<float>());
-
 }
+
+#ifndef BCC
 
 int main(int argc, char **argv)
 {
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
   cosmo.GetZofR(cosmo.OmegaM(),cosmo.OmegaL());
   ifstream ginfo_file(argv[1]);
   float zmin, zmax, band_shift;
-  int nbands, i;
+  int nbands, ntemp, i;
   char filterfile[FILESIZE];
   vector<ginfo> sdss_ginfo;
 
@@ -264,11 +264,13 @@ int main(int argc, char **argv)
 	    back_inserter(sdss_ginfo));
 
   int ngal = sdss_ginfo.size();
+  ntemp = 5;
   vector<int> sed_ids(ngal);
   vector<float> redshift(ngal);
   vector<float> refmag(ngal);
   vector<float> omag(ngal*nbands);
   vector<float> amag(ngal*nbands);
+  vector<float> coeff(ngal*ntemp);
   vector<ginfo>::iterator itr;
 
   for (itr=sdss_ginfo.begin();itr<sdss_ginfo.end();++itr)
@@ -283,7 +285,9 @@ int main(int argc, char **argv)
   }
   cout<<endl;
 
-  assign_colors(refmag, sed_ids, redshift, zmin, zmax,
+
+  match_coeff(sed_ids, &coeff[0]);
+  assign_colors(refmag, coeff, redshift, zmin, zmax,
 		band_shift, nbands, filterfile, omag, amag);
 
   //write out magnitudes
@@ -310,3 +314,4 @@ int main(int argc, char **argv)
     }
 
 }
+#endif

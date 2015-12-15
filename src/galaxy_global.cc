@@ -704,4 +704,17 @@ double fractional_area(){
   return sky_coverage/41253.0;
 }
 
+void read_out_galaxy_info(vector<Galaxy *> gal, vector<GalSED> sed,
+			  vector<int> sed_id, vector<float> mr, 
+			  vector<float> z, vector<int> id)
+{
+  int i;
+  vector<Galaxy *>::iterator itr;
+  for (i=0; i<gal.size(); i++)
+    {
+      mr[i] = gal[i]->Mr();
+      z[i] = gal[i]->zGal();
+      id[i] = sed[sed_id[i]].CatId();
+    }
+}
 

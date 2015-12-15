@@ -149,8 +149,10 @@ ran_gno(const gsl_rng *rng, void *params)
     } while(status == GSL_CONTINUE && iter < max_iter);
     gsl_root_fsolver_free(s);
 
-    if (status == GSL_SUCCESS)
+    if (status == GSL_SUCCESS){
+      //std::cout << "s: " << r << std::endl;
 	return r;
+    }
     else
       std::cout<< "Could not obtain GNO random deviate"<<std::endl;
     return -99;

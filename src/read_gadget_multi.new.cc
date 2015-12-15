@@ -660,7 +660,7 @@ vector <Particle *> ReadGadgetParticles(int &nread){
 }
 
 struct io_header {
-  float BoxSize
+  float BoxSize;
   unsigned long npart;      /*!< npart[1] gives the number of particles in the present file, other particle types are ignored */
   unsigned int nside;
   double mass;          /*!< mass[1] gives the particle mass */
@@ -670,7 +670,7 @@ struct io_header {
   double HubbleParam;      /*!< little 'h' */
 };
 
-unsigned int getFileNside()
+unsigned int getFileNSide()
 {
   std::ostringstream convert;
   convert << datadir << simlabel << "_000_0";
@@ -713,7 +713,7 @@ long getNparts(int minrb, int maxrb, long order_, vector<long> &pidx)
 	{
 	  std::ostringstream convert;
 	  convert << datadir << simlabel << "00" << i << "_" << r;
-	  fname = convert.str()
+	  fname = convert.str();
 	  std::ifstream pfile(fname.c_str());
 
 	  if (pfile.fail()) {
@@ -738,8 +738,8 @@ long getNparts(int minrb, int maxrb, long order_, vector<long> &pidx)
 
 vector <Particle *> ReadGadgetLCCell()
 {
-  int minrb, maxrb;
-  int i, j, r;
+  int minrb,maxrb;
+  int i,j,r,buf;
   int filenside, temp;
   int order1_ = 0, order2_ = 0;
   long nparts, headersize, tid, accum;
@@ -747,6 +747,7 @@ vector <Particle *> ReadGadgetLCCell()
   float td, xfac, vfac;
 
   std::string fname;
+  std::string rnnfname;
   struct io_header header;
   
   struct triple{
@@ -755,11 +756,14 @@ vector <Particle *> ReadGadgetLCCell()
     float z;
   } cart;
 
-  getRadialBins(&minrb, &maxrb);
+  getRadialBins(minrb, maxrb);
   filenside = getFileNSide();
 
-  while(temp = nSide >> 1) order1_++;
-  while(temp = filenside >> 1) order2++;
+  temp = nSide;
+  while(temp >> 1) order1_++;
+
+  temp = filenside;
+  while(temp >> 1) order2_++;
 
   vector<long> idx(12*(2<<(2*order2_)));
   vector<long> pidx(2<<(2*(order2_-order1_)));
@@ -767,7 +771,7 @@ vector <Particle *> ReadGadgetLCCell()
   ring2peanoindex(PixelNum, order1_, order2_, pidx);
   nparts = getNparts(minrb, maxrb, order2_, pidx);
 
-  vector<Particles *> parts(nparts);
+  vector<Particle *> parts(nparts);
   vector<long> partsperfile(maxrb-minrb+1);
   // Only using first two octants
  
@@ -781,11 +785,21 @@ vector <Particle *> ReadGadgetLCCell()
 	{
 	  std::ostringstream convert;
 	  convert << datadir << simlabel << "00" << i << "_" << r;
-	  fname = convert.str()
+	  fname = convert.str();
 	  std::ifstream pfile(fname.c_str());
 	  //need to open density file rfile here
 	  if (pfile.fail()) {
 	    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+	    exit (2031);
+	  }
+
+	  std::ostringstream rconvert;
+	  rconvert << datadir << simlabel << "00" << i << "_" << r << "_rnn";
+	  rnnfname = convert.str();
+	  std::ifstream rfile(rnnfname.c_str());
+	  //need to open density file rfile here
+	  if (rfile.fail()) {
+	    cerr<<"error: cannot open file '" <<rnnfname<<"'"<<endl;
 	    exit (2031);
 	  }
 
@@ -795,10 +809,16 @@ vector <Particle *> ReadGadgetLCCell()
 	  
 	  headersize = sizeof(io_header) + sizeof(long)*12*(2<<(2*order2_));
 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+
 	  // read in positions and densities
 	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 	    {
-	      if (itr==pidx.begin)
+	      if (itr==pidx.begin())
 		{
 		  step = 0;
 		  pnp = idx[*itr];
@@ -809,15 +829,16 @@ vector <Particle *> ReadGadgetLCCell()
 		  pnp = idx[*itr] - idx[*itr-1];
 		}
 		
-	      fseek( pfile, 3*step*sizeof(float), SEEK_CUR );
+	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
+	      rfile.seekg( step*sizeof(float), rfile.cur );
 	      for (j=0; j<pnp; j++)
 		{
 
-		  pfile.read((char *)&cart, sizeof(struct cart));
+		  pfile.read((char *)&cart, sizeof(struct triple));
 		  rfile.read((char *)&td, sizeof(float));
 		  Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
-		  parts[accum+partsperfile[minrb-r]].position(xx);
-		  parts[accum+partsperfile[minrb-r]].density(td);
+		  parts[accum+partsperfile[minrb-r]]->PosAssign(xx);
+		  parts[accum+partsperfile[minrb-r]]->DensAssign(td);
 		  partsperfile[minrb-r]+=1;
 		}
 	    }
@@ -826,7 +847,7 @@ vector <Particle *> ReadGadgetLCCell()
 	  partsperfile[minrb-r] = 0;
 	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 	    {
-	      if (itr==pidx.begin)
+	      if (itr==pidx.begin())
 		{
 		  step = 0;
 		  pnp = idx[*itr];
@@ -837,12 +858,12 @@ vector <Particle *> ReadGadgetLCCell()
 		  pnp = idx[*itr] - idx[*itr-1];
 		}
 		
-	      fseek( pfile, 3*step*sizeof(float), SEEK_CUR );
+	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
 	      for (j=0; j<pnp; j++)
 		{
-		  pfile.read((char *)&cart, sizeof(struct cart));
+		  pfile.read((char *)&cart, sizeof(struct triple));
 		  Point vv(cart.x,cart.y,cart.z);
-		  parts[accum+partsperfile[minrb-r]].velocity(vv);
+		  parts[accum+partsperfile[minrb-r]]->VelAssign(vv);
 		  partsperfile[minrb-r]+=1;
 		}
 	    }
@@ -851,7 +872,7 @@ vector <Particle *> ReadGadgetLCCell()
 	  partsperfile[minrb-r] = 0;
 	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 	    {
-	      if (itr==pidx.begin)
+	      if (itr==pidx.begin())
 		{
 		  step = 0;
 		  pnp = idx[*itr];
@@ -862,11 +883,11 @@ vector <Particle *> ReadGadgetLCCell()
 		  pnp = idx[*itr] - idx[*itr-1];
 		}
 		
-	      fseek( pfile, step*sizeof(long int), SEEK_CUR );
+	      pfile.seekg( step*sizeof(long int), pfile.cur );
 	      for (j=0; j<pnp; j++)
 		{
 		  pfile.read((char *)&tid, sizeof(long int));
-		  parts[accum+partsperfile[minrb-r]].Pid(tid);
+		  parts[accum+partsperfile[minrb-r]]->Pid(tid);
 		  partsperfile[minrb-r]+=1;
 		}
 	    }
@@ -874,5 +895,5 @@ vector <Particle *> ReadGadgetLCCell()
 	}
     }
   assert( accum == nparts );
-  return parts
+  return parts;
 }

@@ -95,16 +95,10 @@ void parse_config(std::vector<std::string> config, prefstruct& out) {
       secondWord.erase(std::remove_if(secondWord.begin(), secondWord.end(), isspace), secondWord.end());
       std::transform(firstWord.begin(),firstWord.end(),firstWord.begin(), ::toupper);
 
-      std::cout << "firstWord: " << firstWord << std::endl;
-      std::cout << "secondWord: " << secondWord << std::endl;
-
       if(firstWord == "NELEM")
 	out.nelem = atoi(secondWord.c_str());
-      if(firstWord == "SMINMAG"){
-	std::cout << "SMINMAG: " << secondWord << std::endl;
+      if(firstWord == "SMINMAG")
 	out.sminmag = atof(secondWord.c_str());
-	std::cout << "out.sminmag: " << out.sminmag << std::endl;
-      }
       if(firstWord == "SREFMAG")
 	out.srefmag = atof(secondWord.c_str());
       if(firstWord == "SMAXMAG")

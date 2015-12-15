@@ -1,8 +1,8 @@
 #compiler
-CXX = /usr/bin/g++ 
-CC = ${CXX}
+CXX=/usr/bin/g++ 
+CC=${CXX}
 OPT = -O3 -ffast-math #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
-WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated #-Wno-long-double
+WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
 END_FLAG = -DBIGENDIAN
 #END_FLAG = -DLITTLEENDIAN
 
@@ -12,6 +12,12 @@ NR_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your 
 NR_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
 KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
 KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
+GSL_LIB = -L/afs/slac.stanford.edu/g/ki/software/gsl/1.15/lib
+GSL_INC = -I/afs/slac.stanford.edu/g/ki/software/gsl/1.15/include/gsl
+CFITSIO_LIB = -L/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CFITSIO_INC = -I/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CCFITS_LIB = -L/afs/slac/g/ki/software/ccfits/2.4/lib 
+CCFITS_INC = -I/afs/slac/g/ki/software/ccfits/2.4/include 
 
 HEALPIX_LIB =
 HEALPIX_INC =
@@ -31,13 +37,13 @@ RM = rm -f
 LD = /usr/bin/ld
 
 #directories to look for include files
-INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC}
+INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC}
 
 #directories to look for libraries
-LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB} ${KCORRECT_LIB}
+LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
 
 #libraries to link
-LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect
+LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect -lgsl -lgslcblas -lCCfits
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
@@ -67,6 +73,7 @@ CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of 
 CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
+CPPFLAGS += -DBCC
 endif
 
 ifeq ($(catalog_type),"SHAM_TEST")
@@ -147,7 +154,7 @@ SRCS = *.cc
 
 EXECNAME = hv
 #OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy.o linreg.o assigngals.new.o haloocc.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o #read_cube.o read_warren bcgs.o
-OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o #read_cube.o read_warren bcgs.o
+OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o kcorrect_utils.o errormodel.o shapes.o efunc.o shapeconfig.o gno.o calcparams.o healpix_utils.o #read_cube.o read_warren bcgs.o
 
 EXECNAME_SPHERE = hv_sphere
 OBJS_SPHERE = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_sphere.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o
@@ -157,8 +164,6 @@ OBJS_SPLINE = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy
         linalg.o statistics.o alglibmisc.o fasttransforms.o \
         optimization.o ap.o integration.o solvers.o \
         dataanalysis.o    interpolation.o   specialfunctions.o
-
-
 
 EXEC1 = gethalos
 OBJS1 = gethalos.o particle.o  read_cube.o read_gadget_multi.o read_MGS.o getgadgethalos.o mystring.o  singleton.o read.o read_warren.o getwhids.o functions.o
@@ -186,6 +191,12 @@ OBJS8 = cov_file.o chainel.o
 
 EXEC9 = kcorrect_utils
 OBJS9 = kcorrect_utils.o cosmology.o
+
+EXEC10 = shapes
+OBJS10 = shapes.o efunc.o shapeconfig.o gno.o calcparams.o
+
+EXEC10 = errormodel
+OBJS10 = errormodel.o 
 
 EXEC_TEST = test_gasdev
 OBJS_TEST = test_gasdev.o
@@ -231,6 +242,12 @@ $(EXEC8): $(OBJS8)
 $(EXEC9): $(OBJS9)
 	$(CXX) -o $(EXEC9) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
+$(EXEC10): $(OBJS10)
+	$(CXX) -o $(EXEC10) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+
+$(EXEC11): $(OBJS11)
+	$(CXX) -o $(EXEC11) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+
 $(EXEC_TEST): $(OBJS_TEST)
 	$(CXX) -o $(EXEC_TEST) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
@@ -238,7 +255,7 @@ dep:
 	makedepend -- $(INCL) -- $(SRCS)
 
 clean:
-	$(RM) $(EXECNAME) $(EXEC1) $(EXEC2) $(EXEC3) $(EXEC9) *.o core.*
+	$(RM) $(EXECNAME) $(EXEC1) $(EXEC2) $(EXEC3) $(EXEC9) $(EXEC10) $(EXEC11) *.o core.*
 
 cleanup:
 	$(RM) $(EXECNAME) $(EXEC1) *.o *~ core.* *.bak

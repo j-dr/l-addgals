@@ -2,7 +2,8 @@
 #include <cassert> 
 #include <unistd.h>     //for sleep()
 #include <fstream>
-#include <math.h> //for M_PI
+#include <math.h> 
+#include <cstring>
 #include <stdlib.h>
 #include "hv2.h"
 #include "hv.h"
@@ -12,6 +13,8 @@
 #include "fivetuple.h"
 #include "ReadParameters.h"
 #include "global_vars.h"
+#include "outputs.h"
+#include "galaxy_global.h"
 #ifdef HEALPIX
 #include "chealpix.h"
 #endif
@@ -574,8 +577,8 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
-  read_out_galaxy_info(galaxies, galseds, ids, mr, z, id);
-  match_coeff(ids, &coeffs[0]);
+  read_out_galaxy_info(galaxies, galseds, id, mr, z, id);
+  match_coeff(id, &coeff[0]);
 
   strcpy(filterfile, "./des_filters.txt");
   assign_colors(mr, coeff, z, ZREDMIN-0.05, ZREDMAX+0.05,
@@ -584,19 +587,19 @@ int main(void){
   vector<float> omag(galaxies.size()*nbands);
   vector<float> omagerr(galaxies.size()*nbands);
   vector<float> flux(galaxies.size()*nbands);
-  vector<float> fluxerr(galaxies.size()*nbands);
+  vector<float> ivar(galaxies.size()*nbands);
   vector<bool> idx(galaxies.size(), true);
 
-  observe_des_y5(tmag, flux, fluxerr, omag, omagerr, idx);
+  observe_des_y5(tmag, flux, ivar, omag, omagerr, idx);
 
-  vector<float> e(galaxies.size()*2);
-  vector<float> s(galaxies.size());
+  vector<double> e(galaxies.size()*2);
+  vector<double> s(galaxies.size());
   generate_shapes(omag, e, s, nelem, nbands);
   
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
-		     omag, omagerr, flux, fluxerr, e, s,
-		     idx, halos, sed_ids, coeffs, outgfn, 
-		     outghfn)
+		     omag, omagerr, flux, ivar, e, s,
+		     idx, halos, sed_ids, coeff, outgfn, 
+		     outghfn);
 #else
   MSG("[hv] Printing galaxies in volume");
   cout<<galaxies.size()<<endl;

@@ -16,13 +16,10 @@
  * -1 if a computed parameter has an illegal value
  */
 int
-calceparams(double mag, eparam *p)
+calceparams(double mag, eparam *p, prefstruct prefs)
 {
     int status = 0;
     float sigma_p;
-    std::cout << "eminmag, emaxmag, erefmag, mag: "
-      << prefs.eminmag << " " << prefs.emaxmag << " "
-      << prefs.erefmag << " " << mag << std::endl;
     if (mag < prefs.eminmag) {
 	mag = prefs.eminmag;
 	status = 1;
@@ -54,13 +51,9 @@ calceparams(double mag, eparam *p)
  * \return 0 if object in magnitude range, 1 if magnitude was reset to minimum magnitude, 2 if magnitude was reset to maximum magnitude, -1 if a computed parameter has an illegal value
  */
 int
-calcsparams(double mag, sparam *p)
+calcsparams(double mag, sparam *p, prefstruct prefs)
 {
     int status = 0;
-
-    std::cout << "sminmag, smaxmag, srefmag, mag: "
-      << prefs.sminmag << " " << prefs.smaxmag << " "
-      << prefs.srefmag << " " << mag << std::endl;
 
     if (mag < prefs.sminmag) {
 	mag = prefs.sminmag;

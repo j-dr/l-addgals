@@ -7,7 +7,9 @@
 #include <iterator>
 #include <vector>
 #include <functional>
+#include "kcorrect.h"
 
+#ifndef BCC
 extern Cosmology cosmo;
 
 typedef std::pair<int,int> indpair;
@@ -15,6 +17,7 @@ bool paircomp (indpair l, indpair r)
 {
 return l.first<r.first; 
 }
+#endif
 
 struct magtuple
 {
@@ -27,14 +30,8 @@ struct ginfo
   float refmag, redshift;
 };
 
-std::istream & operator>>(std::istream & is, magtuple & in)
-{
-  is >> in.bands[0] >> in.bands[1] >> in.bands[2] >>
-    in.bands[3] >> in.bands[4];
 
-  return is;
-}
-
+#ifndef BCC
 std::istream & operator>>(std::istream & is, ginfo & in)
 {
   float pass;
@@ -43,6 +40,9 @@ std::istream & operator>>(std::istream & is, ginfo & in)
 
   return is;
 }
+#endif
+
+std::istream & operator>>(std::istream & is, magtuple & in);
 
 template <class T> struct magop : std::binary_function <T,T,T> {
   T operator() (const T& lhs, const T& rhs) const {return 2.5*log10(lhs/rhs);}
@@ -66,7 +66,7 @@ void k_calculate_magnitudes(std::vector<float> &coeff, std::vector<float> &redsh
 			    char filterfile[], std::vector<float> &omag,
 			    std::vector<float> &amag);
 
-void assign_colors(std::vector<float> &reference_mag, std::vector<int> &sed_ids, 
+void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff, 
 		   std::vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
 		   std::vector<float> &omag, std::vector<float> &amag);

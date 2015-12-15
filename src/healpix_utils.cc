@@ -1,4 +1,46 @@
 #include "healpix_utils.h"
+#include <cmath>
+#include <climits>
+#include <algorithm>
+#include <functional>
+#include <vector>
+#include <utility>
+#include <cassert>
+
+//using namespace std;
+
+static long ctab[0x100];
+static long utab[0x100];
+static const long jrll[] = { 2,2,2,2,3,3,3,3,4,4,4,4 };
+static const long jpll[] = { 1,3,5,7,0,2,4,6,1,3,5,7 };
+static int HEALPIX_TOOLS_INIT = 1;
+
+struct ToPeano : public std::unary_function<long,long> {
+  const long order_;
+  ToPeano(long o) : order_(o) {}
+  long operator() (long pix) {return nest2peano(pix, order_);}
+};
+
+long isqrt(long i)
+{
+  return sqrt(((double) (i)) + 0.5);
+}
+
+void tablefiller(void)
+{
+  assert(CHAR_BIT == 8);
+
+  int m;
+  for (m=0; m<0x100; ++m)
+    {
+      ctab[m] =
+	(m&0x1 )       | ((m&0x2 ) << 7) | ((m&0x4 ) >> 1) | ((m&0x8 ) << 6)
+	| ((m&0x10) >> 2) | ((m&0x20) << 5) | ((m&0x40) >> 3) | ((m&0x80) << 4);
+      utab[m] =
+	(m&0x1 )       | ((m&0x2 ) << 1) | ((m&0x4 ) << 2) | ((m&0x8 ) << 3)
+	| ((m&0x10) << 4) | ((m&0x20) << 5) | ((m&0x40) << 6) | ((m&0x80) << 7);
+    }
+}
 
 long nest2peano(long pix, long order_)
 {
@@ -33,20 +75,17 @@ long nest2peano(long pix, long order_)
   return result + ((face2peanoface[face])<<(2*order_));
 }
 
-bool pairCompare(const pair<long, long>& lhs, const pair<long, long>& rhs) {
-  return lhs.first < rhs.first;
-}
-
-void ring2peanoindex(long pix, long order1_, long order2_, vector<long> pidx)
+void ring2peanoindex(long pix, long order1_, long order2_, std::vector<long> &pidx)
 {
+
   int nmap = 12 * 2 << ( 2 * order2_ );
-  vector<long> hopix( 2 << ( order2_ - order1_ ) );
+  std::vector<long> hopix( 2 << ( order2_ - order1_ ) );
 
   pix = ring2nest( pix, order1_ );
   higher_nest( pix, order1_, order2_, &hopix[0] );
 
-  transform( hopix.begin(), hopix.end(), pidx.begin(), 
-	     bind( nest2peano( _1, order2_ ) ) );
+  std::transform( hopix.begin(), hopix.end(), pidx.begin(), 
+		  ToPeano(order2_) );
 }
 
 long nest2ring(long pix, long order_)
@@ -70,8 +109,8 @@ void higher_nest(long pix, long order1_, long order2_, long *hopix)
   int subpix = pix & ( ( 2 << ( 2 * order1_ ) ) - 1 );
   for (i = 0; i < 2 << ( order2_ - order1_ ); i++)
     {
-      hopix[i] = ( (base - 1) * ( 2 << ( 2 * order1_ ) ) + subpix ) 
-	           << 2 * ( order2_ - order1_ ) + i;
+      hopix[i] = ( ( (base - 1) * ( 2 << ( 2 * order1_ ) ) + subpix ) 
+	           << 2 * ( order2_ - order1_ ) ) + i;
     }
 }
 

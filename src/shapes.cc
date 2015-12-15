@@ -19,18 +19,18 @@ istream & operator>>(istream & is, shapemag & in)
 
 //Given a vector of DES mags, assuming 6 mags per galaxy
 //generate an ellipticity and shape for each.
-void generate_shapes(vector<double> mag, vector<double> e, vector<double> s,
+void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
 		     int nelem, int vl)
 {
+  cout << "generating shapes" << endl;
   int i, iam;
-  gsl_rng **myrng;
+  gsl_rng *myrng;
   double mymag, e1, e2;
   prefstruct prefs;
   eparam eparams;
   sparam sparams;
-  unsigned long int seed;
 
-
+  cout << "reading in default prefs" << endl;
   //read in default prefs to a struct
   vector<string> vdp(dl);
   for (vector<string>::iterator itr=vdp.begin(); itr!=vdp.end(); itr++)
@@ -38,39 +38,59 @@ void generate_shapes(vector<double> mag, vector<double> e, vector<double> s,
       string str = string(default_prefs[(itr-vdp.begin())]);
       *itr = str;
     }
-
+  
   parse_config(vdp, prefs);
-  seed = static_cast<unsigned long int>(time(NULL));
 
-  *myrng = (gsl_rng*)calloc(prefs.nthreads, sizeof(gsl_rng*));
+  long int seed  = (long int)time(NULL);
+  
+  //myrng = (gsl_rng**)malloc(prefs.nthreads*sizeof(gsl_rng*));
+  myrng = gsl_rng_alloc(gsl_rng_ranlxd2);
+  gsl_rng_set(myrng, seed);
+
+  if (!myrng) {
+    cout << "Null pointer!"<<endl;
+    exit(1);
+  }
+  /*cout << "instantiating RNG" << endl;
   for(i = 0; i < prefs.nthreads; i++) {
       myrng[i] = gsl_rng_alloc(gsl_rng_ranlxd2);
       gsl_rng_set(myrng[i], seed + i);
-  }
+      }*/
 
   //for now, nthreads always 1, fix iam
   iam = 0;
+
 
   //Might consider using OMP here?
   for (i=0; i<s.size(); i++)
     {
       mymag = mag[nelem - 1 + i * vl];
-      calceparams(mymag, &eparams);
-      calcsparams(mymag, &sparams);
-      rng_efunc(myrng[iam], &eparams, &e1, &e2);
+      //cout << "mymag: " << mymag << endl;
+      if (i==0) cout << "calculating e params" << endl;
+      calceparams(mymag, &eparams, prefs);
+      if (i==0) cout << "calculating s params" << endl;
+      calcsparams(mymag, &sparams, prefs);
+      if (i==0) cout << "drawing e" << endl;
+      rng_efunc(myrng, &eparams, &e1, &e2, prefs);
+      //cout << "e1: " << e1 << endl;
+      //cout << "e2: " << e2 << endl;
       e[2 * i] = e1;
       e[2 * i + 1] = e2;
-      s[i] = ran_gno(myrng[iam], &sparams);
+      if (i==0) cout << "drawing s" << endl;
+      s[i] = ran_gno(myrng, &sparams);
     }
   
-  for(i = 0; i < prefs.nthreads; i++)
-    gsl_rng_free(myrng[i]);
+  cout << "freeing RNG" << endl;
+  /*for(i = 0; i < prefs.nthreads; i++)
+    gsl_rng_free(myrng[i]);*/
+  gsl_rng_free(myrng);
 
 }
 
+#ifndef BCC
 int main(int argc, char* argv[])
 {
-  int ngal, nelem, vl;
+  int ngal, nelem, vl, i;
 
   nelem = 3;
   vl = 5;
@@ -88,6 +108,8 @@ int main(int argc, char* argv[])
     exit(1);
   }
 
+  cout<<"reading in mags"<<endl;
+
   copy(istream_iterator<shapemag>(mag_file),
        istream_iterator<shapemag>(),
        back_inserter(smag));
@@ -96,14 +118,23 @@ int main(int argc, char* argv[])
 
   vector<double> e(2*ngal);
   vector<double> s(ngal);
-  vector<double> mag(ngal*5);
+  vector<float> mag(ngal*5);
 
-  for (vector<double>::iterator itr=mag.begin(); itr!=mag.end(); itr++){
-    *itr = smag[itr-mag.begin()].bands[(itr-mag.begin())%5];
+  cout<< "copying shapemag struct into double array" << endl;
+  for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++){
+    *itr = smag[(itr-mag.begin())/5].bands[(itr-mag.begin())%5];
+  }
+
+  cout << "First few mags: ";
+  for (i=0; i<10; i++){
+    cout<<mag[i]<<" ";
+    if ((i+1)%5==0) cout << endl;
   }
 
   generate_shapes(mag, e, s, nelem, vl);
-  //write out magnitudes
+  
+  //write out shapes
+  cout << "writing shapes" << endl;
   ofstream s_file("./des_stest.txt");
   ofstream e_file("./des_etest.txt");
 
@@ -123,4 +154,4 @@ int main(int argc, char* argv[])
 	} else e_file << " ";
     }
 }
-
+#endif

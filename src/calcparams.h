@@ -3,8 +3,9 @@
 
 #include "efunc.h"
 #include "gno.h"
+#include "shapeconfig.h"
 
-int calceparams(double, eparam *);
-int calcsparams(double, sparam *);
+int calceparams(double, eparam *, prefstruct);
+int calcsparams(double, sparam *, prefstruct);
 
 #endif

@@ -8,6 +8,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_integration.h>
+#include "shapeconfig.h"
 
 /*!
  * \struct eparam
@@ -20,6 +21,6 @@ typedef struct eparam eparam;
 
 double efunc(double e, void *);
 double efunc_norm(double, double);
-void rng_efunc(const gsl_rng *, void *, double *, double *);
+void rng_efunc(const gsl_rng *, void *, double *, double *, prefstruct);
 
 #endif

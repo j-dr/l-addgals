@@ -54,6 +54,9 @@ extern float p0, p1, p2, p3, pz1, pz2, pz3;
 extern long nSide;
 extern long PixelNum;
 #endif
+#ifdef BCC
+extern int LCNUM;
+#endif
 extern float minrnn, maxrnn;
 #ifdef SHAM_TEST
 extern string sham_file;

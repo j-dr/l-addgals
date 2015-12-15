@@ -12,7 +12,7 @@ vector <Particle *> ReadWarren(int &nread,vector <Halo *> halos );
 vector <Particle *> ReadHVParticles(int &nread);
 vector <Particle *> ReadGadgetParticles(int &nread);
 vector <Particle *> ReadMGSParticles(int &nread);
-
+vector <Particle *> ReadGadgetLCCell();
 
 vector <Particle *> ReadParticles(int &nread, vector <Halo *> halos ){
   vector <Particle *> particles;
@@ -38,7 +38,11 @@ vector <Particle *> ReadParticles(int &nread){
   */
   //else if(sim.Type() == "GADGET2"){
   if(sim.Type() == "GADGET2"){
+#ifdef BCC
+    particles = ReadGadgetLCCell();
+#else
     particles = ReadGadgetParticles(nread);
+#endif
     //vector <Halo*> halos = ReadGadgetHalos();
   }
   /*
