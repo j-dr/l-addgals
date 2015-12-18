@@ -110,7 +110,7 @@ void STLMergeSort(Iter first, Iter last)
     Iter middle = first + (last - first) / 2;
     STLMergeSort(first, middle); // [first, middle)
     STLMergeSort(middle, last);  // [middle, last)
-    inplace_merge(first, middle, last, kvcompare());
+    inplace_merge(first, middle, last);
   }
 }
 
@@ -272,8 +272,8 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//static vector<keyValue> densities(end-begin);
 	//static vector<keyValue> magnitudes(end-begin);
 	static int size;
-	static int temp1[ARRAYSIZE];
-	static int temp2[ARRAYSIZE];
+	static vector<int> temp1(ARRAYSIZE);
+	static vector<int> temp2(ARRAYSIZE);
 
 
 	int answer;
@@ -348,8 +348,8 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	int count2=0;
 	int stepIndex;
 
-	insert(temp1, count1++, magnitudes[magIndex].key);
-	insert(temp2, count2++, densities[densIndex].key);
+	insert(&temp1[0], count1++, magnitudes[magIndex].key);
+	insert(&temp2[0], count2++, densities[densIndex].key);
 	cout << "Insertion" << endl;
 	cout << "check mem" << endl;
 	system("ps ux | grep hv >> mem.tmp");
@@ -366,13 +366,13 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			stepIndex = m*STEP + n;
 			#ifdef INSERTIONSORT
 				if(magIndex+stepIndex < size)
-					insert(temp1, count1++, magnitudes[magIndex+stepIndex].key);
+					insert(&temp1[0], count1++, magnitudes[magIndex+stepIndex].key);
 				if(magIndex-stepIndex > 0)
-					insert(temp1, count1++, magnitudes[magIndex-stepIndex].key);
+					insert(&temp1[0], count1++, magnitudes[magIndex-stepIndex].key);
 				if(densIndex+stepIndex < size)
-					insert(temp2, count2++, densities[densIndex+stepIndex].key);
+					insert(&temp2[0], count2++, densities[densIndex+stepIndex].key);
 				if(densIndex-stepIndex > 0)
-					insert(temp2, count2++, densities[densIndex-stepIndex].key);
+					insert(&temp2[0], count2++, densities[densIndex-stepIndex].key);
 			#else
                                 if(magIndex+stepIndex < size)
                                         temp1[count1++] = magnitudes[magIndex+stepIndex].key;
@@ -384,11 +384,11 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
                                         temp2[count2++] = densities[densIndex-stepIndex].key;
 			#endif
 		}
-
-		#ifndef INSERTIONSORT
-			MergeSort(temp1, count1);
-			MergeSort(temp2, count2);
-		#endif
+		
+                #ifndef INSERTIONSORT
+		    STLMergeSort<vector<int>::iterator>(temp1.begin(), temp1.end());
+		    STLMergeSort<vector<int>::iterator>(temp2.begin(), temp2.end());
+                #endif
 		
                 int i=0,j=0,k=0;
 #ifdef RED_FRACTION
