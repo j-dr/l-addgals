@@ -8,8 +8,9 @@
 #include "choose.h"
 //#include "iostream.h"
 #include <iostream>
-#include<ctime>
-#include<time.h>
+#include <ctime>
+#include <algorithm> 
+#include <time.h>
 #include <string.h>
 
 extern double normal_random(float mean, float stddev);
@@ -52,7 +53,7 @@ void *Mix(int *tab1,int *tab2,int count1,int count2)
   int i,i1,i2;
   i = i1 = i2 = 0;
   int* temp = (int*)malloc(sizeof(int)*(count1+count2));
-
+  cout << "malloc " << count1+count2 << endl;
   while((i1<count1) && (i2<count2))
   {
     while((i1<count1) && ( (*(tab1+i1)) <= (*(tab2+i2))))
@@ -88,12 +89,37 @@ void MergeSort(int* tab,int count)
   Mix(tab,tab+count/2,count/2,(count+1)/2);
 }
 
+struct kvcompare{
+  bool operator()(const keyValue &lhs, const keyValue &rhs)
+  {
+    if (lhs.value < rhs.value)
+      {
+	return true;
+      } 
+    else 
+      {
+	return false;
+      }
+  }  
+};
+
+template<class Iter>
+void STLMergeSort(Iter first, Iter last)
+{
+  if (last - first > 1) {
+    Iter middle = first + (last - first) / 2;
+    STLMergeSort(first, middle); // [first, middle)
+    STLMergeSort(middle, last);  // [middle, last)
+    inplace_merge(first, middle, last, kvcompare());
+  }
+}
+
 void Mix(keyValue *tab1,keyValue *tab2,int count1,int count2)
 {
   int i,i1,i2;
   i = i1 = i2 = 0;
   keyValue* temp = (keyValue *)malloc(sizeof(keyValue)*(count1+count2));
- 
+
   while((i1<count1) && (i2<count2))
   {
     while((i1<count1) && ( (*(tab1+i1)).value <= (*(tab2+i2)).value ))
@@ -243,6 +269,8 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	static int sorted = 0;
 	static keyValue* densities;
 	static keyValue* magnitudes;
+	//static vector<keyValue> densities(end-begin);
+	//static vector<keyValue> magnitudes(end-begin);
 	static int size;
 	static int temp1[ARRAYSIZE];
 	static int temp2[ARRAYSIZE];
@@ -250,8 +278,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 	int answer;
 
-	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
-
+	cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
+	cout << "check mem" << endl;
+	system("ps ux | grep hv >> mem.tmp");
 #ifdef RED_FRACTION
 	//cout<<"Calculating red/blue probability at z = "<<ThisZ<<"..."<<endl;
 	//float red_fraction = REDFRACTION1;
@@ -274,7 +303,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Global red fraction: "<<red_fraction<<endl;
 
 #endif
-
+	cout << "Sorting densities and mags" << endl;
+	cout << "check mem" << endl;
+	system("ps ux | grep hv >> mem.tmp");
 	if( sorted != 1)
 	{
 		sorted = 1;
@@ -290,17 +321,26 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			densities[i].value = log10((*inputIterator).Dens());
 			magnitudes[i].value = (*inputIterator).MR(); 
 		}
-		//cout<<"Starting magnitude sort"<<endl;
+		cout<<"Starting magnitude sort"<<endl;
 		MergeSort(magnitudes,size);
-		//cout<<"Starting density sort"<<endl;
+		cout<<"Starting density sort"<<endl;
 		MergeSort(densities,size);
-		//cout<<"Done with both sorts"<<endl;
+		cout<<"Done with both sorts"<<endl;
 	}	
+
+	cout << "First few magnitudes: " << endl;
+	cout << magnitudes[0].value <<endl;
+	cout << magnitudes[1].value <<endl;
+	cout << magnitudes[2].value <<endl;
+
+	cout << "Binary search" << endl;
+	cout << "check mem" << endl;
+	system("ps ux | grep hv >> mem.tmp");
 	int magIndex = binarySearch(magnitudes,size,mag);
 	int densIndex = binarySearch(densities,size,log10(dens));
 
-	//cout<<"Initial magIndex: "<<magIndex<<" value: "<<magnitudes[magIndex].value<<endl;
-	//cout<<"Initial densIndex: "<<densIndex<<" value: "<<(pow(10.0, densities[densIndex].value))<<endl;
+	cout<<"Initial magIndex: "<<magIndex<<" value: "<<magnitudes[magIndex].value<<endl;
+	cout<<"Initial densIndex: "<<densIndex<<" value: "<<(pow(10.0, densities[densIndex].value))<<endl;
 
 	int maxSteps = (int)(size/STEP);
 
@@ -310,7 +350,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 	insert(temp1, count1++, magnitudes[magIndex].key);
 	insert(temp2, count2++, densities[densIndex].key);
-
+	cout << "Insertion" << endl;
+	cout << "check mem" << endl;
+	system("ps ux | grep hv >> mem.tmp");
 	for(int m=0;m<maxSteps;m++)
 	{
 		for(int n=1;n<=STEP;n++)
@@ -350,7 +392,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		
                 int i=0,j=0,k=0;
 #ifdef RED_FRACTION
-		//cout<<"Counting the number of matching red and blue galaxies..."<<endl;
+		cout<<"Counting the number of matching red and blue galaxies..."<<endl;
 		float nred = 0, ntot = 0;
                 while(i < count1 && j < count2)
                 {
@@ -370,7 +412,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
                                 i++;
                         }
                 }
-		//cout<<" Total number of matching objects: "<<ntot<<", total number of red objects: "<<nred<<endl;
+		cout<<" Total number of matching objects: "<<ntot<<", total number of red objects: "<<nred<<endl;
 		float local_red_fraction = nred/ntot;
 		//float target_local_red_fraction = local_red_fraction*red_fraction/REDFRACTION1;
 		float target_local_red_fraction = local_red_fraction*red_fraction;
