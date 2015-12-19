@@ -427,64 +427,24 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 //vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector <GalSED> & galseds){
 vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector <GalSED> & galseds, vector <Halo *> &halos){
   srand48(seed);
+  cout << "Allocating vector for SEDs" << endl;
   vector <int> sed_ids(galaxies.size());
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
-  //cout<<"Need to check some magnitudes and densities: "<<endl;
-  //for(int i=-22;i<=-4;i++){
-  //cout<<"  "<<i<<", "<<LumNumberDensityInterp(float(i))<<endl;
-  //}
   for(int gi=0;gi<galaxies.size();gi++){
-    //cout<<gi<<" "<<galaxies[gi]->Mr()<<endl;
     if(float(gi)/float(galaxies.size()) > Percent){
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
     }
-    //cout<<gi<<" of "<<galaxies.size()<<endl;
-
-    //if(galaxies[gi]->Central())
-    //{
-    //extern double normal_random(float mean, float stddev);
-    //Galaxy * gal = galaxies[gi];
-    //Particle * p = gal->P();
-    //assert(p);  //this better be true since you removed the other ones.
-    //int hid = p->Hid();
-    //double m200 = halos[hid]->M();
-    ////cout<<"lookin at central galaxy ("<<galaxies[gi]->Central()<<") with m200="<<m200<<", density = "<<nndist[gi]<<", and original Mr = "<<galaxies[gi]->Mr();
-    //double m14 = m200/1e14;
-    //double lum = 4*pow(m14,0.3);
-    //lum = pow(10.0,normal_random(log10(lum),0.15));
-    //double mr = -2.5*log10(lum) - 20.44;
-    //galaxies[gi]->Mr(mr);
-    //nndist[gi] *= 0.5; //We want to make the BCGs dense
-    ////cout<<" adjusted to "<<galaxies[gi]->Mr()<<endl;
-    ////if(mr>Magmin_col) mr = Magmin_col;
-    //}
     Particle * p = galaxies[gi]->P();
     assert(p);  //this better be true since you removed the other ones.
-    //int hid = p->Hid();
-    //if(hid>=0){
-#ifdef DEBUG
+
+#ifdef DEBUG_SEDS
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
     double mr = galaxies[gi]->Mr();
-    //if(mr>Magmin_col) mr = Magmin_col;
-    //cout<<"non central galaxy with Mr = "<<galaxies[gi]->Mr()<<", dens = "<<nndist[gi]<<endl;
-    //cout<<"Choosnig..."<<endl;
+    sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
 
-	sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-    //cout<<"Simulated galaxy: mr = "<<mr<<" nndist = "<<nndist[gi]<<endl;
-    //cout<<"SED galaxy: mr = "<<galseds[sed_ids[gi]].MR()<<" nndist = "<<galseds[sed_ids[gi]].Dens()<<endl;
-    //cout<<sed_ids[gi]<<endl;
-
-
-
-	//sed_ids[gi] = ChooseSED(galseds,mr,nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-    
-	
-	
-	//}
-    //else sed_ids[gi]=-1;
   }
   return sed_ids;
 }

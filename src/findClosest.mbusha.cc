@@ -278,9 +278,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 	int answer;
 
-	cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
-	cout << "check mem" << endl;
-	system("ps ux | grep hv >> mem.tmp");
+	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
+	//cout << "check mem" << endl;
+	//system("ps ux | grep hv >> mem.tmp");
 #ifdef RED_FRACTION
 	//cout<<"Calculating red/blue probability at z = "<<ThisZ<<"..."<<endl;
 	//float red_fraction = REDFRACTION1;
@@ -303,9 +303,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Global red fraction: "<<red_fraction<<endl;
 
 #endif
-	cout << "Sorting densities and mags" << endl;
-	cout << "check mem" << endl;
-	system("ps ux | grep hv >> mem.tmp");
+	//cout << "Sorting densities and mags" << endl;
+	//cout << "check mem" << endl;
+	//system("ps ux | grep hv >> mem.tmp");
 	if( sorted != 1)
 	{
 		sorted = 1;
@@ -321,26 +321,26 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			densities[i].value = log10((*inputIterator).Dens());
 			magnitudes[i].value = (*inputIterator).MR(); 
 		}
-		cout<<"Starting magnitude sort"<<endl;
+		//cout<<"Starting magnitude sort"<<endl;
 		MergeSort(magnitudes,size);
-		cout<<"Starting density sort"<<endl;
+		//cout<<"Starting density sort"<<endl;
 		MergeSort(densities,size);
-		cout<<"Done with both sorts"<<endl;
+		//cout<<"Done with both sorts"<<endl;
 	}	
 
-	cout << "First few magnitudes: " << endl;
-	cout << magnitudes[0].value <<endl;
-	cout << magnitudes[1].value <<endl;
-	cout << magnitudes[2].value <<endl;
+	//cout << "First few magnitudes: " << endl;
+	//cout << magnitudes[0].value <<endl;
+	//cout << magnitudes[1].value <<endl;
+	//cout << magnitudes[2].value <<endl;
 
-	cout << "Binary search" << endl;
-	cout << "check mem" << endl;
-	system("ps ux | grep hv >> mem.tmp");
+	//cout << "Binary search" << endl;
+	//cout << "check mem" << endl;
+	//system("ps ux | grep hv >> mem.tmp");
 	int magIndex = binarySearch(magnitudes,size,mag);
 	int densIndex = binarySearch(densities,size,log10(dens));
 
-	cout<<"Initial magIndex: "<<magIndex<<" value: "<<magnitudes[magIndex].value<<endl;
-	cout<<"Initial densIndex: "<<densIndex<<" value: "<<(pow(10.0, densities[densIndex].value))<<endl;
+	//cout<<"Initial magIndex: "<<magIndex<<" value: "<<magnitudes[magIndex].value<<endl;
+	//cout<<"Initial densIndex: "<<densIndex<<" value: "<<(pow(10.0, densities[densIndex].value))<<endl;
 
 	int maxSteps = (int)(size/STEP);
 
@@ -350,9 +350,9 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 	insert(&temp1[0], count1++, magnitudes[magIndex].key);
 	insert(&temp2[0], count2++, densities[densIndex].key);
-	cout << "Insertion" << endl;
-	cout << "check mem" << endl;
-	system("ps ux | grep hv >> mem.tmp");
+	//cout << "Insertion" << endl;
+	//cout << "check mem" << endl;
+	//system("ps ux | grep hv >> mem.tmp");
 	for(int m=0;m<maxSteps;m++)
 	{
 		for(int n=1;n<=STEP;n++)
@@ -392,7 +392,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		
                 int i=0,j=0,k=0;
 #ifdef RED_FRACTION
-		cout<<"Counting the number of matching red and blue galaxies..."<<endl;
+		//cout<<"Counting the number of matching red and blue galaxies..."<<endl;
 		float nred = 0, ntot = 0;
                 while(i < count1 && j < count2)
                 {
@@ -412,7 +412,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
                                 i++;
                         }
                 }
-		cout<<" Total number of matching objects: "<<ntot<<", total number of red objects: "<<nred<<endl;
+		//cout<<" Total number of matching objects: "<<ntot<<", total number of red objects: "<<nred<<endl;
 		float local_red_fraction = nred/ntot;
 		//float target_local_red_fraction = local_red_fraction*red_fraction/REDFRACTION1;
 		float target_local_red_fraction = local_red_fraction*red_fraction;
@@ -950,8 +950,8 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
 	  int ih = hids[this_ih].key;
 	  if(H[ih]->InVol())
 	    {
-	      cout<<"Error!  Didn't readin particle "<<hids[this_ih].value<<" that should be the center for halo "<<hids[this_ih].key<<endl;
-	      cout<<"Just making up a new particle to go here."<<endl;
+	      //cout<<"Error!  Didn't readin particle "<<hids[this_ih].value<<" that should be the center for halo "<<hids[this_ih].key<<endl;
+	      //cout<<"Just making up a new particle to go here."<<endl;
 	    }
 	  float xfac = 1./(sim.LengthUnit());
 	  Point xx(H[ih]->X()*xfac,H[ih]->Y()*xfac,H[ih]->Z()*xfac);
