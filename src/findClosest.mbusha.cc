@@ -12,40 +12,9 @@
 #include <algorithm> 
 #include <time.h>
 #include <string.h>
+#include "findClosest.mbusha.h"
 
 extern double normal_random(float mean, float stddev);
-
-class keyValue
-{
-public:
-	int key;
-	float value;
-	keyValue(int key, float value)
-	{
-		this->key = key;
-		this->value = value;
-	}
-	keyValue()
-	{
-
-	}	
-};
-
-class intkeyValue
-{
-public:
-        int key;
-        int value;
-        intkeyValue(int key, float value)
-        {
-                this->key = key;
-                this->value = value;
-        }
-        intkeyValue()
-        {
-
-        }
-};
 
 void *Mix(int *tab1,int *tab2,int count1,int count2)
 //void Mix(int *tab1,int *tab2,int count1,int count2)
@@ -252,12 +221,9 @@ void insert(int* temp1, int position, int key)
 	temp1[i+1] = key;
 }
 
-int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, int ThisBCG)
+int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> isred,
+		       const int size, float mag, float dens, float ThisZ, int ThisBCG)
 {
-	vector<GalSED>::iterator begin = v.begin();
-	vector<GalSED>::iterator end = v.end();
-	//#define INSERTIONSORT
-	//#define ARRAYSIZE 10000
 	#define ARRAYSIZE 20000
 
 #ifdef RED_FRACTION
@@ -266,82 +232,25 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 #else
 	static int STEP=500;
 #endif
-	static int sorted = 0;
-	static keyValue* densities;
-	static keyValue* magnitudes;
-	//static vector<keyValue> densities(end-begin);
-	//static vector<keyValue> magnitudes(end-begin);
-	static int size;
 	static vector<int> temp1(ARRAYSIZE);
 	static vector<int> temp2(ARRAYSIZE);
-
-
 	int answer;
 
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 	//cout << "check mem" << endl;
 	//system("ps ux | grep hv >> mem.tmp");
 #ifdef RED_FRACTION
-	//cout<<"Calculating red/blue probability at z = "<<ThisZ<<"..."<<endl;
-	//float red_fraction = REDFRACTION1;
-	//float red_fraction = 0.66;
 	float red_fraction = REDFRACTION1;
 	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
 	float intercept = REDFRACTION1 - slope*Z_REDFRACTION1;
 	if (ThisZ > Z_REDFRACTION1 && ThisBCG == 0)
 	{
-		//linear model
-		/*
-		red_fraction = slope*ThisZ + intercept;
-		if (red_fraction < REDFRACTION2)
-      			red_fraction = REDFRACTION2;
-		*/
-		//power law model
 		red_fraction = pow(10., -0.255388 - 0.545622*ThisZ);
 	} 
-	//cout<<"REDFRACTION1 = "<<REDFRACTION1<<", REDFRACTION2 = "<<REDFRACTION2<<", slope = "<<slope<<", intercept = "<<intercept<<", ThisZ = "<<ThisZ<<endl;
-	//cout<<"Global red fraction: "<<red_fraction<<endl;
-
 #endif
-	//cout << "Sorting densities and mags" << endl;
-	//cout << "check mem" << endl;
-	//system("ps ux | grep hv >> mem.tmp");
-	if( sorted != 1)
-	{
-		sorted = 1;
-		size = end - begin;
-		densities = new keyValue[size];
-		magnitudes = new keyValue[size];
-		vector<GalSED>::iterator inputIterator;
-		int i;
-		for ( i=0,inputIterator= begin ; inputIterator < end; inputIterator++, i++ )
-    		{
-			densities[i].key = i;
-			magnitudes[i].key = i;
-			densities[i].value = log10((*inputIterator).Dens());
-			magnitudes[i].value = (*inputIterator).MR(); 
-		}
-		//cout<<"Starting magnitude sort"<<endl;
-		MergeSort(magnitudes,size);
-		//cout<<"Starting density sort"<<endl;
-		MergeSort(densities,size);
-		//cout<<"Done with both sorts"<<endl;
-	}	
 
-	//cout << "First few magnitudes: " << endl;
-	//cout << magnitudes[0].value <<endl;
-	//cout << magnitudes[1].value <<endl;
-	//cout << magnitudes[2].value <<endl;
-
-	//cout << "Binary search" << endl;
-	//cout << "check mem" << endl;
-	//system("ps ux | grep hv >> mem.tmp");
 	int magIndex = binarySearch(magnitudes,size,mag);
 	int densIndex = binarySearch(densities,size,log10(dens));
-
-	//cout<<"Initial magIndex: "<<magIndex<<" value: "<<magnitudes[magIndex].value<<endl;
-	//cout<<"Initial densIndex: "<<densIndex<<" value: "<<(pow(10.0, densities[densIndex].value))<<endl;
-
 	int maxSteps = (int)(size/STEP);
 
 	int count1=0;
@@ -350,9 +259,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 	insert(&temp1[0], count1++, magnitudes[magIndex].key);
 	insert(&temp2[0], count2++, densities[densIndex].key);
-	//cout << "Insertion" << endl;
-	//cout << "check mem" << endl;
-	//system("ps ux | grep hv >> mem.tmp");
+
 	for(int m=0;m<maxSteps;m++)
 	{
 		for(int n=1;n<=STEP;n++)
@@ -399,7 +306,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
                         if ( temp1[i] == temp2[j])
                         {
 				ntot++;
-				if(v[temp1[i]].Red()) nred++;
+				if(isred[temp1[i]]) nred++;
                                 i++;
                                 j++;
                         }
@@ -431,7 +338,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
                         if ( temp1[i] == temp2[j])
                         {
 #ifdef RED_FRACTION
-                                if(v[temp1[i]].Red() == is_red)
+                                if(isred[temp1[i]] == is_red)
                                 {
                                         answer = temp1[i];
 					answerArray[answerCount++] = answer;

@@ -175,11 +175,12 @@ inline void DeEvolveGal(Galaxy*& pgalaxy){
 
 //vector <Galaxy *> GetGalaxies(double vol, float, float, float, float, float, float, float);
 //vector <Galaxy *> GetGalaxies(double vol, float, float, float);
-vector <Galaxy *> GetGalaxies(double vol, float phistar);
+//vector <Galaxy *> GetGalaxies(double vol, float phistar);
+vector <Galaxy *> GetGalaxies(double vol);
 //vector <Galaxy *> GetGalaxies(double vol, ChainEl chel);
 //vector <Galaxy *> GetDimGalaxies(double vol, ChainEl chel);
 //void GetDimGalaxies(vector <Galaxy*> &galaxies, double zmin, double zmax, double vf, ChainEl chel);
-vector <Galaxy *> GetGalaxiesNodens(double vol);
+//vector <Galaxy *> GetGalaxiesNodens(double vol);
 double LF(double M, double* dummy);
 float ChooseMag();
 void GetMags(unsigned int n, vector <double> &mags);

@@ -9,8 +9,8 @@
 #include <functional>
 #include "kcorrect.h"
 
-#ifndef BCC
-extern Cosmology cosmo;
+#ifdef UNITTESTS
+//extern Cosmology cosmo;
 
 typedef std::pair<int,int> indpair;
 bool paircomp (indpair l, indpair r)
@@ -31,7 +31,7 @@ struct ginfo
 };
 
 
-#ifndef BCC
+#ifdef UNITTESTS
 std::istream & operator>>(std::istream & is, ginfo & in)
 {
   float pass;

@@ -2,6 +2,7 @@
 #define OUTPUTS_H
 #include <CCfits/CCfits>
 #include <vector>
+#include <galaxy.h>
 
 void  write_bcc_catalogs(std::vector<Galaxy *> &galaxies, std::vector<Particle *> &particles, 
 			 std::vector<float> amag, std::vector<float> tmag, std::vector<float> mr, 

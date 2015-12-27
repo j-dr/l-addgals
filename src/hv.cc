@@ -15,6 +15,7 @@
 #include "global_vars.h"
 #include "outputs.h"
 #include "galaxy_global.h"
+#include "galaxy.h"
 #ifdef HEALPIX
 #include "chealpix.h"
 #endif
@@ -366,6 +367,8 @@ int main(void){
       cout<<" Magnitude range: "<<galaxies[0]->Mr()<<", "<<galaxies[galaxies.size()-1]->Mr()<<endl;
     }
   */
+#elif OLDPDF
+  galaxies=GetGalaxies(volume);
 #else
   galaxies=GetGalaxies(volume, phi_rescale);
 #endif
@@ -487,6 +490,9 @@ int main(void){
   cout<<"Getting Neighbors..."<<endl;
   vector <float> nndist = GetNeighborDist(galaxycopy, galaxies);
   ofstream outrfile(outrfn.c_str());
+  cout<<"Got neighbor dists: check mem"<<endl;
+  system("ps ux | grep hv > mem.tmp");
+
 #ifdef DEBUG
   cout<<"printing nndist"<<endl;
   for(int i=0;i<galaxies.size();i++)
@@ -496,6 +502,8 @@ int main(void){
   cout<<"Getting Neighbor Percents..."<<endl;
   vector <float> nndist_percent = GetNeighborPercents(nndist, galaxies);
   cout<<"Measured the nndist_percent's: "<<nndist_percent[0]<<" "<<nndist_percent[1]<<endl;
+  cout << "check mem" << endl;
+  system("ps ux | grep hv > mem.tmp");
   //  ofstream outrfile(outrfn.c_str());
 #ifdef DEBUG
   for(int i=0;i<galaxies.size();i++)
@@ -529,10 +537,11 @@ int main(void){
     outddmfile<<gal->Dist8()<<" "<<nndist[gi]<<" "<<gal->Mr()<<endl;
   }
 
-
+  galaxycopy = galaxies;
   cout<<"[hv] Assigning colors."<<endl;
   system("date");
-  galaxycopy = galaxies;
+  cout << "check mem" << endl;
+  system("ps ux | grep hv > mem.tmp");
 
 #ifndef COLORS_FROM_RELATIVE_DENSITY
   sed_ids = GetSEDs(galaxycopy, nndist, galseds, halos);
@@ -580,8 +589,8 @@ int main(void){
   read_out_galaxy_info(galaxies, galseds, id, mr, z, id);
   match_coeff(id, &coeff[0]);
 
-  strcpy(filterfile, "./des_filters.txt");
-  assign_colors(mr, coeff, z, ZREDMIN-0.05, ZREDMAX+0.05,
+  strcpy(filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/des_filters.txt");
+  assign_colors(mr, coeff, z, ZREDMIN, ZREDMAX,
 		0.1, nbands, filterfile, tmag, amag);
 
   vector<float> omag(galaxies.size()*nbands);

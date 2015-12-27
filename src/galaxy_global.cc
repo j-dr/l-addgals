@@ -7,6 +7,7 @@
 #include "galaxy.h"
 #include "cosmo.h" 
 #include "ReadParameters.h"
+#include "galaxy_global.h"
 #ifdef LF_FROM_DATA
 #include <vector>
 #endif
@@ -57,11 +58,6 @@ float FiveTuple::LocalDens() const{
 
 //NBIN is the total number of rdel bins for our magnitude calculation
 //#define NBIN 85000
-#define NBIN 8500
-struct den_ent{
-  float prob[NBIN];
-  float r[NBIN];
-};
 
 
 //get the explicit denpdf parameters for our redshift, magnitude
@@ -194,10 +190,6 @@ float LocalDens(float magnitude, float redshift, float vol)
   //define our probability distribution for this galaxy
   //cout<<"Defining probability array..."<<endl;
   den_ent pdf = define_prob(magnitude, redshift, vol);
-  //for(int i=0;i<NBIN;i++){
-    //cout<<pdf.r[i]<<" "<<pdf.prob[i]<<endl;
-  //}
-
   float d8 = LocalDens(pdf);
 
   return d8;
@@ -606,7 +598,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
         pdfarray[iz] = define_prob(tmag,tz,vol);
       }
 
-    if (mag <= -21.0 && mag > -22.000){
+    if (mag <= -22.0 && mag > -23.000){
       string pdfcheck_str = "pdf_check.txt";
       ofstream pdfcheck_file(pdfcheck_str.c_str());
       for(int i=0;i<NBIN;i++){
@@ -704,9 +696,9 @@ double fractional_area(){
   return sky_coverage/41253.0;
 }
 
-void read_out_galaxy_info(vector<Galaxy *> gal, vector<GalSED> sed,
-			  vector<int> sed_id, vector<float> mr, 
-			  vector<float> z, vector<int> id)
+void read_out_galaxy_info(vector<Galaxy *> &gal, vector<GalSED> &sed,
+			  vector<int> &sed_id, vector<float> &mr, 
+			  vector<float> &z, vector<int> &id)
 {
   int i;
   vector<Galaxy *>::iterator itr;

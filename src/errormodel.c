@@ -88,9 +88,9 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
 	  copy(itr-nband+1, itr+1, mag.begin()+count);
 	  count+=nband;
 	}
+	idx[i] = good;
 	good = false;
       }
-      idx[i] = good;
     }
 
   mag.resize(count);

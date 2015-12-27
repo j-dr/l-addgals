@@ -9,7 +9,7 @@
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
-#ifndef BCC
+#ifdef UNITTESTS
 Cosmology cosmo(0.3, 0.82, 0.7);
 #endif
 using namespace std;
@@ -91,7 +91,8 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
 {
   static int ntemps=5;
   int n;
-  string filename = "../training/cooper/combined_dr6_cooper.dat";
+  //Need to replace with variable passed in stringparameters
+  string filename = "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/training/cooper/combined_dr6_cooper.dat";
   ifstream coeff_file(filename.c_str());
   if (coeff_file.fail()) {
     cerr<<"error: cannot open "<<filename<<endl;
@@ -197,7 +198,21 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   float ab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
   vector<float> deltam(ngal);
-  strcpy(sdss_filterfile, "./sdss_filter.txt");
+  strcpy(sdss_filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/sdss_filter.txt");
+  
+  cout << "First few reference magnitudes: " << endl;
+  for (i=0;i<5;i++) 
+    {
+      cout << reference_mag[i] << ", ";
+    }
+  cout << endl;
+
+  cout<<"Coeffs: "<<endl;
+  for (i=0;i<25;i++){
+    cout<<coeff[i]<<", ";
+    if ((i+1)%5==0) cout<<endl;
+  }
+  cout<<endl;
 
   //calculate SDSS r-band abs mags to determine magnitude shifts to apply
   //to kcorrect outputs for other bands
@@ -211,7 +226,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   cout<<"10-100 deltam"<<endl;
   for (i=10;i<100;i++){
     cout<<deltam[i]<<", ";
-    if ((i-10+1)%6==0) cout<<endl;
+    if ((i-10+1)%5==0) cout<<endl;
   }
   cout<<endl;
   
@@ -231,7 +246,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 
 }
 
-#ifndef BCC
+#ifdef UNITTESTS
 
 int main(int argc, char **argv)
 {

@@ -4,8 +4,9 @@
 #include <unistd.h>     //for sleep()
 #include <fstream>
 #include <CCfits/CCfits>
-#include "galaxy.h"
+#include "outputs.h"
 
+#ifndef UNITTESTS
 int GalaxyZBin(float zRed);
 
 void PrintMinMaxDens(vector <Galaxy *> &galaxies, vector <Particle *> &particles)
@@ -132,6 +133,7 @@ void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles,
   }
     cout<<"Didn't print "<<NNotPrinted<<" galaxies.  Of these "<<NNotPrintedInVol<<" were in the specified volume."<<endl;  
 }
+#endif
 
 void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles, 
 			 vector<float> amag, vector<float> tmag, vector<float> mr, 
@@ -145,8 +147,10 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   std::auto_ptr<FITS> tFits;
   int size = galaxies.size();
   int keep = s.size();
+  unsigned long rows(5);
   
   //Write truth file
+  cout << "Opening fits file" << endl;
   try{
     tFits.reset(new FITS(outgfn,Write));
   }
@@ -269,13 +273,14 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[34] = "2E";
   tcolForm[35] = "E";
 
+
+  cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
     central(keep), haloid(keep), empty(keep,-1);
   
   //Go through the galaxies and get the info we want
   int count=0;
-  int hcount=0;
   Particle * p;
   for (int i=0; i<size; i++)
     {
@@ -294,8 +299,22 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       z[count] = p->Zred();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
-      haloid[count] = halos[hid]->Id();
+      if (central[count]==1) 
+	{
+	  haloid[count] = halos[hid]->Id();
+	}
+      else
+	{
+	  haloid[count] = -1;
+	}
+      count++;
     }
+
+  cout << "Number of galaxies with idx == true: " << count << endl;
+  cout << "Number of galaxies with shapes: " << keep << endl;
+  //assert(count==keep);
+
+  cout << "Creating TRUTH HDU" << endl;
   static string ttablename("TRUTH");
   Table* newTable;
 
@@ -307,17 +326,18 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     exit(1);
   }
 
+  cout << "Writing columns" << endl;
   try{
     newTable->column(tcolName[0]).write(id,1);
     newTable->column(tcolName[1]).write(id,1); //should this be something else?
     newTable->column(tcolName[2]).write(sed_ids,1);
-    newTable->column(tcolName[3]).write(coeffs,1);
-    newTable->column(tcolName[4]).write(tmag,1);
-    newTable->column(tcolName[5]).write(omag,1);
-    newTable->column(tcolName[6]).write(flux,1);
-    newTable->column(tcolName[7]).write(ivar,1);
-    newTable->column(tcolName[8]).write(omagerr,1);
-    newTable->column(tcolName[9]).write(amag,1);
+    newTable->column(tcolName[3]).write(coeffs,count,1);
+    newTable->column(tcolName[4]).write(tmag,count,1);
+    newTable->column(tcolName[5]).write(omag,count,1);
+    newTable->column(tcolName[6]).write(flux,count,1);
+    newTable->column(tcolName[7]).write(ivar,count,1);
+    newTable->column(tcolName[8]).write(omagerr,count,1);
+    newTable->column(tcolName[9]).write(amag,count,1);
     newTable->column(tcolName[10]).write(ra,1);
     newTable->column(tcolName[11]).write(dec,1);
     newTable->column(tcolName[12]).write(z,1);
@@ -329,7 +349,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(tcolName[18]).write(central,1);
     newTable->column(tcolName[19]).write(ra,1);
     newTable->column(tcolName[20]).write(dec,1);
-    newTable->column(tcolName[21]).write(e,1);
+    newTable->column(tcolName[21]).write(e,count,1);
     newTable->column(tcolName[22]).write(empty,1);
     newTable->column(tcolName[23]).write(empty,1);
     newTable->column(tcolName[24]).write(empty,1);
@@ -342,7 +362,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(tcolName[31]).write(vx,1);
     newTable->column(tcolName[32]).write(vy,1);
     newTable->column(tcolName[33]).write(vz,1);
-    newTable->column(tcolName[34]).write(e,1);
+    newTable->column(tcolName[34]).write(e,count,1);
     newTable->column(tcolName[35]).write(s,1);
   }
   catch(FitsException &except){
@@ -356,3 +376,4 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   }    
 
 }
+

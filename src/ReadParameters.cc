@@ -131,6 +131,42 @@ void fillParameters(ParameterDatabase* pd)
 		pz1 = pd->findParameterValue("pz1");
 		pz2 = pd->findParameterValue("pz2");
 		pz3 = pd->findParameterValue("pz3");
+
+		if (cm0 == -1) cm0 = 0;
+		if (cm1 == -1) cm1 = 0;
+		if (cm2 == -1) cm2 = 0;
+		if (cm3 == -1) cm3 = 0;
+		if (cm4 == -1) cm4 = 0;
+		if (cmz1 == -1) cmz1 = 0;
+		if (cmz2 == -1) cmz2 = 0;
+		if (cmz3 == -1) cmz3 = 0;
+		if (cs0 == -1) cs0 = 0;
+		if (cs1 == -1) cs1 = 0;
+		if (cs2 == -1) cs2 = 0;
+		if (cs3 == -1) cs3 = 0;
+		if (csz1 == -1) csz1 = 0;
+		if (csz2 == -1) csz2 = 0;
+		if (fm0 == -1) fm0 = 0;
+		if (fm1 == -1) fm1 = 0;
+		if (fm2 == -1) fm2 = 0;
+		if (fm3 == -1) fm3 = 0;
+		if (fmz1 == -1) fmz1 = 0;
+		if (fmz2 == -1) fmz2 = 0;
+		if (fs0 == -1) fs0 = 0;
+		if (fs1 == -1) fs1 = 0;
+		if (fs2 == -1) fs2 = 0;
+		if (fs3 == -1) fs3 = 0;
+		if (fs4 == -1) fs4 = 0;
+		if (fsz1 == -1) fsz1 = 0;
+		if (fsz2 == -1) fsz2 = 0;
+		if (fsz3 == -1) fsz3 = 0;
+		if (p0 == -1) p0 = 0;
+		if (p1 == -1) p1 = 0;
+		if (p2 == -1) p2 = 0;
+		if (p3 == -1) p3 = 0;
+		if (pz1 == -1) pz1 = 0;
+		if (pz2 == -1) pz2 = 0;
+		if (pz3 == -1) pz3 = 0;
 	}
 #ifdef HEALPIX
 	nSide = pd->findParameterValue("nSide");

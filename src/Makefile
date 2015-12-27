@@ -1,7 +1,7 @@
 #compiler
 CXX=/usr/bin/g++ 
 CC=${CXX}
-OPT = -O3 -ffast-math #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
+OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
 WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
 END_FLAG = -DBIGENDIAN
 #END_FLAG = -DLITTLEENDIAN
@@ -136,7 +136,8 @@ endif
 #CPPFLAGS += -DBOLSHOI  #Readin one of the bolshoi-formatted galaxy files
 #CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first sort
 #CPPFLAGS += -DPARALLEL -i-dynamic
-#CPPFLAGS += -DDEBUG_GET_GALS
+CPPFLAGS += -DDEBUG_GET_GALS
+CPPFLAGS += -DDEBUG_SEDS
 #CPPFLAGS += -DSNAPSHOT         #Using a snapshot instead of a lightcone
 #CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 #CPPFLAGS += -DEVOLVE_DENSPDF   #readin denspdf files from multiple LasDamas snapshots
@@ -145,8 +146,10 @@ endif
 #CPPFLAGS += -DSHAM_TEST      #add Consuelo SHAM galaxies back to Consuelo
 #CPPFLAGS += -DSIXPARAMS                #fit for a skewed lognormal distribution in the field objects
 #CPPFLAGS += -DDEBUG
+#CPPFLAGS += -DOLDPDF
+#CPPFLAGS += -DDEBUG_PDF
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
-
+#CPPFLAGS += -DUNITTESTS
 #CXX = mpic++
 
 
@@ -154,7 +157,7 @@ SRCS = *.cc
 
 EXECNAME = hv
 #OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy.o linreg.o assigngals.new.o haloocc.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o #read_cube.o read_warren bcgs.o
-OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o kcorrect_utils.o errormodel.o shapes.o efunc.o shapeconfig.o gno.o calcparams.o healpix_utils.o #read_cube.o read_warren bcgs.o
+OBJS = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o kcorrect_utils.o errormodel.o shapes.o efunc.o shapeconfig.o gno.o calcparams.o healpix_utils.o galaxy.o #read_cube.o read_warren bcgs.o
 
 EXECNAME_SPHERE = hv_sphere
 OBJS_SPHERE = hv.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_sphere.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o
@@ -195,8 +198,11 @@ OBJS9 = kcorrect_utils.o cosmology.o
 EXEC10 = shapes
 OBJS10 = shapes.o efunc.o shapeconfig.o gno.o calcparams.o
 
-EXEC10 = errormodel
-OBJS10 = errormodel.o 
+EXEC11 = errormodel
+OBJS11 = errormodel.o 
+
+EXEC12 = unittests
+OBJS12 = unittests.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o kcorrect_utils.o errormodel.o shapes.o efunc.o shapeconfig.o gno.o calcparams.o healpix_utils.o galaxy.o
 
 EXEC_TEST = test_gasdev
 OBJS_TEST = test_gasdev.o
@@ -247,6 +253,9 @@ $(EXEC10): $(OBJS10)
 
 $(EXEC11): $(OBJS11)
 	$(CXX) -o $(EXEC11) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+
+$(EXEC12): $(OBJS12)
+	$(CXX) -o $(EXEC12) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
 $(EXEC_TEST): $(OBJS_TEST)
 	$(CXX) -o $(EXEC_TEST) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)

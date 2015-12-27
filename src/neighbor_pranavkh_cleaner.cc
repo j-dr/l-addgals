@@ -6,9 +6,11 @@
 #include "galaxy.h"
 #include "singleton.h"
 #include "choose.h"
+#include "findClosest.mbusha.h"
 #include <math.h>
 
-int findCloseGalaxies2(vector <GalSED> &v, float mag, float den, float ThisZ, int ThisBCGs);
+int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> isred,
+		       const int size, float mag, float dens, float ThisZ, int ThisBCG);
 
 
 vector <GalSED> ReadSED();
@@ -427,25 +429,57 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 //vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector <GalSED> & galseds){
 vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector <GalSED> & galseds, vector <Halo *> &halos){
   srand48(seed);
-  cout << "Allocating vector for SEDs" << endl;
   vector <int> sed_ids(galaxies.size());
+  vector<GalSED>::iterator begin = galseds.begin();
+  vector<GalSED>::iterator end = galseds.end();
+  static int sorted = 0;
+  static keyValue* densities;
+  static keyValue* magnitudes;
+  static int size;
+  int i;
+
+  size = end - begin;
+  densities = new keyValue[size];
+  magnitudes = new keyValue[size];
+  vector<bool> isred(size);
+  vector<GalSED>::iterator inputIterator;
+
+  for ( i=0,inputIterator= begin ; inputIterator < end; inputIterator++, i++ )
+    {
+      densities[i].key = i;
+      magnitudes[i].key = i;
+      densities[i].value = log10((*inputIterator).Dens());
+      magnitudes[i].value = (*inputIterator).MR(); 
+      isred[i] = inputIterator->Red();
+    }
+
+  MergeSort(magnitudes,size);
+  MergeSort(densities,size);
+
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
   for(int gi=0;gi<galaxies.size();gi++){
     if(float(gi)/float(galaxies.size()) > Percent){
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
+      cout << "Last SED id: " << sed_ids[gi-1] << endl;
+      system("ps ux | grep hv >> mem.tmp");
     }
-    Particle * p = galaxies[gi]->P();
-    assert(p);  //this better be true since you removed the other ones.
+    //Particle * p = galaxies[gi]->P();
+    // assert(p);  //this better be true since you removed the other ones.
 
 #ifdef DEBUG_SEDS
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
     double mr = galaxies[gi]->Mr();
-    sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-
+    sed_ids[gi] = findCloseGalaxies2(densities, magnitudes, isred, size, 
+				     mr, nndist[gi], galaxies[gi]->Z(),
+				     galaxies[gi]->Central());
   }
+  
+  delete densities;
+  delete magnitudes;
+
   return sed_ids;
 }
 
