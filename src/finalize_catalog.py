@@ -12,12 +12,15 @@ import time
 
 
 TZERO = None
-def tprint(info):
+def tprint(info, stime=None):
     global TZERO
     if TZERO is None:
         TZERO = time.time()
 
-    print('[%8ds] %s' % (time.time()-TZERO,info))
+    tnow = time.time()
+    print('[%8ds] %s' % (tnow-TZERO,info))
+    
+    return tnow
 
 
 def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,3e12,2.4e13]):
@@ -96,7 +99,7 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
             
     if rank != 0:
         for i, bsize in enumerate(['1050', '2600', '4000']):
-            tprint('    {0}: Processing box {1}'.format(rank, bsize))
+            tstart = tprint('    {0}: Processing box {1}'.format(rank, bsize))
             h = fitsio.read(halopaths[i], columns=['HALOID', 'MVIR', 'RVIR', 'HALOPX', 'HALOPY', 'HALOPZ', 'HOST_HALOID'])
             h = h[h['MVIR']>mmin[i]]
             occ = np.zeros((len(h),6))
@@ -113,7 +116,8 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
             pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
             upix = pixh[pidx]
             pixmap = hp.ud_grade(np.arange(12*2**2),4)
-
+            tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
+            print('{0}: Reading took {1}s'.format(rank, tstart-tread))
             pixpaths = glob('{0}/Lb{1}_{2}/[0-9]*'.format(basepath, bsize, postfix))
             chunks = [pixpaths[i::(size-1)] for i in range(size-1)]
 
@@ -127,13 +131,18 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
                 else:
                     hend = pidx[hidx+1]
                 
-                tprint('    {0}: Building KDTree for pixel {1}'.format(rank,pix))
+                ttree = tprint('    {0}: Building KDTree for pixel {1}'.format(rank,pix))
                 ht = spatial.KDTree(h[hstart:hend][['HALOPX','HALOPY','HALOPZ']].view((h.dtype['HALOPX'],3)))
                 pfiles = glob('{0}/*/hv_output/gal_ginfo1.dat'.format(ppath))
                 
                 for i, f in enumerate(pfiles):
+                    tszbin = tprint('    {0}: Working on redshift bin {1}'.format(rank, f.split('/')[-3]))
+                    if i==0: print('{0}: Building tree took {1}s'.format(rank, tszbin-ttree))
                     pc, hdr = fitsio.read(f, header=True)
+                    tsh = tprint('    {0}: Finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
                     o, l = associate_halos(pc, h[hstart:hend], ht)
+                    tfh = tprint('    {0}: Finished finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
+                    print('{0}: Halo finding took {1}s'.format(rank, tfh-tsh))
                     occ[hstart:hend] += o
                     lum[hstart:hend] += l
                     pc['ID'] += i*1000000000
@@ -142,6 +151,7 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
                     status = MPI.Status()
                     comm.send(pix, tag=tags['write'])
                     message = comm.recv(tag=tags['write'], status=status)
+                    tprint('    {0}: Writing galaxies for z bin {1}'.format(rank, f.split('/')[-3]))
                     write_fits(outpath, prefix, pix, pc, hdr)
             
             comm.send(occ, tag=tags['occ'+bsize])
