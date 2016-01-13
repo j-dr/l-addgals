@@ -3,7 +3,7 @@ from SimulationAnalysis import readHlist
 from collections import deque
 from glob import glob
 from mpi4py import MPI
-from scipy import spatial
+import fast3tree as f3t
 import numpy.lib.recfunctions as rf
 import numpy as np
 import healpy as hp
@@ -29,8 +29,8 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
     size = comm.Get_size()
     rank = comm.Get_rank()
 
-    tags = {'write':0, 'occ1050':1, 'occ2600':2, 'occ4000':3,
-            'lum1050':4, 'lum2600':5, 'lum4000':6, 'exit':7}
+    tags = {'write':0, 'fwrite':1, 'occ1050':2, 'occ2600':3, 'occ4000':4,
+            'lum1050':5, 'lum2600':6, 'lum4000':7, 'exit':8}
     message = None
 
     if rank == 0:
@@ -45,9 +45,10 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
             remove = []
             #see if any write requests can be filled
             if len(wwaiting)>0:
-
                 for w in wwaiting:
+                    tprint('    Rank {0} is waiting to write for pixel {1}'.format(w[0],w[1]))
                     if w[1] not in writing:
+                        tprint('    Master gives rank {0} permission to write'.format(w[0]))
                         comm.send(message, tag=tags['write'], dest=w[0])
                         writing.append(w[1])
                         remove.append(w)
@@ -56,43 +57,46 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
                 wwaiting.remove(r)
 
             #Recieve requests
-            status = MPI.Status()
-            message = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-            tag = status.Get_tag()
-            if tag==tags['write']:
-                wwaiting.append([status.Get_source(), message])
-            elif tag==tags['occ1050']:
-                if occ[0]==None:
-                    occ[0] = message
-                else:
-                    occ[0] += message
-            elif tag==tags['occ2600']:
-                if occ[1]==None:
-                    occ[1] = message
-                else:
-                    occ[1] += message
-            elif tag==tags['occ4000']:
-                if occ[2]==None:
-                    occ[2] = message
-                else:
-                    occ[2] += message
-            elif tag==tags['lum1050']:
-                if lum[0]==None:
-                    lum[0] = message
-                else:
-                    lum[0] += message
-            elif tag==tags['lum2600']:
-                if lum[1]==None:
-                    lum[1] = message
-                else:
-                    lum[1] += message
-            elif tag==tags['lum4000']:
-                if lum[2]==None:
-                    lum[2] = message
-                else:
-                    lum[2] += message
-            elif tag==tags['exit']:
-                done.append(status.Get_source())
+            if (len(wwaiting)+len(writing))<(size-1):
+                status = MPI.Status()
+                message = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+                tag = status.Get_tag()
+                if tag==tags['write']:
+                    wwaiting.append([status.Get_source(), message])
+                elif tag==tags['fwrite']:
+                    writing.remove(message)
+                elif tag==tags['occ1050']:
+                    if occ[0]==None:
+                        occ[0] = message
+                    else:
+                        occ[0] += message
+                elif tag==tags['occ2600']:
+                    if occ[1]==None:
+                        occ[1] = message
+                    else:
+                        occ[1] += message
+                elif tag==tags['occ4000']:
+                    if occ[2]==None:
+                        occ[2] = message
+                    else:
+                        occ[2] += message
+                elif tag==tags['lum1050']:
+                    if lum[0]==None:
+                        lum[0] = message
+                    else:
+                        lum[0] += message
+                elif tag==tags['lum2600']:
+                    if lum[1]==None:
+                        lum[1] = message
+                    else:
+                        lum[1] += message
+                elif tag==tags['lum4000']:
+                    if lum[2]==None:
+                        lum[2] = message
+                    else:
+                        lum[2] += message
+                elif tag==tags['exit']:
+                    done.append(status.Get_source())
         
         for i, bsize in enumerate(['1050', '2600', '4000']):
             update_halo_file(halopaths[i], prefix, outpath, bsize, occ[i], lum[i], mmin[i])
@@ -117,7 +121,7 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
             upix = pixh[pidx]
             pixmap = hp.ud_grade(np.arange(12*2**2),4)
             tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
-            print('{0}: Reading took {1}s'.format(rank, tstart-tread))
+            print('{0}: Reading took {1}s'.format(rank, tread-tstart))
             pixpaths = glob('{0}/Lb{1}_{2}/[0-9]*'.format(basepath, bsize, postfix))
             chunks = [pixpaths[i::(size-1)] for i in range(size-1)]
 
@@ -132,42 +136,54 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
                     hend = pidx[hidx+1]
                 
                 ttree = tprint('    {0}: Building KDTree for pixel {1}'.format(rank,pix))
-                ht = spatial.KDTree(h[hstart:hend][['HALOPX','HALOPY','HALOPZ']].view((h.dtype['HALOPX'],3)))
-                pfiles = glob('{0}/*/hv_output/gal_ginfo1.dat'.format(ppath))
-                
-                for i, f in enumerate(pfiles):
-                    tszbin = tprint('    {0}: Working on redshift bin {1}'.format(rank, f.split('/')[-3]))
-                    if i==0: print('{0}: Building tree took {1}s'.format(rank, tszbin-ttree))
-                    pc, hdr = fitsio.read(f, header=True)
-                    tsh = tprint('    {0}: Finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
-                    o, l = associate_halos(pc, h[hstart:hend], ht)
-                    tfh = tprint('    {0}: Finished finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
-                    print('{0}: Halo finding took {1}s'.format(rank, tfh-tsh))
-                    occ[hstart:hend] += o
-                    lum[hstart:hend] += l
-                    pc['ID'] += i*1000000000
-
-                    #request permission to write
-                    status = MPI.Status()
-                    comm.send(pix, tag=tags['write'])
-                    message = comm.recv(tag=tags['write'], status=status)
-                    tprint('    {0}: Writing galaxies for z bin {1}'.format(rank, f.split('/')[-3]))
-                    write_fits(outpath, prefix, pix, pc, hdr)
-            
-            comm.send(occ, tag=tags['occ'+bsize])
-            comm.send(lum, tag=tags['lum'+bsize])
+                with f3t.fast3tree(h[hstart:hend][['HALOPX','HALOPY','HALOPZ']].view((h.dtype['HALOPX'],3))) as ht:
+                    pfiles = glob('{0}/*/hv_output/gal_ginfo1.dat'.format(ppath))
+                    
+                    for i, f in enumerate(pfiles):
+                        tszbin = tprint('    {0}: Working on redshift bin {1}'.format(rank, f.split('/')[-3]))
+                        pc, hdr = fitsio.read(f, header=True)
+                        tsh = tprint('    {0}: Finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
+                        o, l = associate_halos(pc, h[hstart:hend], ht)
+                        tfh = tprint('    {0}: Finished finding halos for redshift bin {1}. Took {2}s'.format(rank, f.split('/')[-3], time.time()-tsh))
+                        occ[hstart:hend] += o
+                        lum[hstart:hend] += l
+                        pc['ID'] += i*1000000000
+                        
+                        #request permission to write
+                        status = MPI.Status()
+                        comm.send(pix, tag=tags['write'])
+                        message = comm.recv(tag=tags['write'], status=status)
+                        tprint('    {0}: Writing galaxies for z bin {1}'.format(rank, f.split('/')[-3]))
+                        write_fits(outpath, prefix, pix, pc, hdr)
+                        comm.send(pix, tag=tags['fwrite'])
+                        
+                    tprint('    {0}: Pixel {1} took {2}s'.format(rank, pix, time.time()-ttree))
+                    comm.send(occ, tag=tags['occ'+bsize])
+                    comm.send(lum, tag=tags['lum'+bsize])
 
         comm.send(message, tag=tags['exit'])
 
-def associate_halos(galaxies, halos, tree):
+def associate_halos(galaxies, halos, tree, rassoc=10):
 
     occ = np.zeros((len(halos),6))
     lum = np.zeros((len(halos),3))
+    gpos = galaxies[['PX', 'PY', 'PZ']].view((galaxies.dtype['PX'],3))
+    hpos = halos[['HALOPX','HALOPY','HALOPZ']].view((halos.dtype['HALOPX'],3))
+    d = np.zeros(len(galaxies))
+    hid = np.zeros(len(galaxies), dtype=np.int)
     
     #assign nearest halo to galaxy
-    d, hid = tree.query(galaxies[['PX', 'PY', 'PZ']].view((galaxies.dtype['PX'],3)))
-    print('Distance to nearest halo: {0}'.format(d))
-    print('Minimum distance to nearest halo: {0}'.format(np.min(d)))
+    for i, gi in enumerate(gpos):
+        try:
+            gi = tree.query_radius(gpos[i,:],rassoc)
+            di = np.sqrt((hpos[gi,0]-gpos[i,0])**2 + (hpos[gi,1]-gpos[i,1])**2 + (hpos[gi,2]-gpos[i,2])**2)
+            d[i] = np.min(di)
+            hid[i] = gi[di==d[i]]
+        except:
+            hid[i] = -1
+            d[i] = -1
+            
+    #tprint('    Minimum distance to nearest halo: {0}'.format(np.min(d)))
 
     cen = galaxies['CENTRAL']==1
     galaxies['RHALO'][cen] = 0.0
@@ -179,14 +195,14 @@ def associate_halos(galaxies, halos, tree):
     lum[hid[bound],0] += galaxies['AMAG'][bound,1]
 
     nmt, = np.where(halos['HALOID'][hid[cen]]==galaxies[cen]['HALOID'])
-    print(len(nmt))
-    print('Number of centrals with unidentified halos: {0}'.format(len(galaxies[cen])-len(nmt)))
+    tprint('    Number of centrals with unidentified halos: {0}'.format(len(galaxies[cen])-len(nmt)))
+
     galaxies[cen]['M200'] = halos[hid[cen]]['MVIR']
     lum[hid[cen],2] = galaxies[cen]['AMAG'][:,1]
-
     occ[hid[bound],0] += 1
 
     for i, mr in enumerate([-10,-18,-19,-20,-21,-22]):
+        #tprint('    Getting occupations for Mr < {0}'.format(mr))
         midx = galaxies['AMAG'][bound,1]<mr
         hidx = hid[bound][midx].argsort()
         mhid = hid[bound][midx][hidx]
