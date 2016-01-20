@@ -277,7 +277,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1);
+    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5);
   
   //Go through the galaxies and get the info we want
   int count=0;
@@ -299,6 +299,11 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       z[count] = p->Zred();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
+      for (int c=0; c<5; c++)
+	{
+	  cf[count*5+c] = coeffs[i*5+c];
+	  am[count*5+c] = amag[i*5+c];
+	}
       if (central[count]==1) 
 	{
 	  haloid[count] = halos[hid]->Id();
@@ -328,42 +333,79 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
   cout << "Writing columns" << endl;
   try{
+    cout << "writing id 1" << endl;
     newTable->column(tcolName[0]).write(id,1);
+    cout << "writing id 2" << endl;
     newTable->column(tcolName[1]).write(id,1); //should this be something else?
+    cout << "writing sed_ids" << endl;
     newTable->column(tcolName[2]).write(sed_ids,1);
-    newTable->column(tcolName[3]).write(coeffs,count,1);
+    cout << "writing coeffs" << endl;
+    newTable->column(tcolName[3]).write(cf,count,1);
+    cout << "writing tmag" << endl;
     newTable->column(tcolName[4]).write(tmag,count,1);
+    cout << "writing omag" << endl;
     newTable->column(tcolName[5]).write(omag,count,1);
+    cout << "writing omag" << endl;
     newTable->column(tcolName[6]).write(flux,count,1);
+    cout << "writing flux" << endl;    
     newTable->column(tcolName[7]).write(ivar,count,1);
+    cout << "writing ivar" << endl;
     newTable->column(tcolName[8]).write(omagerr,count,1);
-    newTable->column(tcolName[9]).write(amag,count,1);
+    cout << "writing coeffs" << endl;
+    newTable->column(tcolName[9]).write(am,count,1);
+    cout << "writing ra" << endl;
     newTable->column(tcolName[10]).write(ra,1);
+    cout << "writing dec" << endl;
     newTable->column(tcolName[11]).write(dec,1);
+    cout << "writing z" << endl;
     newTable->column(tcolName[12]).write(z,1);
+    cout << "writing haloid" << endl;
     newTable->column(tcolName[13]).write(haloid,1);
+    cout << "writing 14" << endl;
     newTable->column(tcolName[14]).write(empty,1);
+    cout << "writing 15" << endl;
     newTable->column(tcolName[15]).write(empty,1);
+    cout << "writing 16" << endl;
     newTable->column(tcolName[16]).write(empty,1);
+    cout << "writing 17" << endl;
     newTable->column(tcolName[17]).write(empty,1);
+    cout << "writing 18" << endl;
     newTable->column(tcolName[18]).write(central,1);
+    cout << "writing 19" << endl;
     newTable->column(tcolName[19]).write(ra,1);
+    cout << "writing 20" << endl;
     newTable->column(tcolName[20]).write(dec,1);
+    cout << "writing 21" << endl;
     newTable->column(tcolName[21]).write(e,count,1);
+    cout << "writing 22" << endl;
     newTable->column(tcolName[22]).write(empty,1);
+    cout << "writing 23" << endl;
     newTable->column(tcolName[23]).write(empty,1);
+    cout << "writing 24" << endl;
     newTable->column(tcolName[24]).write(empty,1);
+    cout << "writing 25" << endl;
     newTable->column(tcolName[25]).write(empty,1);
+    cout << "writing 26" << endl;
     newTable->column(tcolName[26]).write(mr,1);
+    cout << "writing 27" << endl;
     newTable->column(tcolName[27]).write(s,1);
+    cout << "writing 28" << endl;
     newTable->column(tcolName[28]).write(px,1);
+    cout << "writing 29" << endl;
     newTable->column(tcolName[29]).write(py,1);
+    cout << "writing 30" << endl;
     newTable->column(tcolName[30]).write(pz,1);
+    cout << "writing 31" << endl;
     newTable->column(tcolName[31]).write(vx,1);
+    cout << "writing 32" << endl;
     newTable->column(tcolName[32]).write(vy,1);
+    cout << "writing 33" << endl;
     newTable->column(tcolName[33]).write(vz,1);
+    cout << "writing 34" << endl;
     newTable->column(tcolName[34]).write(e,count,1);
+    cout << "writing 35" << endl;
     newTable->column(tcolName[35]).write(s,1);
+    cout << "writing 36" << endl;
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");
