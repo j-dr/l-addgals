@@ -58,7 +58,7 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[],
 	omag[i] = 99.0;
 	omagerr[i] = 99.0;
       }
-      ivar[i] = 1/(ivar[i] * iexptime[b]);
+      ivar[i] = 1/ivar[i];
     }
 }
 
