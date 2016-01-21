@@ -1,4 +1,5 @@
 #include "healpix_utils.h"
+#include <iostream>
 #include <cmath>
 #include <climits>
 #include <algorithm>
@@ -56,6 +57,8 @@ long nest2peano(long pix, long order_)
     0, 5, 6, 11, 10, 1, 4, 7, 2, 3, 8, 9 };
   
   long npix_ = 1;
+  std::cout << "order: " << order_ << std::endl;
+  std::cout << "pix: " << pix << std::endl;
   npix_ = 12*(npix_ << (2*order_));
   assert(pix >= 0 && pix < npix_);
   
@@ -78,10 +81,13 @@ long nest2peano(long pix, long order_)
 void ring2peanoindex(long pix, long order1_, long order2_, std::vector<long> &pidx)
 {
 
-  int nmap = 12 * 2 << ( 2 * order2_ );
-  std::vector<long> hopix( 2 << ( order2_ - order1_ ) );
+  int nmap = 12 * ( 1 << ( 2 * order2_ ) );
+  std::cout << "order1: " << order1_ << std::endl;
+  std::cout << "order2: " << order2_ << std::endl;
+  std::vector<long> hopix( 1 << 2*( order2_ - order1_ ) );
 
   pix = ring2nest( pix, order1_ );
+  std::cout << "Getting peano indices for pixel: " << pix << std::endl;
   higher_nest( pix, order1_, order2_, &hopix[0] );
 
   std::transform( hopix.begin(), hopix.end(), pidx.begin(), 
@@ -106,10 +112,12 @@ void higher_nest(long pix, long order1_, long order2_, long *hopix)
 {
   int i;
   int base = pix >> 2 * order1_;
-  int subpix = pix & ( ( 2 << ( 2 * order1_ ) ) - 1 );
-  for (i = 0; i < 2 << ( order2_ - order1_ ); i++)
+  std::cout << "base: " << base << std::endl;
+  int subpix = pix & ( ( 1 << ( 2 * order1_ ) ) - 1 );
+  std::cout << "subpix: " << subpix << std::endl;
+  for (i = 0; i < (1 << 2 * ( order2_ - order1_ )); i++)
     {
-      hopix[i] = ( ( (base - 1) * ( 2 << ( 2 * order1_ ) ) + subpix ) 
+      hopix[i] = ( ( base * ( 1 << ( 2 * order1_ ) ) + subpix ) 
 	           << 2 * ( order2_ - order1_ ) ) + i;
     }
 }
