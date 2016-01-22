@@ -775,7 +775,7 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
   int i,r,count,temp;
   long np,j;
   long pc;
-  int npix = 12*(2<<(2*order2_));
+  int npix = 12*(1<<(2*order2_));
   long fnpix=9999999999;
   int forder;
   long nparts = 0;
@@ -806,22 +806,28 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
 		continue;
 	      }
-	      
+
 	      pfile.read((char *)(&header), sizeof(struct io_header));
 	      if (header.npart == 0) continue;
-	      
-	      count = 0;
-	      for (j=0; j<npix; j++)
+
+	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
+	      partial_sum(idx.begin(), idx.end(), idx.begin());
+	      assert(header.npart == idx[idx.size()-1]);
+
+	      long fpos = 0;
+	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
-		  pfile.read((char *)(&np), sizeof(long));
-		  if (j!=pidx[count]) continue;
-		  cout << "pidx[count]: " << pidx[count] << endl;
-		  cout << "np: " << np << endl;
+		  if (*itr==0)
+		    {
+		      np = idx[*itr];
+		    }
+		  else
+		    {
+		      np = idx[*itr] - idx[(*itr)-1];
+		    }
 		  nparts += np;
-		  count += 1;
 		}
 	    }
-	  cout << "nparts: " << nparts << endl;
 	}
     }
   return nparts;
@@ -834,7 +840,7 @@ vector <Particle *> ReadGadgetLCCell()
   int indexnside, temp;
   int nbins;
   int order1_ = 0, order2_ = 0;
-  long headersize, tid, accum;
+  long tid, accum;
   long step, pnp, nparts;
   float td, xfac, vfac;
   float tstart, tend;
@@ -920,7 +926,6 @@ vector <Particle *> ReadGadgetLCCell()
 	      assert(header.npart == idx[idx.size()-1]);
 	      cout << "number of particles in this file is " << header.npart << endl;
 
-	      headersize = sizeof(io_header) + sizeof(long)*12*(1<<(2*order2_));
 	      
 	      rfile.read((char*) &buf, 4); 
 	      rfile.read((char*) &buf, 4); 
@@ -934,17 +939,22 @@ vector <Particle *> ReadGadgetLCCell()
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
 		  cout << "itr: " << *itr << endl;
-		  if (itr==pidx.begin())
+		  if (*itr==0)
 		    {
 		      step = 0;
 		      pnp = idx[*itr];
+		    }
+		  else if (itr==pidx.begin())
+		    {
+		      step = idx[(*itr)-1];
+		      pnp = idx[*itr] - idx[(*itr)-1];
 		    }
 		  else
 		    {
 		      step = idx[(*itr)-1] - idx[*(itr-1)];
 		      pnp = idx[*itr] - idx[(*itr)-1];
 		    }
-		  
+
 		  fpos += step + pnp;
 		  cout << "seeking to position " << fpos << endl;
 		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
