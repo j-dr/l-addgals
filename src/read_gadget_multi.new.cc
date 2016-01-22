@@ -936,6 +936,7 @@ vector <Particle *> ReadGadgetLCCell()
 	      // read in positions and densities
 	      cout << "Reading in positions" << endl;
 	      long fpos = 0;
+	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
 		  cout << "itr: " << *itr << endl;
@@ -968,7 +969,6 @@ vector <Particle *> ReadGadgetLCCell()
 		      rfile.read((char *)&td, sizeof(float));
 		      Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
 		      parts[accum+fnp] = new Particle();
-		      assert(parts[accum+fnp]!=NULL);
 		      parts[accum+fnp]->PosAssign(xx);
 		      parts[accum+fnp]->DensAssign(td);
 		      fnp+=1;
@@ -980,15 +980,20 @@ vector <Particle *> ReadGadgetLCCell()
 	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
-		  if (itr==pidx.begin())
+		  if (*itr==0)
 		    {
 		      step = 0;
 		      pnp = idx[*itr];
 		    }
+		  else if (itr==pidx.begin())
+		    {
+		      step = idx[(*itr)-1];
+		      pnp = idx[*itr] - idx[(*itr)-1];
+		    }
 		  else
 		    {
-		      step = idx[*itr-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[*itr-1];
+		      step = idx[(*itr)-1] - idx[*(itr-1)];
+		      pnp = idx[*itr] - idx[(*itr)-1];
 		    }
 		  
 		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
@@ -1006,21 +1011,26 @@ vector <Particle *> ReadGadgetLCCell()
 	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
-		  if (itr==pidx.begin())
+		  if (*itr==0)
 		    {
 		      step = 0;
 		      pnp = idx[*itr];
 		    }
+		  else if (itr==pidx.begin())
+		    {
+		      step = idx[(*itr)-1];
+		      pnp = idx[*itr] - idx[(*itr)-1];
+		    }
 		  else
 		    {
-		      step = idx[*itr-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[*itr-1];
+		      step = idx[(*itr)-1] - idx[*(itr-1)];
+		      pnp = idx[*itr] - idx[(*itr)-1];
 		    }
 		  
-		  pfile.seekg( step*sizeof(long int), pfile.cur );
+		  pfile.seekg( step*sizeof(long), pfile.cur );
 		  for (j=0; j<pnp; j++)
 		    {
-		      pfile.read((char *)&tid, sizeof(long int));
+		      pfile.read((char *)&tid, sizeof(long));
 		      parts[accum+fnp]->Pid(tid);
 		      fnp+=1;
 		    }
