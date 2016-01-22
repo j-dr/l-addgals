@@ -8,7 +8,6 @@
 #include <sstream>
 #include <string>
 #include <cmath>
-#include <glob.h>
 
 #include "biniostream.h"
 #include "point.h"
@@ -22,7 +21,6 @@
 #include "healpix_utils.h"
 
 static const int MMAXINT=32767;
-
 
 //
 // reads all halos from file and returns vector of halo pointers
@@ -660,23 +658,26 @@ vector <Particle *> ReadGadgetParticles(int &nread){
 
 }
 
-struct io_header {
+struct io_header readLCCellHeader(std::string fname)
+{
+  std::ifstream pfile(fname.c_str());
+  struct io_header header;
 
-  unsigned long npart;      /*!< npart[1] gives the number of particles in the present file, other particle types are ignored */
-  unsigned int nside;
-  unsigned int filenside;
+  if (pfile.fail()) {
+    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+    header.npart = 0;  
+    return header;
+  }
 
-  float BoxSize;
-  double mass;          /*!< mass[1] gives the particle mass */
-  double Omega0;           /*!< matter density */
-  double OmegaLambda;      /*!< vacuum energy density */
-  double HubbleParam;      /*!< little 'h' */
-};
+  pfile.read((char *)(&header), sizeof(struct io_header));
+
+  return header;
+}
 
 unsigned int getIndexNSide()
 {
   std::ostringstream convert;
-  convert << datadir << simlabel << "_000_0";
+  convert << datadir << simlabel << "_000_0_0";
   std::string fname = convert.str();
   std::ifstream pfile(fname.c_str());
   struct io_header header;
@@ -694,7 +695,7 @@ unsigned int getIndexNSide()
 unsigned int getFileNSide()
 {
   std::ostringstream convert;
-  convert << datadir << simlabel << "_000_0";
+  convert << datadir << simlabel << "_000_0_0";
   std::string fname = convert.str();
   std::ifstream pfile(fname.c_str());
   struct io_header header;
@@ -709,7 +710,6 @@ unsigned int getFileNSide()
   return header.filenside;
 }
 
-
 void getRadialBins(int &minrb, int &maxrb)
 {
   float r_zmin = cosmo.RofZ(ZREDMIN);
@@ -719,48 +719,69 @@ void getRadialBins(int &minrb, int &maxrb)
   maxrb = r_zmax/25;
 }
 
-void createRefinementPlan(vector<float> &rbins, vector<int> &rnside)
+std::vector<long> getFilePixels(string datadir, string simlabel, int pix, 
+				int r, int order1_)
 {
-  int nbins = rbins.size()
-  float lastrr = RR0;
-  vector<float> rr;
-  float nrr;
-  int i;
-
-  rr.push_back(RR0);
-
-  for (i=0; i<nbins; i++)
-    {
-      rbins[i] = RMIN + RSTEP * i;
-    }
-
-  while (lastrr<RMAX)
-    {
-      nrr = lastrr*sqrt(2);
-      rr.push_back(nrr);
-      lastrr = nrr;
-    }
+  /*
+    inputs:
+    pix -- The pixel that we are adding galaxies to
+    order1_ -- The healpix order that addgals is using
+    order2_ -- The healpix order that the LC radial bin uses
+  */
   
-  rnside[0] = LFILENSIDE;
-  nrr = 0;
-  for (i=0; i<(nbins-1); i++)
+  string fname;
+  struct io_header header;
+  int temp;
+  int order2_=0;
+  int pc = 0;
+
+  while (true) {
+    std::ostringstream convert;
+    convert << datadir << simlabel << "_000_" << r << "_" <<pc;
+    fname = convert.str();
+    header = readLCCellHeader(fname);
+    if ((header.npart == 0) & (r!=0))
+      {
+	pc++;
+	continue;
+      }
+    temp = header.filenside;
+    while(temp >>= 1) order2_++;
+    break;
+  }
+  pix = ring2nest(pix, order1_);
+
+  std::vector<long> fpix;
+  if (order2_ < order1_)
     {
-      if (rbins[i]>rr[nrr]) nrr++;
-      rnside[i+1] = LFILENSIDE*pow(2,nr);
-      if (rnside[i+1]>HFILENSIDE) rnside[i+1]=HFILENSIDE;
+      //Only one file contains our pixel
+      fpix.push_back(lower_nest(pix, order1_, order2_));
+    } 
+  else if (order2_ > order1_)
+    {
+      fpix.resize(1 << ( 2 * ( order2_ - order1_ ) ) );
+      higher_nest(pix, order1_, order2_, &fpix[0]);
     }
+  else
+    {
+      fpix.push_back(pix);
+    }
+
+  return fpix;
 }
 
-long getNparts(int minrb, int maxrb, long order_, vector<long> &pidx)
+long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &pidx)
 {
   int i,r,count,temp;
-  long nparts,np,j;
-  long pix=0;
-  int npix = 12*(2<<(2*order_));
+  long np,j;
+  long pc;
+  int npix = 12*(2<<(2*order2_));
   long fnpix=9999999999;
-  int forder=0;
+  int forder;
+  long nparts = 0;
   vector<long> idx(npix);
   std::string fname;
+  std::vector<long> fpix;
   struct io_header header;
   
   // Only using first two octants
@@ -768,37 +789,39 @@ long getNparts(int minrb, int maxrb, long order_, vector<long> &pidx)
     {
       for (r=minrb; r<=maxrb; r++)
 	{
-	  while (true) 
+	  //Determine which file pixels contain particles in the 
+	  //healpix cell we are using now
+	  fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
+
+	  for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	    {
-	      if (pc>(fnpix-1)) break;
+	      pc = *itr;
+	      std::cout << "Reading cell " << r << " " << pc << std::endl;
 	      std::ostringstream convert;
-	      convert << datadir << simlabel << "00" << i << "_" << r << "_" << pc;
+	      convert << datadir << simlabel << "_00" << i << "_" << r << "_" << pc;
 	      fname = convert.str();
 	      std::ifstream pfile(fname.c_str());
-	      
+ 	      
 	      if (pfile.fail()) {
-		cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
-		exit (2031);
+		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
+		continue;
 	      }
 	      
 	      pfile.read((char *)(&header), sizeof(struct io_header));
-	      if (pc==0)
-		{
-		  temp = header.filenside;
-		  while(temp >> 1) forder++;
-		  fnpix = 12*(2<<(forder));
-		}
+	      if (header.npart == 0) continue;
 	      
 	      count = 0;
 	      for (j=0; j<npix; j++)
 		{
 		  pfile.read((char *)(&np), sizeof(long));
 		  if (j!=pidx[count]) continue;
+		  cout << "pidx[count]: " << pidx[count] << endl;
+		  cout << "np: " << np << endl;
 		  nparts += np;
 		  count += 1;
 		}
-	      pc++;
 	    }
+	  cout << "nparts: " << nparts << endl;
 	}
     }
   return nparts;
@@ -811,12 +834,14 @@ vector <Particle *> ReadGadgetLCCell()
   int indexnside, temp;
   int nbins;
   int order1_ = 0, order2_ = 0;
-  long nparts, headersize, tid, accum;
-  long step, pnp;
+  long headersize, tid, accum;
+  long step, pnp, nparts;
   float td, xfac, vfac;
+  float tstart, tend;
   long pix=0;
   long fnpix=9999999999;
-
+  long fnp=0;
+  std::vector<long> fpix;
   std::string fname;
   std::string rnnfname;
   struct io_header header;
@@ -827,62 +852,75 @@ vector <Particle *> ReadGadgetLCCell()
     float z;
   } cart;
 
+  cout << "Determining radial bins" << endl;
   getRadialBins(minrb, maxrb);
+  cout << "Radial bins " << minrb << " " << maxrb << endl;
   indexnside = getIndexNSide();
+  cout << "IndexNside: " << indexnside << endl;
   nbins = maxrb-minrb;
 
   temp = nSide;
-  while(temp >> 1) order1_++;
+  while(temp >>= 1) order1_++;
 
   temp = indexnside;
-  while(temp >> 1) order2_++;
+  while(temp >>= 1) order2_++;
 
-  vector<long> idx(12*(2<<(2*order2_)));
-  vector<long> pidx(2<<(2*(order2_-order1_)));
+  vector<long> idx(12*(1<<(2*order2_)));
+  vector<long> pidx(1<<(2*(order2_-order1_)));
 
+  cout << "Getting peano indices" << endl;
   ring2peanoindex(PixelNum, order1_, order2_, pidx);
-  nparts = getNparts(minrb, maxrb, order2_, pidx);
-
+  cout << "Getting number of particles" << endl;
+  nparts = getNparts(minrb, maxrb, order1_, order2_, pidx);
+  cout << "[ReadGadgetLCCell] Reading in " << nparts << "particles" <<endl;
   vector<Particle *> parts(nparts);
-  vector<long> partsperfile(maxrb-minrb+1);
+  tstart = clock();
   // Only using first two octants
  
   //vfac = sqrt(header.time); does this do anything with LCs?
   xfac = 1./(sim.LengthUnit());
-  
   accum = 0;
   for (i=0; i<2; i++)
     {
       for (r=minrb; r<=maxrb; r++)
 	{
-	  while (true) 
+
+	  fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
+	  for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	    {
-	      if (pix>(fnpix-1)) break;
+	      pix = *itr;
+
 	      std::ostringstream convert;
-	      convert << datadir << simlabel << "00" << i << "_" << r 
+	      convert << datadir << simlabel << "_00" << i << "_" << r 
 		      << "_" << pix;
 	      fname = convert.str();
 	      std::ifstream pfile(fname.c_str());
 	      if (pfile.fail()) {
-		cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
-		exit (2031);
+		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
+		continue;
 	      }
 
+	      pfile.read((char *)(&header), sizeof(struct io_header));
+	      if (header.npart == 0) continue;
+
 	      std::ostringstream rconvert;
-	      rconvert << datadir << simlabel << "00" << i << "_" << r 
-		       << "_" << pix << "_rnn";
+	      rconvert << datadir << "rnn_" << simlabel << "_00" << i << "_" << r 
+		       << "_" << pix;
 	      rnnfname = rconvert.str();
 	      std::ifstream rfile(rnnfname.c_str());
 	      if (rfile.fail()) {
 		cerr<<"error: cannot open file '" <<rnnfname<<"'"<<endl;
 		exit (2031);
 	      }
-
-	      pfile.read((char *)(&header), sizeof(struct io_header));
-	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(2<<(2*order2_)));
-	      partial_sum(idx.begin(), idx.end(), idx.begin());
 	      
-	      headersize = sizeof(io_header) + sizeof(long)*12*(2<<(2*order2_));
+	      cout << "reading in index" << endl;
+
+	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
+	      partial_sum(idx.begin(), idx.end(), idx.begin());
+	      assert(header.npart == idx[idx.size()-1]);
+	      cout << "number of particles in this file is " << header.npart << endl;
+
+	      headersize = sizeof(io_header) + sizeof(long)*12*(1<<(2*order2_));
 	      
 	      rfile.read((char*) &buf, 4); 
 	      rfile.read((char*) &buf, 4); 
@@ -891,8 +929,11 @@ vector <Particle *> ReadGadgetLCCell()
 	      rfile.read((char*) &buf, 4); 
 	      
 	      // read in positions and densities
+	      cout << "Reading in positions" << endl;
+	      long fpos = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
+		  cout << "itr: " << *itr << endl;
 		  if (itr==pidx.begin())
 		    {
 		      step = 0;
@@ -900,26 +941,33 @@ vector <Particle *> ReadGadgetLCCell()
 		    }
 		  else
 		    {
-		      step = idx[*itr-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[*itr-1];
+		      step = idx[(*itr)-1] - idx[*(itr-1)];
+		      pnp = idx[*itr] - idx[(*itr)-1];
 		    }
 		  
+		  fpos += step + pnp;
+		  cout << "seeking to position " << fpos << endl;
 		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
+		  cout << "seeking with step " << step << endl;
 		  rfile.seekg( step*sizeof(float), rfile.cur );
+		  cout << "reading " << pnp << "particles" << endl;
 		  for (j=0; j<pnp; j++)
 		    {
-		      
+		      //cout << j << endl;
 		      pfile.read((char *)&cart, sizeof(struct triple));
 		      rfile.read((char *)&td, sizeof(float));
 		      Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
-		      parts[accum+partsperfile[minrb-r]]->PosAssign(xx);
-		      parts[accum+partsperfile[minrb-r]]->DensAssign(td);
-		      partsperfile[minrb-r]+=1;
+		      parts[accum+fnp] = new Particle();
+		      assert(parts[accum+fnp]!=NULL);
+		      parts[accum+fnp]->PosAssign(xx);
+		      parts[accum+fnp]->DensAssign(td);
+		      fnp+=1;
 		    }
 		}
-	      
+	      cout << "Read in " << fnp << " particles" << endl;
 	      // read in velocities
-	      partsperfile[minrb-r] = 0;
+	      cout << "Reading in velocities" << endl;
+	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
 		  if (itr==pidx.begin())
@@ -938,13 +986,14 @@ vector <Particle *> ReadGadgetLCCell()
 		    {
 		      pfile.read((char *)&cart, sizeof(struct triple));
 		      Point vv(cart.x,cart.y,cart.z);
-		      parts[accum+partsperfile[minrb-r]]->VelAssign(vv);
-		      partsperfile[minrb-r]+=1;
+		      parts[accum+fnp]->VelAssign(vv);
+		      fnp+=1;
 		    }
 		}
-	      
+
+	      cout << "Reading in ids" << endl;	      
 	      // read in particle ids
-	      partsperfile[minrb-r] = 0;
+	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
 		  if (itr==pidx.begin())
@@ -962,15 +1011,17 @@ vector <Particle *> ReadGadgetLCCell()
 		  for (j=0; j<pnp; j++)
 		    {
 		      pfile.read((char *)&tid, sizeof(long int));
-		      parts[accum+partsperfile[minrb-r]]->Pid(tid);
-		      partsperfile[minrb-r]+=1;
+		      parts[accum+fnp]->Pid(tid);
+		      fnp+=1;
 		    }
 		}
-	      accum += partsperfile[minrb-r];
-	      pix++;
+	      accum += fnp;
+	      cout << "Have read " << accum << " particles in total" << endl;
 	    }
 	}
     }
   assert( accum == nparts );
+  tend = clock();
+  cout << "[ReadGadgetLCCell] Reading particles took " << tend-tstart << " seconds." <<endl;
   return parts;
 }
