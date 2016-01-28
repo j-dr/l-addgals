@@ -253,16 +253,17 @@ int main(void){
   //PRNT("hv",LumNumberDensityInterp(Magmin));
   PRNT("hv",Magmin);
 
+#ifndef TESTREADPART
   //Read the halos and particles from the input files
   MSG("[hv] Reading halos");
   halos = ReadHalos();
+#endif
 
   MSG("[hv] Reading particles");
-  int nread;
-  particles = ReadParticles(nread, halos);
+  particles = ReadParticles();
   PRNTV(particles.size());
-  PRNTV(nread);
 
+  cout << "PARTICLE_FRACTION: " << PARTICLE_FRACTION << " Particle Mass: " << sim.ParticleMass() << " Volume: " << volume << endl;
   float rho = (particles.size()/PARTICLE_FRACTION)*sim.ParticleMass()/volume;
   float rhoback = 3.*100.0*100.0/(8*M_PI*4.301e-9)*sim.OmegaM();
   float phi_rescale = rho/rhoback;
@@ -443,12 +444,6 @@ int main(void){
   //HaloOcc(halos);
    
   PRNT("hv",galaxies.size());
-  ofstream outcfile(outcfn.c_str());
-
-  cout<<"[hv] Writing cf file"<<endl;
-  for(int gi=0;gi<galaxies.size();gi++){
-    galaxies[gi]->WriteCFinfo(outcfile);
-  }
 
 #else //skip the if not JUST_COLORS statement
   read_galaxies(particles, galaxies, halos);
@@ -489,15 +484,10 @@ int main(void){
   //Calculate the projected distance
   cout<<"Getting Neighbors..."<<endl;
   vector <float> nndist = GetNeighborDist(galaxycopy, galaxies);
-  ofstream outrfile(outrfn.c_str());
+
   cout<<"Got neighbor dists: check mem"<<endl;
   system("ps ux | grep hv > mem.tmp");
 
-#ifdef DEBUG
-  cout<<"printing nndist"<<endl;
-  for(int i=0;i<galaxies.size();i++)
-    outrfile<<nndist[i]<<endl;
-#endif
 #ifdef  COLORS_FROM_RELATIVE_DENSITY
   cout<<"Getting Neighbor Percents..."<<endl;
   vector <float> nndist_percent = GetNeighborPercents(nndist, galaxies);
@@ -506,6 +496,7 @@ int main(void){
   system("ps ux | grep hv > mem.tmp");
   //  ofstream outrfile(outrfn.c_str());
 #ifdef DEBUG
+  ofstream outrfile(outrfn.c_str());
   for(int i=0;i<galaxies.size();i++)
     outrfile<<nndist[i]<<" "<<nndist_percent[i]<<endl;
 #endif
@@ -600,9 +591,9 @@ int main(void){
   vector<bool> idx(galaxies.size(), true);
 
   observe_des_y5(tmag, flux, ivar, omag, omagerr, idx);
-
-  vector<double> e(galaxies.size()*2);
-  vector<double> s(galaxies.size());
+  assert(omag.size()%nbands == 0);
+  vector<double> e(omag.size()/nbands*2);
+  vector<double> s(omag.size()/nbands);
   generate_shapes(omag, e, s, nelem, nbands);
   
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 

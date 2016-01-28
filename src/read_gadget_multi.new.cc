@@ -8,6 +8,8 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <algorithm>
+#include <functional>
 
 #include "biniostream.h"
 #include "point.h"
@@ -21,6 +23,17 @@
 #include "healpix_utils.h"
 
 static const int MMAXINT=32767;
+
+struct ToRing : public std::unary_function<long,long> {
+  const int order_;
+  ToRing(int o) : order_(o) {}
+  long operator() (long pix) {return nest2ring(pix, order_);}
+};
+
+bool comparez(Particle *lhs, Particle *rhs)
+{
+  return lhs->Zred() < rhs->Zred();
+}
 
 //
 // reads all halos from file and returns vector of halo pointers
@@ -629,6 +642,17 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
   cout<<"  x: "<<minpos[2]<<"/"<<maxpos[2]<<endl;
 #endif
 
+#ifdef DEBUGLC
+  string pfname = "lcdata.dat";
+  ofstream pfile(pfname.c_str());
+  for (vector<Particle *>::iterator pitr=particles.begin(); pitr!=particles.end(); pitr++)
+    {
+      Particle *p = *pitr;
+      p->Write(pfile);//pfile << pitr->X() << " " << pitr->Y() << " " pitr->Z() << " " pitr->VX() << " " << pitr->VY() << " " pitr->VZ()
+      //   << " " << pitr->Zred() << endl;
+    }
+#endif
+
   return np;
 }
 
@@ -714,7 +738,6 @@ void getRadialBins(int &minrb, int &maxrb)
 {
   float r_zmin = cosmo.RofZ(ZREDMIN);
   float r_zmax = cosmo.RofZ(ZREDMAX);
-  
   minrb = r_zmin/25;
   maxrb = r_zmax/25;
 }
@@ -735,6 +758,8 @@ std::vector<long> getFilePixels(string datadir, string simlabel, int pix,
   int order2_=0;
   int pc = 0;
 
+  //Look for first pixel with particles in it for this radial bin
+  //get the file nside from this file
   while (true) {
     std::ostringstream convert;
     convert << datadir << simlabel << "_000_" << r << "_" <<pc;
@@ -766,6 +791,10 @@ std::vector<long> getFilePixels(string datadir, string simlabel, int pix,
     {
       fpix.push_back(pix);
     }
+  
+  //this was for when lightcone files were written out to ring ordered pix
+  //should now be nest ordered
+  //std::transform(fpix.begin(), fpix.end(), fpix.begin(), ToRing(order2_));
 
   return fpix;
 }
@@ -793,15 +822,16 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 	  //healpix cell we are using now
 	  fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
 
+	  //Add up parts from each lightcone pixel associated with PixelNum
 	  for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	    {
 	      pc = *itr;
-	      std::cout << "Reading cell " << r << " " << pc << std::endl;
 	      std::ostringstream convert;
 	      convert << datadir << simlabel << "_00" << i << "_" << r << "_" << pc;
 	      fname = convert.str();
 	      std::ifstream pfile(fname.c_str());
  	      
+	      //Sometimes a pixel will be empty, if so raise a warning but continue
 	      if (pfile.fail()) {
 		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
 		continue;
@@ -810,11 +840,13 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 	      pfile.read((char *)(&header), sizeof(struct io_header));
 	      if (header.npart == 0) continue;
 
+	      //Read in the index, make sure it agrees with npart from header
 	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
 	      partial_sum(idx.begin(), idx.end(), idx.begin());
 	      assert(header.npart == idx[idx.size()-1]);
 
 	      long fpos = 0;
+	      //Add up the particles that are in the right peano indices
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
 		  if (*itr==0)
@@ -831,6 +863,13 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 	}
     }
   return nparts;
+}
+
+bool notInVolume(Particle *part)
+{
+  return ! ( ( ZREDMIN <= part->Zred() ) & ( part->Zred() < ZREDMAX ) &
+	     ( RAMIN <= part->Ra() ) & ( part->Ra() < RAMAX ) &
+	     ( DECMIN <= part->Dec() ) & ( part->Dec() < DECMAX ) );
 }
 
 vector <Particle *> ReadGadgetLCCell()
@@ -874,9 +913,7 @@ vector <Particle *> ReadGadgetLCCell()
   vector<long> idx(12*(1<<(2*order2_)));
   vector<long> pidx(1<<(2*(order2_-order1_)));
 
-  cout << "Getting peano indices" << endl;
   ring2peanoindex(PixelNum, order1_, order2_, pidx);
-  cout << "Getting number of particles" << endl;
   nparts = getNparts(minrb, maxrb, order1_, order2_, pidx);
   cout << "[ReadGadgetLCCell] Reading in " << nparts << "particles" <<endl;
   vector<Particle *> parts(nparts);
@@ -919,8 +956,6 @@ vector <Particle *> ReadGadgetLCCell()
 		exit (2031);
 	      }
 	      
-	      cout << "reading in index" << endl;
-
 	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
 	      partial_sum(idx.begin(), idx.end(), idx.begin());
 	      assert(header.npart == idx[idx.size()-1]);
@@ -934,12 +969,10 @@ vector <Particle *> ReadGadgetLCCell()
 	      rfile.read((char*) &buf, 4); 
 	      
 	      // read in positions and densities
-	      cout << "Reading in positions" << endl;
 	      long fpos = 0;
 	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
-		  cout << "itr: " << *itr << endl;
 		  if (*itr==0)
 		    {
 		      step = 0;
@@ -957,11 +990,8 @@ vector <Particle *> ReadGadgetLCCell()
 		    }
 
 		  fpos += step + pnp;
-		  cout << "seeking to position " << fpos << endl;
 		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
-		  cout << "seeking with step " << step << endl;
 		  rfile.seekg( step*sizeof(float), rfile.cur );
-		  cout << "reading " << pnp << "particles" << endl;
 		  for (j=0; j<pnp; j++)
 		    {
 		      //cout << j << endl;
@@ -974,9 +1004,11 @@ vector <Particle *> ReadGadgetLCCell()
 		      fnp+=1;
 		    }
 		}
+	      //Seek to the end of the positions
+	      step = (idx.back())-idx[pidx.back()];
+	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
 	      cout << "Read in " << fnp << " particles" << endl;
 	      // read in velocities
-	      cout << "Reading in velocities" << endl;
 	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 		{
@@ -1005,8 +1037,9 @@ vector <Particle *> ReadGadgetLCCell()
 		      fnp+=1;
 		    }
 		}
-
-	      cout << "Reading in ids" << endl;	      
+	      //Seek to the end of the velocities
+	      step = idx.back()-idx[pidx.back()];
+	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
 	      // read in particle ids
 	      fnp = 0;
 	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
@@ -1037,11 +1070,35 @@ vector <Particle *> ReadGadgetLCCell()
 		}
 	      accum += fnp;
 	      cout << "Have read " << accum << " particles in total" << endl;
+	      pfile.close();
+	      rfile.close();
 	    }
 	}
     }
   assert( accum == nparts );
+  //Get rid of particles that fall outside of redshift range
+  parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
+  
+  //Get maximum redshift
+  vector<Particle*>::iterator maxzp = std::max_element(parts.begin(), parts.end(), comparez);
+  
+  cout << "Maximum particle redshift is : " << parts[maxzp-parts.begin()]->Zred() << endl;
+  zmax->SetVal(parts[maxzp-parts.begin()]->Zred());
+
   tend = clock();
-  cout << "[ReadGadgetLCCell] Reading particles took " << tend-tstart << " seconds." <<endl;
+
+  cout << "[ReadGadgetLCCell] Reading particles took " << (tend-tstart)/CLOCKS_PER_SEC << " seconds." <<endl;
+
+#ifdef DEBUGLC
+  string pfname = "lcdata.dat";
+  ofstream pfile(pfname.c_str());
+  for (vector<Particle *>::iterator pitr=parts.begin(); pitr!=parts.end(); pitr++)
+    {
+      Particle *p = *pitr;
+      p->Write(pfile);//pfile << pitr->X() << " " << pitr->Y() << " " pitr->Z() << " " pitr->VX() << " " << pitr->VY() << " " pitr->VZ()
+      //   << " " << pitr->Zred() << endl;
+    }
+#endif
+
   return parts;
 }

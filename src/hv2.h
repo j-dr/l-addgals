@@ -37,7 +37,11 @@ string outafn = out_path+"gal_assign.dat";
 */
 string outpfn = "gal_pinfo.dat";
 string outdfn = "gal_dinfo.dat";
+#ifdef BCC
+string outgfn = FLABEL+"."+PSTR+"."+ZSTR+".fits";
+#else
 string outgfn = "gal_ginfo1.dat";
+#endif
 string outghfn= "gal_hinfo.dat";
 string outhfn = "halos.dat";
 string outcfn = "gal_cfinfo.dat";

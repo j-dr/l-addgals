@@ -30,6 +30,7 @@
  float SCATTER;
  int REDSHIFT_FIT;
  int GLOBAL_FIT;
+ int LCNUM;
  float cm0, cm1, cm2, cm3, cm4, cmz1, cmz2, cmz3;
  float cs0, cs1, cs2, cs3, csz1, csz2;
  float fm0, fm1, fm2, fm3, fmz1, fmz2;
@@ -44,7 +45,8 @@
  string sham_file;
 #endif
 #ifdef BCC
- int LCNUM;
+ string PSTR;
+ string ZSTR;
 #endif
  double sim_redshift;
   
@@ -208,6 +210,9 @@ void fillParameters(StringDatabase* sd)
 	lbcgfile = sd->findParameterValue("lbcgfile");
 #ifdef SHAM_TEST
 	sham_file = sd->findParameterValue("SHAM_file");
+#elseif BCC
+	PSTR = sd->findParameterValue("pstr");
+	ZSTR = sd->findParameterValue("zstr");
 #endif
 	hodfile = sd->findParameterValue("hodfile");
 	if (hodfile != "not_found") read_hod = 1;
