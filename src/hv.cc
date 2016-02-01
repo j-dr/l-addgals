@@ -21,7 +21,7 @@
 #endif
 
 //#define COLORS
-#define PRINTHALOS
+//#define PRINTHALOS
 //#define NOCFS
 
 using namespace std;
@@ -171,13 +171,15 @@ int main(void){
   //correct out output files
   outpfn = out_path+outpfn;
   outdfn = out_path+outdfn;
-  outgfn = out_path+outgfn;
+  outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";;
   outghfn= out_path+outghfn;
   outhfn = out_path+outhfn;
   outcfn = out_path+outcfn;
   outgzfn = out_path+outgzfn;
   outrfn = out_path+outrfn;
   outafn = out_path+outafn;
+
+  cout << "outgfn: " << outgfn << endl;
 
   sim = DefineSimulation();
   cosmo = sim.SimCosmology();
@@ -215,6 +217,7 @@ int main(void){
   RMAX_REAL = r_zmax;
   cout<<"Specified Simulation Volume: "<<volume<<endl;
   cout<<"Radial limits: "<<RMIN_REAL<<" - "<<RMAX_REAL<<endl;
+  cout<<"Redshift limits: "<<ZREDMIN<<" "<<ZREDMAX<<endl;
 
 
   //Define some functions that are called later in the code

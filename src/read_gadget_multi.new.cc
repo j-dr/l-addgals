@@ -700,38 +700,44 @@ struct io_header readLCCellHeader(std::string fname)
 
 unsigned int getIndexNSide()
 {
-  std::ostringstream convert;
-  convert << datadir << simlabel << "_000_0_0";
-  std::string fname = convert.str();
-  std::ifstream pfile(fname.c_str());
+  int r = 0;
   struct io_header header;
 
-  if (pfile.fail()) {
-    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
-    exit (2031);  
+  while (true) {
+    std::ostringstream convert;
+    convert << datadir << simlabel << "_000_" << r << "_0";
+    std::string fname = convert.str();
+    std::ifstream pfile(fname.c_str());
+    
+    if (pfile.fail()) {
+      r++;
+      continue;
+    }
+    
+    pfile.read((char *)(&header), sizeof(struct io_header));
+    return header.nside;
   }
-
-  pfile.read((char *)(&header), sizeof(struct io_header));
-
-  return header.nside;
 }
 
 unsigned int getFileNSide()
 {
-  std::ostringstream convert;
-  convert << datadir << simlabel << "_000_0_0";
-  std::string fname = convert.str();
-  std::ifstream pfile(fname.c_str());
+  int r = 0;
   struct io_header header;
 
-  if (pfile.fail()) {
-    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
-    exit (2031);  
+  while (true) {
+    std::ostringstream convert;
+    convert << datadir << simlabel << "_000_" << r << "_0";
+    std::string fname = convert.str();
+    std::ifstream pfile(fname.c_str());
+    
+    if (pfile.fail()) {
+      r++;
+      continue;
+    }
+    
+    pfile.read((char *)(&header), sizeof(struct io_header));
+    return header.filenside;
   }
-
-  pfile.read((char *)(&header), sizeof(struct io_header));
-
-  return header.filenside;
 }
 
 void getRadialBins(int &minrb, int &maxrb)
@@ -867,9 +873,10 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 
 bool notInVolume(Particle *part)
 {
-  return ! ( ( ZREDMIN <= part->Zred() ) & ( part->Zred() < ZREDMAX ) &
-	     ( RAMIN <= part->Ra() ) & ( part->Ra() < RAMAX ) &
-	     ( DECMIN <= part->Dec() ) & ( part->Dec() < DECMAX ) );
+  float tr = part->R();
+  return ! ( ( RMIN_REAL <= tr ) && (tr <= RMAX_REAL) &&
+	     ( RAMIN <= part->Ra() ) && ( part->Ra() < RAMAX ) &&
+	     ( DECMIN <= part->Dec() ) && ( part->Dec() < DECMAX ) );
 }
 
 vector <Particle *> ReadGadgetLCCell()

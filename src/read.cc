@@ -14,15 +14,14 @@ vector <Particle *> ReadGadgetParticles(int &nread);
 vector <Particle *> ReadMGSParticles(int &nread);
 vector <Particle *> ReadGadgetLCCell();
 
-vector <Particle *> ReadParticles(int &nread, vector <Halo *> halos ){
+vector <Particle *> ReadParticles(){
   vector <Particle *> particles;
+  int nread;
 
-  //if(sim.Type() == "HV") particles = ReadHVParticles(nread);
-  //else if(sim.Type() == "WAR") particles = ReadWarren(nread, halos);
-  //else if(sim.Type() == "GADGET2") particles = ReadGadgetParticles(nread);
   if(sim.Type() == "GADGET2") particles = ReadGadgetParticles(nread);
   else if(sim.Type() == "MGS") particles = ReadMGSParticles(nread);
-  else {cout<<"[ReadParticles arg arg] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}
+  else if (sim.Type() == "BCCGADGET2") particles = ReadGadgetLCCell();
+  else {cout<<"[ReadParticles] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}
   return particles;
 }
 
@@ -71,12 +70,9 @@ vector <Halo*> ReadHalos(void){
 #ifdef SHAM_TEST
   if(sim.Type() == "GADGET2") halos = ReadRockstarHalosHlist();
 #else
-  if(sim.Type() == "GADGET2") halos = ReadRockstarHalos();
+  if((sim.Type() == "GADGET2") | (sim.Type() == "BCCGADGET2")) halos = ReadRockstarHalos();
 #endif
   else if(sim.Type() == "MGS") halos = ReadMGSHalos();
   else {cout<<"[ReadHalos] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}
   return halos;
 }
-
-
-

@@ -4,8 +4,8 @@
  string simtype; 	//Gadget or other data format
  string simlabel;	//Not currently being used
 // string simnum ;	//Not currently bing used
-// string flabel ;	//Not currently being used
- string datadir ;	//Only used in the (incomplete) MGS readin function
+ string flabel ;	
+ string datadir ;	
  string halofile ;	//File where halodata is sotred
  string rnn_halofile ;	//File where halodata is sotred
  string simulationfile; //file with particle data
@@ -199,7 +199,7 @@ void fillParameters(StringDatabase* sd)
 	simtype = sd->findParameterValue("simtype");
 	simlabel = sd->findParameterValue("simlabel");
 	//simnum = sd->findParameterValue("simnum");
-	//flabel = sd->findParameterValue("flabel");
+	flabel = sd->findParameterValue("flabel");
 	datadir = sd->findParameterValue("datadir");
 	halofile = sd->findParameterValue("halofile");
 	rnn_halofile = sd->findParameterValue("rnn_halofile");
@@ -210,10 +210,9 @@ void fillParameters(StringDatabase* sd)
 	lbcgfile = sd->findParameterValue("lbcgfile");
 #ifdef SHAM_TEST
 	sham_file = sd->findParameterValue("SHAM_file");
-#elseif BCC
+#endif
 	PSTR = sd->findParameterValue("pstr");
 	ZSTR = sd->findParameterValue("zstr");
-#endif
 	hodfile = sd->findParameterValue("hodfile");
 	if (hodfile != "not_found") read_hod = 1;
 }

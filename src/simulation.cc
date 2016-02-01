@@ -10,10 +10,9 @@
 Simulation DefineGadgetSimulation(void){
 
   int buf, np13;
-  gadget_header head;
   long long npart;
-
   string infile = simulationfile;
+  gadget_header head;
   const char *infilechar = infile.c_str();
   ifstream inFile(infilechar, ios::in);
   if(!inFile){
@@ -44,14 +43,52 @@ Simulation DefineGadgetSimulation(void){
   Simulation sim(simtype, cosmo);
   sim.Boxsize(head.BoxSize);
   sim.ParticleMass(head.mass[1]);
+  cout << "particle mass: " << sim.ParticleMass() << endl;
   sim.Np(np13);
 
   return sim;
 }
 
+
+Simulation DefineBCCGadgetSimulation(void){
+
+  int buf, np13;
+  long long npart;
+  io_header head;
+  int r = 0;
+
+  while (true) {
+    std::ostringstream convert;
+    convert << datadir << simlabel << "_000_" << r << "_0";
+    std::string fname = convert.str();
+    std::ifstream pfile(fname.c_str());
+    
+    if (pfile.fail()) {
+      r++;
+      continue;
+    }
+    
+    pfile.read((char *)(&head), sizeof(struct io_header));
+    break;
+  }
+
+  npart = head.npartTotal;
+  np13 = int(pow((double) npart, (double)1/3));
+  Cosmology cosmo(head.Omega0, 0.0, head.HubbleParam);
+  Simulation sim(simtype, cosmo);
+  sim.Boxsize(head.BoxSize);
+  sim.ParticleMass(head.mass*pow(10.0,10.0));
+  sim.Np(np13);
+
+  return sim;
+}
+
+
+
 Simulation DefineSimulation(void){
   Simulation simulation;
   if (simtype == "GADGET2") simulation=DefineGadgetSimulation();
+  if (simtype == "BCCGADGET2") simulation=DefineBCCGadgetSimulation();
 
   return simulation;
 }

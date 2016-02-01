@@ -240,10 +240,12 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 
   query_pt = annAllocPt(dim);             // allocate query point
   //  int jmax = 0;
+#ifdef DEBUG
   string fnddout = out_path+"dd2.out";
   string fnnfout = out_path+"nf.out";
   ofstream ddout(fnddout.c_str());
   ofstream nfout(fnnfout.c_str());
+#endif
   //loop over the z slices
   int  pi=0;
 #ifdef DEBUG
@@ -399,7 +401,9 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 	  }
 	  else{
 	    //nfout<<dist<<" "<<i<<" "<<galaxies[i]->Z()<<" "<<k_search<<endl;
+#ifdef DEBUG
 	    nfout<<dist<<" "<<i<<" "<<points[i]->Z()<<" "<<k_search<<endl;
+#endif
 	    //re-search if you didn't look far out enough
 	    k_search = 2*k_search;
 	    delete [] nn_idx;
@@ -410,7 +414,9 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
   	}//if dist is not found
       }//while dist is not found
       nndist[gid] = dist;
+#ifdef DEBUG
       ddout<<i<<" "<<pi<<" "<<gid<<" "<<dist<<" "<<t_found<<" "<<n_found<<" "<<k_search<<" "<<npts<<" "<<bi<<endl;
+#endif
       pi++;
     }//loop over points in z bin
     //    ofstream ddout("dd2.out");
@@ -468,10 +474,11 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
     //Particle * p = galaxies[gi]->P();
     // assert(p);  //this better be true since you removed the other ones.
 
+    double mr = galaxies[gi]->Mr();
 #ifdef DEBUG_SEDS
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
-    double mr = galaxies[gi]->Mr();
+
     sed_ids[gi] = findCloseGalaxies2(densities, magnitudes, isred, size, 
 				     mr, nndist[gi], galaxies[gi]->Z(),
 				     galaxies[gi]->Central());

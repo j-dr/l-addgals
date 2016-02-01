@@ -238,7 +238,13 @@ int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> i
 
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 	//cout << "check mem" << endl;
-	//system("ps ux | grep hv >> mem.tmp");
+#ifdef DEBUG_SEDS
+	ofstream fout("sed_check.dat", ios::app);
+	ofstream dmout("sed_checkdm.dat", ios::app);
+	dmout << mag << " " << dens << endl;
+	system("ps ux | grep hv >> sedmem.tmp");
+#endif
+
 #ifdef RED_FRACTION
 	float red_fraction = REDFRACTION1;
 	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
@@ -262,6 +268,9 @@ int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> i
 
 	for(int m=0;m<maxSteps;m++)
 	{
+#ifdef DEBUG_SEDS
+	  fout << m << " ";
+#endif
 		for(int n=1;n<=STEP;n++)
 		{
 			if(count1>=ARRAYSIZE || count2>=ARRAYSIZE)
@@ -363,6 +372,10 @@ int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> i
 		if (answerCount > 0)
 		{
 			int ind = rand() % answerCount;
+#ifdef DEBUG_SEDS
+			fout << endl;
+			system("ps ux | grep hv >> sedmem.tmp");
+#endif
 			return answerArray[ind];
 		}
 	}
