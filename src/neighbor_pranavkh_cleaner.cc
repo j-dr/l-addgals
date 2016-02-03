@@ -8,6 +8,7 @@
 #include "choose.h"
 #include "findClosest.mbusha.h"
 #include <math.h>
+#include <omp.h>
 
 int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> isred,
 		       const int size, float mag, float dens, float ThisZ, int ThisBCG);
@@ -464,6 +465,8 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
 
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
+
+#pragma omp parallel for
   for(int gi=0;gi<galaxies.size();gi++){
     if(float(gi)/float(galaxies.size()) > Percent){
       cout<<"  "<<Percent*100.<<"% done"<<endl;

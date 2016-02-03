@@ -8,6 +8,7 @@ import numpy.lib.recfunctions as rf
 import numpy as np
 import healpy as hp
 import fitsio
+import warnings
 import time
 
 
@@ -23,22 +24,35 @@ def tprint(info, stime=None):
     return tnow
 
 
-def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,3e12,2.4e13]):
+def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans, 
+                      bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05, 
+                      nside=8):
 
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
     rank = comm.Get_rank()
 
     tags = {'write':0, 'fwrite':1, 'occ1050':2, 'occ2600':3, 'occ4000':4,
-            'lum1050':5, 'lum2600':6, 'lum4000':7, 'exit':8}
+            'lum1050':5, 'lum2600':6, 'lum4000':7, 'exit':8, 'recv':9}
+    bsizeenum = {'1050':0, '2600':1, '4000':2}
     message = None
 
     if rank == 0:
         writing = deque()
         wwaiting = deque()
+        rwaiting = deque()
         done = []
         occ = [None, None, None]
-        lum = [None, None, None] 
+        lum = [None, None, None]
+        pixpaths = deque()
+        for i, bsize in enumerate(['1050', '2600', '4000']):
+            pix = glob('{0}/Lb{1}_{2}/[0-9]*/*'.format(basepath, bsize, suffix))
+            zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
+            pix = np.unique(np.array([p.split('/')[-2] for p in pix]))
+            for zb in zbins:
+                for p in pix:
+                    pixpaths.append([bsize, p, zb])
+
         while True:
             #are we done?
             if len(done)==(size-1): break
@@ -46,120 +60,199 @@ def finalize_catalogs(basepath, prefix, postfix, outpath, halopaths, mmin=[3e12,
             #see if any write requests can be filled
             if len(wwaiting)>0:
                 for w in wwaiting:
-                    tprint('    Rank {0} is waiting to write for pixel {1}'.format(w[0],w[1]))
-                    if w[1] not in writing:
+                    tprint('    Rank {0} is waiting to write to pixels {1}'.format(w[0],w[1]))
+                    write = True
+                    for p in w[1]:
+                        if p in writing: write=False
+                    if write:
                         tprint('    Master gives rank {0} permission to write'.format(w[0]))
                         comm.send(message, tag=tags['write'], dest=w[0])
-                        writing.append(w[1])
+                        writing.extend(w[1])
                         remove.append(w)
+
+            #see if any processors need another bin
+            while len(rwaiting)>0:
+                proc = rwaiting.popleft()
+                if len(pixpaths)==0:
+                    comm.send(None, tag=tags['recv'], dest=proc)
+                    continue
+
+                finfo = pixpaths.popleft()
+                tprint('    Assigning rank {0} to bsize, pix, zbin: {1}, {2}, {3}'.format(proc, *finfo))
+                comm.send(finfo, tag=tags['recv'], dest=proc)
             
             for r in remove:
                 wwaiting.remove(r)
 
-            #Recieve requests
-            if (len(wwaiting)+len(writing))<(size-1):
+            #Need to process finished writing notifications more quickly 
+            #so that requests don't build up
+            while len(writing)>10:
                 status = MPI.Status()
-                message = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-                tag = status.Get_tag()
-                if tag==tags['write']:
-                    wwaiting.append([status.Get_source(), message])
-                elif tag==tags['fwrite']:
-                    writing.remove(message)
-                elif tag==tags['occ1050']:
-                    if occ[0]==None:
-                        occ[0] = message
-                    else:
-                        occ[0] += message
-                elif tag==tags['occ2600']:
-                    if occ[1]==None:
-                        occ[1] = message
-                    else:
-                        occ[1] += message
-                elif tag==tags['occ4000']:
-                    if occ[2]==None:
-                        occ[2] = message
-                    else:
-                        occ[2] += message
-                elif tag==tags['lum1050']:
-                    if lum[0]==None:
-                        lum[0] = message
-                    else:
-                        lum[0] += message
-                elif tag==tags['lum2600']:
-                    if lum[1]==None:
-                        lum[1] = message
-                    else:
-                        lum[1] += message
-                elif tag==tags['lum4000']:
-                    if lum[2]==None:
-                        lum[2] = message
-                    else:
-                        lum[2] += message
-                elif tag==tags['exit']:
-                    done.append(status.Get_source())
+                tprint('    Master waiting for writing to finish...')
+                message = comm.recv(source=MPI.ANY_SOURCE, tag=tags['fwrite'], status=status)
+                for p in message:
+                    writing.remove(p)
+
+            #Recieve requests
+            status = MPI.Status()
+            tprint('    Master waiting to recieve messages')
+            message = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+            tprint('    Master recieved message')
+            tag = status.Get_tag()
+            if tag==tags['write']:
+                wwaiting.append([status.Get_source(), message])
+            elif tag==tags['fwrite']:
+                for p in message:
+                    writing.remove(p)
+            elif tag==tags['recv']:
+                rwaiting.append(status.Get_source())
+            elif tag==tags['occ1050']:
+                if occ[0]==None:
+                    occ[0] = message
+                else:
+                    occ[0] += message
+            elif tag==tags['occ2600']:
+                if occ[1]==None:
+                    occ[1] = message
+                else:
+                    occ[1] += message
+            elif tag==tags['occ4000']:
+                if occ[2]==None:
+                    occ[2] = message
+                else:
+                    occ[2] += message
+            elif tag==tags['lum1050']:
+                if lum[0]==None:
+                    lum[0] = message
+                else:
+                    lum[0] += message
+            elif tag==tags['lum2600']:
+                if lum[1]==None:
+                    lum[1] = message
+                else:
+                    lum[1] += message
+            elif tag==tags['lum4000']:
+                if lum[2]==None:
+                    lum[2] = message
+                else:
+                    lum[2] += message
+            elif tag==tags['exit']:
+                done.append(status.Get_source())
         
         for i, bsize in enumerate(['1050', '2600', '4000']):
-            update_halo_file(halopaths[i], prefix, outpath, bsize, occ[i], lum[i], mmin[i])
+            if i==0:
+                zl = 0.0
+            else:
+                zl = bzcut[i-1]
+
+            update_halo_file(halopaths[i], prefix, outpath, bsize, occ[i], 
+                             lum[i], mmin[i], zl, bzcut[i], zbuff=zbuff)
             
     if rank != 0:
-        for i, bsize in enumerate(['1050', '2600', '4000']):
-            tstart = tprint('    {0}: Processing box {1}'.format(rank, bsize))
-            h = fitsio.read(halopaths[i], columns=['HALOID', 'MVIR', 'RVIR', 'HALOPX', 'HALOPY', 'HALOPZ', 'HOST_HALOID'])
-            h = h[h['MVIR']>mmin[i]]
-            occ = np.zeros((len(h),6))
-            lum = np.zeros((len(h),3))
+        bsize = None
+        lastbsize = None
+        while True:
+            tprint('    {0}: Requesting new bin'.format(rank))
+            comm.send(tag=tags['recv'])
+            message = comm.recv(tag=tags['recv'])
+            if message==None:
+                break
+            lastbsize = bsize
+            bsize = message[0]
+            pix = message[1]
+            zbin = message[2]
+
+            tstart = tprint('    {0}: Processing box, pix, zbin: {1}, {2}, {3}'.format(rank, bsize, pix, zbin))
             
-            pixh = hp.vec2pix(2, h['HALOPX'], h['HALOPY'], h['HALOPZ'])
-
-            #index the halos by healpix cell
-            pidx = pixh.argsort()
-            pixh = pixh[pidx]
-            h = h[pidx]
-            pidx = pixh[1:]-pixh[:-1]
-            pidx, = np.where(pidx!=0)
-            pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
-            upix = pixh[pidx]
-            pixmap = hp.ud_grade(np.arange(12*2**2),4)
-            tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
-            print('{0}: Reading took {1}s'.format(rank, tread-tstart))
-            pixpaths = glob('{0}/Lb{1}_{2}/[0-9]*'.format(basepath, bsize, postfix))
-            chunks = [pixpaths[i::(size-1)] for i in range(size-1)]
-
-            for ppath in chunks[rank-1]:
-                #build kdtree for this cell
-                pix = int(ppath.split('/')[-1])
-                hidx, = np.where(upix==pixmap[pix])
-                hstart = pidx[hidx]
-                if hidx==(len(pidx)-1):
-                    hend = len(h)
-                else:
-                    hend = pidx[hidx+1]
-                
-                ttree = tprint('    {0}: Building KDTree for pixel {1}'.format(rank,pix))
-                with f3t.fast3tree(h[hstart:hend][['HALOPX','HALOPY','HALOPZ']].view((h.dtype['HALOPX'],3))) as ht:
-                    pfiles = glob('{0}/*/hv_output/gal_ginfo1.dat'.format(ppath))
-                    
-                    for i, f in enumerate(pfiles):
-                        tszbin = tprint('    {0}: Working on redshift bin {1}'.format(rank, f.split('/')[-3]))
-                        pc, hdr = fitsio.read(f, header=True)
-                        tsh = tprint('    {0}: Finding halos for redshift bin {1}'.format(rank, f.split('/')[-3]))
-                        o, l = associate_halos(pc, h[hstart:hend], ht)
-                        tfh = tprint('    {0}: Finished finding halos for redshift bin {1}. Took {2}s'.format(rank, f.split('/')[-3], time.time()-tsh))
-                        occ[hstart:hend] += o
-                        lum[hstart:hend] += l
-                        pc['ID'] += i*1000000000
-                        
-                        #request permission to write
-                        status = MPI.Status()
-                        comm.send(pix, tag=tags['write'])
-                        message = comm.recv(tag=tags['write'], status=status)
-                        tprint('    {0}: Writing galaxies for z bin {1}'.format(rank, f.split('/')[-3]))
-                        write_fits(outpath, prefix, pix, pc, hdr)
-                        comm.send(pix, tag=tags['fwrite'])
-                        
-                    tprint('    {0}: Pixel {1} took {2}s'.format(rank, pix, time.time()-ttree))
+            #If starting on a new box, read in the correct halo file
+            if bsize!=lastbsize:
+                if lastbsize!=None:
+                    tocc = tprint('    {0}: Sending occupations'.format(rank))
                     comm.send(occ, tag=tags['occ'+bsize])
                     comm.send(lum, tag=tags['lum'+bsize])
+                    tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
+
+                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['HALOID', 'MVIR', 'RVIR', 'HALOPX', 
+                                                                      'HALOPY', 'HALOPZ', 'HOST_HALOID', 'Z'])
+
+                if bsizeenum[bsize]==0:
+                    hlz = 0.0
+                else:
+                    hlz = bzcut[bsizeenum[bsize]-1]
+
+                #only want halos above mass cut in redshifts relevant for this box size
+                h = h[h['MVIR']>mmin[bsizeenum[bsize]]]
+                h = h[((hlz-zbuff)<=h['Z']) & (h['Z']<(bzcut[bsizeenum[bsize]]+zbuff))]
+
+                occ = np.zeros((len(h),6))
+                lum = np.zeros((len(h),3))
+            
+                pixh = hp.vec2pix(2, h['HALOPX'], h['HALOPY'], h['HALOPZ'])
+
+                #index the halos by healpix cell
+                pidx = pixh.argsort()
+                pixh = pixh[pidx]
+                h = h[pidx]
+                pidx = pixh[1:]-pixh[:-1]
+                pidx, = np.where(pidx!=0)
+                pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
+                upix = pixh[pidx]
+                pixmap = hp.ud_grade(np.arange(12*2**2),4)
+                tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
+                print('{0}: Reading took {1}s'.format(rank, tread-tstart))
+            
+            f = '{0}/Lb{1}_{2}/{3}/{4}/{5}_{1}.{3}.{4}.fits'.format(basepath, bsize, suffix, pix, zbin, prefix)
+            
+            #get redshift cutoffs for this bin
+            ztidx, = np.where((ztrans['zbin']==zbin) & (ztrans['bsize']==bsize))
+            assert(len(ztidx)==1)
+
+            hidx, = np.where(upix==pixmap[int(pix)])
+            hstart = pidx[hidx]
+
+            if hidx==(len(pidx)-1):
+                hend = len(h)
+            else:
+                hend = pidx[hidx+1]
+
+            #build tree to associate galaxies and halos 
+            with f3t.fast3tree(h[hstart:hend][['HALOPX','HALOPY','HALOPZ']].view((h.dtype['HALOPX'],3))) as ht:
+                try:
+                    pc, hdr = fitsio.read(f, header=True)
+                except:
+                    warnings.warn('Could not read file {0}, continuing...'.format(f))
+                    continue
+
+                #get galaxies in correct redshift bin
+                pc = pc[((pc['PX']!=0) | (pc['PY']!=0) | (pc['PZ']!=0)) &
+                        (ztrans['zmin'][ztidx]<=pc['Z']) & (pc['Z']<ztrans['zmax'][ztidx])]
+
+                tsh = tprint('    {0}: Finding halos for pixel, redshift bin: {1}, {2}'.format(rank, pix, zbin))
+                o, l = associate_halos(pc, h[hstart:hend], ht)
+                tfh = tprint('    {0}: Finished finding halos for redshift bin. Took {1}s'.format(rank, time.time()-tsh))
+
+                #update halo occupations
+                occ[hstart:hend] += o
+                lum[hstart:hend] += l
+                
+                #create unique ID
+                pc['ID'] += (int(pix)*100+int(zbin)+int(bsize))*1000000
+
+                #request permission to write
+                hpix = hp.vec2pix(nside, pc['PX'],pc['PY'],pc['PZ'], nest=True)
+                up = np.unique(hpix)
+                status = MPI.Status()
+                treq = tprint('    {0}: Requesting permission to write to pix {1}'.format(rank, pix))
+                comm.send(up, tag=tags['write'])
+                message = comm.recv(tag=tags['write'], status=status)
+
+                tprint('    {0}: Waited {1}s for permission'.format(rank, time.time()-treq))
+                twr = tprint('    {0}: Writing galaxies for pix, z bin: {1}, {2}'.format(rank, pix, zbin))
+                write_fits(outpath, prefix, pix, pc, hpix, up, hdr)
+                tdw = tprint('    {0}: Done writing galaxies for {1}, {2}. Took {3}s'.format(rank, pix, zbin, time.time()-twr))
+
+                comm.send(up, tag=tags['fwrite'])
+                tprint('    {0}: Message sent. Took {1}s'.format(rank, time.time()-tdw))
 
         comm.send(message, tag=tags['exit'])
 
@@ -206,6 +299,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
         midx = galaxies['AMAG'][bound,1]<mr
         hidx = hid[bound][midx].argsort()
         mhid = hid[bound][midx][hidx]
+        if len(mhid)==0:continue
         mgr = galaxies['AMAG'][bound,1][midx][hidx]
         hidx = mhid[1:]-mhid[:-1]
         hidx, = np.where(hidx!=0)
@@ -224,13 +318,11 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
 
     return occ, lum
 
-def write_fits(outpath, prefix, pix, catalog, header, nside=8):
-
-    hpix = hp.vec2pix(nside, catalog['PX'],catalog['PY'],catalog['PZ'])
-    upix = np.unique(hpix)
+def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8):
 
     for p in upix:
         fits = fitsio.FITS('{0}/{1}_{2}.fits'.format(outpath, prefix, p) ,'rw')
+        print('Writing to {0}/{1}_{2}.fits'.format(outpath, prefix, p))
         try:
             pidx = hpix==p
             h = fits[-1].read_header()
@@ -239,10 +331,11 @@ def write_fits(outpath, prefix, pix, catalog, header, nside=8):
         except:
             fits.write(catalog, header=header)
 
-def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin):
+def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zmax, zbuff=0.05):
     
     h = fitsio.read(halopath)
     h = h[h['MVIR']>mmin]
+    h = h[((zmin-zbuff)<=h['Z']) & (h['Z']<(zmax+zbuff))]
     h['LUMTOT'] = lum[:,0]
     h['LUM20'] = lum[:,1]
     h['LBCG'] = lum[:,2]
@@ -253,7 +346,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin):
     h['N21'] = occ[:,4]
     h['N22'] = occ[:,5]
 
-    fitsio.write('{0}/{1}_halos_{2}.fits'.format(outpath,prefix,bsize), h)
+    fitsio.write('{0}/{1}_{2}_halos.fits'.format(outpath,prefix,bsize), h)
 
 def combine_parents_list_fits(parentpath, listpath, prefix, outpath, bsize, occ, lum, mmin=5e12):
     hdtype = np.dtype([('id',np.int), ('mvir',np.float), ('vmax',np.float), ('vrms',np.float),
@@ -295,14 +388,15 @@ def combine_parents_list_fits(parentpath, listpath, prefix, outpath, bsize, occ,
 
 if __name__ == '__main__':
     
-    basepath = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard/'
+    outpath = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard_v1.11/Catalog_v1.11'
     halopaths = ['/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb1050/Octants_01/rockstar/halos_1050.fit',
                  '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb2600/Octants_01/rockstar/halos_2600.fit',
                  '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb4000/Octants_01/rockstar/halos_4000.fit']
-    outpath = '/lustre/ki/pfs/jderose/l-addgals/catalogs/Buzzard/Catalog_l-addgals/'
+    basepath = '/lustre/ki/pfs/jderose/l-addgals/catalogs/Buzzard_v1.11/'
     prefix = 'Buzzard'
-    postfix = 'l-addgals'
-    finalize_catalogs(basepath, prefix, postfix, outpath, halopaths)
+    suffix = 'l-addgals'
+    zbins = fitsio.read('/u/ki/jderose/ki23/l-addgals/src/BCC_zbins.fits')
+    finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, zbins)
     #occ = np.zeros((1808525,6))
     #lum = np.zeros((1808525,3))
     #combine_parents_list_fits(parentpath, halopath, prefix, outpath, bsize, occ, lum)
