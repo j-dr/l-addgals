@@ -27,8 +27,13 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[],
   float fsky1[nband];
   float iexptime[nband];
   gsl_rng *rng;
-  long int seed;
-  seed = (long int)time(NULL);
+  //long int seed;
+  unsigned int seed;
+  FILE *urandom;
+
+  urandom = fopen ("/dev/urandom", "r");
+  fread (&seed, sizeof (seed), 1, urandom);
+  //seed = (long int)time(NULL);
   rng = gsl_rng_alloc(gsl_rng_ranlxd2);
   gsl_rng_set(rng, seed);
   
@@ -58,7 +63,7 @@ void apply_uniform_errormodel(float exptime[], float limmags[], float lnscat[],
 	omag[i] = 99.0;
 	omagerr[i] = 99.0;
       }
-      ivar[i] = 1/ivar[i];
+      ivar[i] = 1/(ivar[i]*ivar[i]);
     }
 }
 
