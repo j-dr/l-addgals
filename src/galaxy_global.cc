@@ -65,7 +65,7 @@ FiveTuple denspdf_params(float magnitude, float zred)
 {
 
   float mag_ref= -20.5;
-  float dim_mag_lim = -19.0-mag_ref;
+  //float dim_mag_lim = -19.0-mag_ref;
   float bright_mag_lim = -22.5-mag_ref;
   float mag = magnitude-mag_ref;
   if (mag > dim_mag_lim) mag = dim_mag_lim;
@@ -594,7 +594,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
 	float tz = ZREDMIN + iz*dz_pdf;
         if (tz > 4.0) tz = 4.0;
 	float tmag = mag;
-	if (tmag > -18.5) tmag = -18.5;
+	if (tmag > -19.0) tmag = -19.0;
         pdfarray[iz] = define_prob(tmag,tz,vol);
       }
 

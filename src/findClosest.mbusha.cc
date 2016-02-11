@@ -401,7 +401,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 
 	//This value is used for the number of galaxies that should be considered based on distance. Analogous to the size of the bin. Higher value results in lesser processing time.
 	int NEARESTZ = 500000;
-	float dZ = 0.02; //v2.11
+	float dZ = 0.01; //was 0.02 for l-addgals buzzard_v1.11
 	//float dZ = 1.005; //trying to improve v4.20
 	//float dZ = 0.015; //MGS
 #ifdef SNAPSHOT
