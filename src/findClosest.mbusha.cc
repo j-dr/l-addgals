@@ -634,8 +634,8 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 */
 
 		//Michael's version -- just define an explicit dZ
-		minZVal = gZ - dZ*(1+gZ);
-		maxZVal = gZ + dZ*(1+gZ);
+		minZVal = gZ - dZ;
+		maxZVal = gZ + dZ;
 
 		//original version -- requires that we loop in order of increasing density
 		//position = binarySearch(particleD, position, particleCount,gD);
