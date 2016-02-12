@@ -6,12 +6,9 @@
 #include "galaxy.h"
 #include "singleton.h"
 #include "choose.h"
-#include "findClosest.mbusha.h"
 #include <math.h>
-#include <omp.h>
 
-int findCloseGalaxies2(keyValue *densities, keyValue *magnitudes, vector<bool> isred,
-		       const int size, float mag, float dens, float ThisZ, int ThisBCG);
+int findCloseGalaxies2(vector <GalSED> &v, float mag, float den, float ThisZ, int ThisBCGs);
 
 
 vector <GalSED> ReadSED();
@@ -61,11 +58,7 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
     float binmax = binmin + ColorBinSize;
     //cout<<"  doing bin "<<bin<<" with min/max z = "<<binmin<<"/"<<binmax<<endl;
     for (int i=0;i<galaxies.size();i++){
-#ifdef SNAPSHOT
-      if (galaxies[i]->P()->Z() < binmin || galaxies[i]->P()->Z() > binmax)
-#else
       if (galaxies[i]->Z() < binmin || galaxies[i]->Z() > binmax)
-#endif
 	continue;
       float tnndist = nndist[i];
       tGalaxyId.dens(tnndist);
@@ -136,7 +129,7 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
 
 
 vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> points){
-  cout<<"In GetNeighborDist Cleaner"<<endl;
+  cout<<"In GetNeighborDist"<<endl;
   cout<<"  number of galaxies: "<<galaxies.size()<<endl;;
   cout<<"  number of points:   "<<points.size()<<endl;
   //PRNTV(galaxies.size());
@@ -234,12 +227,10 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 
   query_pt = annAllocPt(dim);             // allocate query point
   //  int jmax = 0;
-#ifdef DEBUG
   string fnddout = out_path+"dd2.out";
   string fnnfout = out_path+"nf.out";
   ofstream ddout(fnddout.c_str());
   ofstream nfout(fnnfout.c_str());
-#endif
   //loop over the z slices
   int  pi=0;
 #ifdef DEBUG
@@ -300,26 +291,16 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 	 (galaxies[i]->Zbin()==bi-1)||
 	 (galaxies[i]->Zbin()==bi+1)){
 	assert(nsi<nsearch);
-#ifdef SNAPSHOT
-	data_pts[nsi][0] = galaxies[i]->P()->X();
-	data_pts[nsi][1] = galaxies[i]->P()->Y();
-#else
 	data_pts[nsi][0] = galaxies[i]->Ra();
 	data_pts[nsi][1] = galaxies[i]->Dec();
-#endif
 	sids.push_back(i);
 	nsi++;
       }
     }
     for(int i=0;i<points.size();i++){
       if(points[i]->Zbin()==bi){
-#ifdef SNAPSHOT
-	data_pts1[npi][0] = points[i]->P()->X();
-	data_pts1[npi][1] = points[i]->P()->Y();
-#else
 	data_pts1[npi][0] = points[i]->Ra();
 	data_pts1[npi][1] = points[i]->Dec();
-#endif
 	ids[npi]=i;
 	npi++;
       } 
@@ -395,9 +376,7 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 	  }
 	  else{
 	    //nfout<<dist<<" "<<i<<" "<<galaxies[i]->Z()<<" "<<k_search<<endl;
-#ifdef DEBUG
 	    nfout<<dist<<" "<<i<<" "<<points[i]->Z()<<" "<<k_search<<endl;
-#endif
 	    //re-search if you didn't look far out enough
 	    k_search = 2*k_search;
 	    delete [] nn_idx;
@@ -408,9 +387,7 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
   	}//if dist is not found
       }//while dist is not found
       nndist[gid] = dist;
-#ifdef DEBUG
       ddout<<i<<" "<<pi<<" "<<gid<<" "<<dist<<" "<<t_found<<" "<<n_found<<" "<<k_search<<" "<<npts<<" "<<bi<<endl;
-#endif
       pi++;
     }//loop over points in z bin
     //    ofstream ddout("dd2.out");
@@ -430,59 +407,64 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector <GalSED> & galseds, vector <Halo *> &halos){
   srand48(seed);
   vector <int> sed_ids(galaxies.size());
-  vector<GalSED>::iterator begin = galseds.begin();
-  vector<GalSED>::iterator end = galseds.end();
-  static int sorted = 0;
-  static keyValue* densities;
-  static keyValue* magnitudes;
-  static int size;
-  int i;
-
-  size = end - begin;
-  densities = new keyValue[size];
-  magnitudes = new keyValue[size];
-  vector<bool> isred(size);
-  vector<GalSED>::iterator inputIterator;
-
-  for ( i=0,inputIterator= begin ; inputIterator < end; inputIterator++, i++ )
-    {
-      densities[i].key = i;
-      magnitudes[i].key = i;
-      densities[i].value = log10((*inputIterator).Dens());
-      magnitudes[i].value = (*inputIterator).MR(); 
-      isred[i] = inputIterator->Red();
-    }
-
-  MergeSort(magnitudes,size);
-  MergeSort(densities,size);
-
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
-
-#pragma omp parallel for
+  //cout<<"Need to check some magnitudes and densities: "<<endl;
+  //for(int i=-22;i<=-4;i++){
+  //cout<<"  "<<i<<", "<<LumNumberDensityInterp(float(i))<<endl;
+  //}
   for(int gi=0;gi<galaxies.size();gi++){
+    //cout<<gi<<" "<<galaxies[gi]->Mr()<<endl;
     if(float(gi)/float(galaxies.size()) > Percent){
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
-      cout << "Last SED id: " << sed_ids[gi-1] << endl;
-      system("ps ux | grep hv >> mem.tmp");
     }
-    //Particle * p = galaxies[gi]->P();
-    // assert(p);  //this better be true since you removed the other ones.
+    //cout<<gi<<" of "<<galaxies.size()<<endl;
 
-    double mr = galaxies[gi]->Mr();
-#ifdef DEBUG_SEDS
+    //if(galaxies[gi]->Central())
+    //{
+    //extern double normal_random(float mean, float stddev);
+    //Galaxy * gal = galaxies[gi];
+    //Particle * p = gal->P();
+    //assert(p);  //this better be true since you removed the other ones.
+    //int hid = p->Hid();
+    //double m200 = halos[hid]->M();
+    ////cout<<"lookin at central galaxy ("<<galaxies[gi]->Central()<<") with m200="<<m200<<", density = "<<nndist[gi]<<", and original Mr = "<<galaxies[gi]->Mr();
+    //double m14 = m200/1e14;
+    //double lum = 4*pow(m14,0.3);
+    //lum = pow(10.0,normal_random(log10(lum),0.15));
+    //double mr = -2.5*log10(lum) - 20.44;
+    //galaxies[gi]->Mr(mr);
+    //nndist[gi] *= 0.5; //We want to make the BCGs dense
+    ////cout<<" adjusted to "<<galaxies[gi]->Mr()<<endl;
+    ////if(mr>Magmin_col) mr = Magmin_col;
+    //}
+    Particle * p = galaxies[gi]->P();
+    assert(p);  //this better be true since you removed the other ones.
+    //int hid = p->Hid();
+    //if(hid>=0){
+#ifdef DEBUG
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
+    double mr = galaxies[gi]->Mr();
+    //if(mr>Magmin_col) mr = Magmin_col;
+    //cout<<"non central galaxy with Mr = "<<galaxies[gi]->Mr()<<", dens = "<<nndist[gi]<<endl;
+    //cout<<"Choosnig..."<<endl;
 
-    sed_ids[gi] = findCloseGalaxies2(densities, magnitudes, isred, size, 
-				     mr, nndist[gi], galaxies[gi]->Z(),
-				     galaxies[gi]->Central());
+	sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
+    //cout<<"Simulated galaxy: mr = "<<mr<<" nndist = "<<nndist[gi]<<endl;
+    //cout<<"SED galaxy: mr = "<<galseds[sed_ids[gi]].MR()<<" nndist = "<<galseds[sed_ids[gi]].Dens()<<endl;
+    //cout<<sed_ids[gi]<<endl;
+
+
+
+	//sed_ids[gi] = ChooseSED(galseds,mr,nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
+    
+	
+	
+	//}
+    //else sed_ids[gi]=-1;
   }
-  
-  delete densities;
-  delete magnitudes;
-
   return sed_ids;
 }
 
