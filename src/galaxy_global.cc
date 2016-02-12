@@ -68,7 +68,7 @@ FiveTuple denspdf_params(float magnitude, float zred)
   //float dim_mag_lim = -19.0-mag_ref;
   float bright_mag_lim = -22.5-mag_ref;
   float mag = magnitude-mag_ref;
-  if (mag > dim_mag_lim) mag = dim_mag_lim;
+  //if (mag > dim_mag_lim) mag = dim_mag_lim;
   if (mag < bright_mag_lim) mag = bright_mag_lim;
   float cm, cs, fm, fs, p;
   cm = cm0 + cm1*mag + cm2*mag*mag + cm3*mag*mag*mag + cm4*mag*mag*mag*mag + cmz1*zred + cmz2*zred*zred + cmz3*zred*zred*zred;
