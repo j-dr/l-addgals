@@ -24,12 +24,12 @@ HEALPIX_INC =
 
 ifeq "$(HOSTNAME)" "orange"
 	#CXX=icpc
-	CXX=clang++
+	CXX=g++
 	OPT= -O3 -Wno-deprecated #-ffast-math
 	#OPT= -g
 	WARN=
-#	END_FLAG = -DLITTLEENDIAN
-	END_FLAG = -DBIGENDIAN
+	END_FLAG = -DLITTLEENDIAN
+	#END_FLAG = -DBIGENDIAN
 	HEALPIX_LIB = -L/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/lib
 	HEALPIX_INC = -I/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/include
 	OMPFLAG = 
