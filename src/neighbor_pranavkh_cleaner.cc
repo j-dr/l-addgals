@@ -41,22 +41,15 @@ int CompareByDens (GalaxyPercent a, GalaxyPercent b)
 
 vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &galaxies)
 {
-  cout<<"cleaner version"<<endl;
   vector <float> color_percent(galaxies.size());
-  cout<<"made color_percent vector"<<endl;
   int nColorBins = floor(zmax->GetVal()/ColorBinSize)+1;
-  cout<<"got num of color bins"<<endl;
   struct GalaxyPercent tGalaxyId(0.,0);
-  cout<<"made galaxy percent struct"<<endl;
   vector <GalaxyPercent> GalaxyId;
-  cout<<"made galaxy percent id vec"<<endl;
   //  GalaxyId.reserve(galaxies.size());
   int nInColorBins = 0;
   int nInColorBin[nColorBins];
-  cout<<"allocated nincolorbin int array"<<endl;
   for (int i=0;i<nColorBins;i++)
     nInColorBin[i] = 0;
-  cout<<"set all to zero"<<endl;
   int min_gid = 1000000;
   int max_gid = 0;
   int min_i = 1000000;
