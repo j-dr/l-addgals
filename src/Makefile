@@ -24,26 +24,28 @@ HEALPIX_INC =
 
 ifeq "$(HOSTNAME)" "orange"
 	#CXX=icpc
-	CXX=g++
-	OPT= -O3 -Wno-deprecated
+	CXX=clang++
+	OPT= -O3 -Wno-deprecated #-ffast-math
+	#OPT= -g
 	WARN=
 #	END_FLAG = -DLITTLEENDIAN
 	END_FLAG = -DBIGENDIAN
 	HEALPIX_LIB = -L/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/lib
 	HEALPIX_INC = -I/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/include
+	OMPFLAG = 
 endif
 
 RM = rm -f
 LD = /usr/bin/ld
 
 #directories to look for include files
-INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC}
+INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC} 
 
 #directories to look for libraries
 LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
 
 #libraries to link
-LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect -lgsl -lgslcblas -lCCfits
+LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect -lgsl -lgslcblas -lCCfits 
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
@@ -74,6 +76,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
+OMPFLAG = -fopenmp
 endif
 
 ifeq ($(catalog_type),"SHAM_TEST")
@@ -136,8 +139,8 @@ endif
 #CPPFLAGS += -DBOLSHOI  #Readin one of the bolshoi-formatted galaxy files
 #CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first sort
 #CPPFLAGS += -DPARALLEL -i-dynamic
-CPPFLAGS += -DDEBUG_GET_GALS
-CPPFLAGS += -DDEBUG_SEDS
+#CPPFLAGS += -DDEBUG_GET_GALS
+#CPPFLAGS += -DDEBUG_SEDS
 #CPPFLAGS += -DSNAPSHOT         #Using a snapshot instead of a lightcone
 #CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 #CPPFLAGS += -DEVOLVE_DENSPDF   #readin denspdf files from multiple LasDamas snapshots
@@ -150,6 +153,8 @@ CPPFLAGS += -DDEBUG_SEDS
 #CPPFLAGS += -DDEBUG_PDF
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
 #CPPFLAGS += -DUNITTESTS
+#CPPFLAGS += -DTESTREADPART
+#CPPFLAGS += -DDEBUGLC
 #CXX = mpic++
 
 
@@ -211,7 +216,7 @@ OBJS_TEST = test_gasdev.o
 ### TARGETS ###
 
 $(EXECNAME): $(OBJS)
-	$(CXX) -o $(EXECNAME) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+	$(CXX) ${OMPFLAG} -o $(EXECNAME) $^ $(CPPFLAGS)  $(LDFLAGS) $(LOADLIBES) 
 
 $(EXECNAME_SPHERE): $(OBJS_SPHERE)
 	$(CXX) -o $(EXECNAME) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
