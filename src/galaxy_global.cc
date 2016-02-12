@@ -7,7 +7,6 @@
 #include "galaxy.h"
 #include "cosmo.h" 
 #include "ReadParameters.h"
-#include "galaxy_global.h"
 #ifdef LF_FROM_DATA
 #include <vector>
 #endif
@@ -58,6 +57,11 @@ float FiveTuple::LocalDens() const{
 
 //NBIN is the total number of rdel bins for our magnitude calculation
 //#define NBIN 85000
+#define NBIN 8500
+struct den_ent{
+  float prob[NBIN];
+  float r[NBIN];
+};
 
 
 //get the explicit denpdf parameters for our redshift, magnitude
@@ -71,11 +75,11 @@ FiveTuple denspdf_params(float magnitude, float zred)
   //if (mag > dim_mag_lim) mag = dim_mag_lim;
   if (mag < bright_mag_lim) mag = bright_mag_lim;
   float cm, cs, fm, fs, p;
-  cm = cm0 + cm1*mag + cm2*mag*mag + cm3*mag*mag*mag + cm4*mag*mag*mag*mag + cmz1*zred + cmz2*zred*zred + cmz3*zred*zred*zred;
+  cm = cm0 + cm1*mag + cm2*mag*mag + cm3*mag*mag*mag + cmz1*zred + cmz2*zred*zred;
   cs = cs0 + cs1*mag + cs2*mag*mag + cs3*mag*mag*mag + csz1*zred + csz2*zred*zred;
-  fm = fm0 + fm1*mag + fm2*mag*mag + fm3*mag*mag*mag + fmz1*zred + fmz2*zred*zred;
-  fs = fs0 + fs1*mag + fs2*mag*mag + fs3*mag*mag*mag + fs4*mag*mag*mag*mag + fsz1*zred + fsz2*zred*zred + fsz3*zred*zred*zred;
-  p = p0 + p1*mag + p2*mag*mag + p3*mag*mag*mag + pz1*zred + pz2*zred*zred + pz3*zred*zred*zred;
+  fm = fm0 + fm1*mag + fm2*mag*mag + fmz1*zred;
+  fs = fs0 + fs1*mag + fs2*mag*mag + fs3*mag*mag*mag + fsz1*zred + fsz2*zred*zred;
+  p = p0 + p1*mag + p2*mag*mag + pz1*zred + pz2*zred*zred;
 
   FiveTuple fp(cm,cs,fm,fs,p);
 
@@ -138,12 +142,12 @@ den_ent define_prob(float magnitude, float redshift, float vol)
     for(int i=0;i<nbin;i++)
       pdf.prob[i] /= norm;
   }
-  //#ifdef DEBUG
-  //  ofstream pdf_file("pdf_test.ascii");
-  //  for(int id=0;id<nbin;id++){
-  //    pdf_File<<x_prob[36].x[id]<<" "<<y_prob[36].x[id]<<endl;
-  //  }
-  //#endif
+#ifdef DEBUG
+  ofstream pdf_file("pdf_test.ascii");
+  for(int id=0;id<nbin;id++){
+    pdf_file<<x_prob[36].x[id]<<" "<<y_prob[36].x[id]<<endl;
+  }
+#endif
 
   return pdf;
 }
@@ -151,6 +155,8 @@ den_ent define_prob(float magnitude, float redshift, float vol)
 
 float LocalDens(den_ent pdf)
 {
+
+
   float d8_max = 8.5;
   float d8_min = 1.1*minrnn;
   int nbin = NBIN;
@@ -166,20 +172,12 @@ float LocalDens(den_ent pdf)
       ind++;
     if (ind == nbin)
       ind--;
-
     float dx = ranu - pdf.prob[ind-1];
     float slope = (pdf.r[ind]-pdf.r[ind-1])/(pdf.prob[ind]-pdf.prob[ind-1]);
     d8 = pdf.r[ind-1]+dx*slope;
-#ifdef DEBUG_PDF
-    cout<<"dx = "<<dx<<", slope = "<<slope<<", d8 = "<<d8<<endl;
-    cout<<"ranu = "<<ranu<<", pdf.prob[ind] = "<<pdf.prob[ind]<<", pdf.prob[ind-1] = "<<pdf.prob[ind-1]<<", pdf.r[ind] ="<<pdf.r[ind]<<", pdf.r[ind-1] = "<<pdf.r[ind-1]<<endl;
-#endif
   }
   if(!(d8 < d8_max)) d8 = d8_max;
   if(!(d8 > d8_min)) d8 = d8_min;
-#ifdef DEBUG_PDF
-  cout<<"Returning dens"<<endl;
-#endif
   return d8;
 }
 
@@ -190,6 +188,10 @@ float LocalDens(float magnitude, float redshift, float vol)
   //define our probability distribution for this galaxy
   //cout<<"Defining probability array..."<<endl;
   den_ent pdf = define_prob(magnitude, redshift, vol);
+  //for(int i=0;i<NBIN;i++){
+    //cout<<pdf.r[i]<<" "<<pdf.prob[i]<<endl;
+  //}
+
   float d8 = LocalDens(pdf);
 
   return d8;
@@ -208,9 +210,7 @@ float SelectGalaxyZ()
   //rn *= rm*rm*rm;
   rn = (rm*rm*rm - rmin*rmin*rmin)*rn + rmin*rmin*rmin;
   rn = pow(rn, 1.0/3.0);
-  //cout<<"Random galaxy los distance: "<<rn<<endl;
   float z = cosmo.ZofR(rn);
-  //cout<<"Correspoinding redshift: "<<z<<endl;
 #endif
   return z;
 }
@@ -274,14 +274,12 @@ double LF(double M, double* dummy){
     i++;
   float diff = M - gmagbin[i-1];
   float LF,slope;
-
-  //if the density is zero, we interpolate in linear space
   if (gdensity[i] == 0 || gdensity[i-1] == i){
     slope = (gdensity[i]-gdensity[i-1])/(gmagbin[i]-gmagbin[i-1]);
     LF = gdensity[i-1] + diff*slope;
     if (LF <= 0.)
       LF = 0.;
-  } else { //else we interpolate in log space
+  } else {
     slope = log10(gdensity[i]/gdensity[i-1])/(gmagbin[i]-gmagbin[i-1]);
     LF = pow(10., log10(gdensity[i-1]) + diff*slope);
   }
@@ -403,23 +401,6 @@ double LumNumberDensityInterp(double M){
 }
 
 
-/*
-double ZdistmodInterp(double z){
-  if((z<0)||(z>1.5)){
-    cerr<<"Redshift out of bounds in Zdistmod function: "<<z<<endl;
-    exit(1);
-  }
-  vector<double>::iterator pos;
-  pos=upper_bound(zdistmod_z.begin(), zdistmod_z.end(), z);
-  int i = distance(zdistmod_z.begin(),pos);
-  double delta_x = zdistmod_z[i] - zdistmod_z[i-1];
-  double dx      = z        - zdistmod_z[i-1];
-  double delta_y = zdistmod_dm[i] - zdistmod_dm[i-1];
-  double y = dx/delta_x*delta_y+zdistmod_dm[i-1];
-
-  return y;
-}
-*/
 
 double LumNumberDensity(double M){
   integrator LF_integrator(&LF, 0, 1.0E-05, 0.01);
@@ -507,17 +488,8 @@ double NdensMagnitude(double ndens){
 */
 vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
 
-  cout<<"denspdf parameters for z = 0, Mr = -19:"<<endl;
-  FiveTuple tparams = denspdf_params(-19.0, 0.0);
-  tparams.Print();
-
   //initialize the random number generator
   srand48(seed);
-
-  //parameters for making sure we generate galaxies for quasars
-  float quasar_magmin = deevolve_mag(-18.0,ZREDMAX);
-  float quasar_frac = 0.02;
-  cout<<"Minimum magnitude to get the necessary quasars: "<<quasar_magmin<<endl;
 
   //rescale the LF for cosmic variance
   for(int i=0;i<gdensity.size();i++)
@@ -528,15 +500,6 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
 
   //calculate the total number of galaxies we expect to generate
   int n = (int) (LumNumberDensity(Magmin)*vol);
-  //do we need to add more galaxies for quasars to go onto?  
-  if (Magmin < quasar_magmin){
-    cout<<"Adding extra galaxies for QSOs..."<<endl;
-    int n1 = LumNumberDensity(Magmin)*vol;
-    int n2 = LumNumberDensity(quasar_magmin)*vol;
-    int n_qso = (n2-n1)*quasar_frac;
-    cout<<"Number of dim galaxies for the QSO sample: "<<n_qso<<endl;
-    n += n_qso;
-  }
   PRNT("GetGalaxies:", n);
   //cout<<"Simulation redshift: "<<sim_redshift<<endl;
 
@@ -575,11 +538,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
   cout<<"Expect to generate "<<ng_expected<<" galaxies."<<endl;
   float next = -23.0;
 
-  string magdens_check_str = "magdens_check.txt";
-  ofstream magdens_check_file(magdens_check_str.c_str());
-
   //generate galaxies by looping over our magnitude bins
-  //for(double mag=-23.7; mag <=-8; mag+=0.001){
   for(double mag=-23.7; mag <=-8; mag+=0.001){
     if (mag > next){
       cout<<"Generating galaxy magnitudes "<<mag<<endl;
@@ -591,51 +550,33 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
     pdfarray.reserve(nzbins);
     for (int iz=0;iz<nzbins;iz++)
       {
-	float tz = ZREDMIN + iz*dz_pdf;
-        if (tz > 4.0) tz = 4.0;
+	float tz = ZREDMIN + tz*dz_pdf;
 	float tmag = mag;
 	if (tmag > -19.0) tmag = -19.0;
         pdfarray[iz] = define_prob(tmag,tz,vol);
       }
 
-    if (mag <= -22.0 && mag > -23.000){
-      string pdfcheck_str = "pdf_check.txt";
-      ofstream pdfcheck_file(pdfcheck_str.c_str());
-      for(int i=0;i<NBIN;i++){
-        pdfcheck_file<<pdfarray[0].r[i]<<" "<<pdfarray[0].prob[i]<<endl;
-      }
-    }
 
     //Determine the number of galaxies in this magnitude bin
     double num = LF_integrator.Integrate(-30, mag)*volume;
-    //are we in the quasar regime?
-    if (mag > Magmin) {
-      double num1 = LF_integrator.Integrate(-30, Magmin)*volume;
-      double num2 = num;
-      num = num1 + ((num2-num1)*quasar_frac);
-      //cout<<"Generating some galaxies for QSOs now."<<endl;
-      //cout<<"num to this mag: "<<num2<<" num to Magmin: "<<num1<<" num to be generated: "<<num<<endl;
-    }
     int diff = ((int) floor(num))-galaxies.size();
-    //cout<<" Will make "<<diff<<" galaxies with magnitude "<<mag<<" (so far have made "<<galaxies.size()<<" of "<<n<<")"<<endl;
+    //cout<<" Will make "<<diff<<" galaxies with magnitude "<<mag<<endl;
 
     //we allocated space for n galaxies -- truncating to stop if we're gone further than that
     if (num>n) diff = n-galaxies.size();
 
     //loop over new galaxies to determine redshifts and densities
     for(int i=0;i<diff;i++){
+      //cout<<"Getting redshift..."<<endl;
       float zGal = SelectGalaxyZ();
       
+      //cout<<"Getting local density with mag = "<<mag<<", zGal = "<<zGal<<", vol = "<<vol<<endl;
       //float dist8 = LocalDens(mag, zGal, vol);
       int pdf_zbin = round((zGal-ZREDMIN)/dz_pdf);
       if (pdf_zbin < 0) pdf_zbin = 0;
       if (pdf_zbin >= nzbins) pdf_zbin = nzbins-1;
-#ifdef DEBUG
-      cout<<"Getting local density with z = "<<zGal<<" and pdf_zbin = "<<pdf_zbin<<", corresponding to "<<ZREDMIN+dz_pdf*pdf_zbin<<endl;
-#endif 
+      //cout<<"Getting local density with z = "<<zGal<<" and pdf_zbin = "<<pdf_zbin<<", corresponding to "<<ZREDMIN+dz_pdf*pdf_zbin<<endl;
       float dist8 = LocalDens(pdfarray[pdf_zbin]);
-      magdens_check_file<<mag<<" "<<dist8<<endl;
-
 
       //have considered some models where we scale d8 by the growth function
 #ifdef SCALE_BY_GROWTH_FCN
@@ -653,7 +594,6 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
       galaxies.push_back(galaxy);
       galaxies[ngal]->zGal(zGal);
       ngal++;
-
     }
     if (galaxies.size()>=n) break;
   }  
@@ -668,8 +608,8 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
 
   //output some diagnostics of our galaxy distribution
   cout<<"[GetGalaxies] Done getting galaxy magnitudes "<<galaxies.size()<<endl;
-  float dimmest = -100.;
-  float brightest = 0.;
+  int dimmest = -100.;
+  int brightest = 0.;
   for(int ig=0;ig<galaxies.size();ig++){
     if (galaxies[ig]->Mr() < brightest)
       brightest = galaxies[ig]->Mr();
@@ -696,6 +636,7 @@ double fractional_area(){
   return sky_coverage/41253.0;
 }
 
+
 void read_out_galaxy_info(vector<Galaxy *> &gal, vector<GalSED> &sed,
 			  vector<int> &sed_id, vector<float> &mr, 
 			  vector<float> &z, vector<int> &id)
@@ -709,4 +650,3 @@ void read_out_galaxy_info(vector<Galaxy *> &gal, vector<GalSED> &sed,
       id[i] = sed[sed_id[i]].CatId();
     }
 }
-
