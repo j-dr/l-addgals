@@ -637,16 +637,14 @@ double fractional_area(){
 }
 
 
-void read_out_galaxy_info(vector<Galaxy *> &gal, vector<GalSED> &sed,
-			  vector<int> &sed_id, vector<float> &mr, 
-			  vector<float> &z, vector<int> &id)
+void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr, 
+			  vector<float> &z)
 {
   int i;
   vector<Galaxy *>::iterator itr;
   for (i=0; i<gal.size(); i++)
     {
       mr[i] = gal[i]->Mr();
-      z[i] = gal[i]->zGal();
-      id[i] = sed[sed_id[i]].CatId();
+      z[i] = gal[i]->Z();
     }
 }

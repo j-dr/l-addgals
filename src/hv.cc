@@ -580,11 +580,15 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
-  read_out_galaxy_info(galaxies, galseds, id, mr, z, id);
-  match_coeff(id, &coeff[0]);
+  read_out_galaxy_info(galaxies, mr, z);
+  match_coeff(sed_ids, &coeff[0]);
 
   strcpy(filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/des_filters.txt");
-  assign_colors(mr, coeff, z, ZREDMIN, ZREDMAX,
+
+  int zmin = ZREDMIN-0.1 < 0 ? 0.0 : ZREDMIN-0.1;
+  int zmax = ZREDMAX+0.1;
+
+  assign_colors(mr, coeff, z, zmin, zmax,
 		0.1, nbands, filterfile, tmag, amag);
 
   vector<float> omag(galaxies.size()*nbands);
