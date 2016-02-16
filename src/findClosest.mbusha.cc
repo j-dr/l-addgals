@@ -253,19 +253,12 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 
 #ifdef RED_FRACTION
-	//cout<<"Calculating red/blue probability at z = "<<ThisZ<<"..."<<endl;
-	//float red_fraction = REDFRACTION1;
-	//float red_fraction = 0.66;
-	float red_fraction = REDFRACTION1;
-	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
-	float intercept = REDFRACTION1 - slope*Z_REDFRACTION1;
+
 	if (ThisZ > Z_REDFRACTION1 && ThisBCG == 0)
 	{
-		red_fraction = slope*ThisZ + intercept;
-		if (red_fraction < REDFRACTION2)
-      			red_fraction = REDFRACTION2;
+	  red_fraction = pow(10., -0.255388 - 0.545622*ThisZ);
 	} 
-	//cout<<"REDFRACTION1 = "<<REDFRACTION1<<", REDFRACTION2 = "<<REDFRACTION2<<", slope = "<<slope<<", intercept = "<<intercept<<", ThisZ = "<<ThisZ<<endl;
+
 	//cout<<"Global red fraction: "<<red_fraction<<endl;
 #endif
 
