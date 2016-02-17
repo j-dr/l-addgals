@@ -253,13 +253,15 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 
 #ifdef RED_FRACTION
-
+	float red_fraction = REDFRACTION1;
+	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
+	float intercept = REDFRACTION1 - slope*Z_REDFRACTION1;
 	if (ThisZ > Z_REDFRACTION1 && ThisBCG == 0)
-	{
-	  red_fraction = pow(10., -0.255388 - 0.545622*ThisZ);
-	} 
-
-	//cout<<"Global red fraction: "<<red_fraction<<endl;
+	  {
+	    red_fraction = slope*ThisZ + intercept;
+	    if (red_fraction < REDFRACTION2)
+	      red_fraction = REDFRACTION2;
+	  } 
 #endif
 
 	if( sorted != 1)
@@ -361,6 +363,18 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		float local_red_fraction = nred/ntot;
 		//float target_local_red_fraction = local_red_fraction*red_fraction/REDFRACTION1;
 		float target_local_red_fraction = local_red_fraction*red_fraction;
+
+#ifdef RF_TEST	   
+		string filename = "rftest.dat";
+		ofstream rffile(filename.c_str(), std::ofstream::out | std::ofstream::app);
+
+		if (rffile.fail()) {
+		  cerr<<"Error:  cannont open Redfraction file file: "<<filename<<endl;
+		  exit(1);
+		}
+
+		rffile << red_fraction << " " << local_red_fraction << " " << target_local_red_fraction << endl;
+#endif
 	        int is_red = 1;
         	float ran = drand48();
         	if (ran > target_local_red_fraction)
