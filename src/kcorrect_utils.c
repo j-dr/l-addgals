@@ -1,5 +1,6 @@
 #include "kcorrect_utils.h"
 #include "cosmo.h"
+#include "errormodel.h"
 #include <math.h>
 #include <cstring>
 #include <limits>
@@ -9,9 +10,10 @@
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
-#ifdef UNITTESTS
-Cosmology cosmo(0.3, 0.82, 0.7);
-#endif
+//#ifdef UNITTESTS
+//Cosmology cosmo(0.3, 0.0, 0.7);
+//#endif
+
 using namespace std;
 
 static int nz=1000;
@@ -219,6 +221,10 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
 			 1, sdss_filterfile, omag, amag);
 
+  //apply ab magnitude correction
+  //transform(amag.begin(), amag.end(), amag.begin(),
+  //	    bind2nd(minus<float>(), ab_corr));
+
   //determine shift needed to get reference_mag from sdss_amag
   transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
 	    deltam.begin(), minus<float>());
@@ -244,6 +250,20 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
     }
   }
 
+#ifdef COLORTEST
+  ofstream amag_file("./des_amagtest.txt");
+  vector<float>::iterator ditr;
+
+  for (ditr=amag.begin(); ditr!=amag.end(); ++ditr)
+    {
+      amag_file << *ditr;
+      if ((ditr-amag.begin()+1)%nbands==0)
+	{
+	  amag_file << "\n";
+	} else amag_file << " ";
+    }
+#endif
+
 }
 
 #ifdef UNITTESTS
@@ -255,7 +275,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  cosmo.GetZofR(cosmo.OmegaM(),cosmo.OmegaL());
+  //cosmo.GetZofR(cosmo.OmegaM(),cosmo.OmegaL());
   ifstream ginfo_file(argv[1]);
   float zmin, zmax, band_shift;
   int nbands, ntemp, i;
@@ -266,12 +286,13 @@ int main(int argc, char **argv)
     cerr<<"error: cannot open "<<argv[1]<<endl;
     exit(1);
   }
-  
-  zmin = 0.0;
+  //zmin = 0.0;
+  zmin = 0.00000 - 0.1 < 0 ? 0.0 : 0.00000-0.1;
   //zmax = 0.5;
-  zmax=2.0;
+  //zmax=2.0;
+  zmax = 0.174762+0.1;
   band_shift = 0.1;
-  nbands = 6;
+  nbands = 5;
   strcpy(filterfile, "./des_filters.txt");
 
   copy(istream_iterator<ginfo>(ginfo_file),
@@ -305,9 +326,19 @@ int main(int argc, char **argv)
   assign_colors(refmag, coeff, redshift, zmin, zmax,
 		band_shift, nbands, filterfile, omag, amag);
 
+  vector<float> obmag(refmag.size()*nbands);
+  vector<float> obmagerr(refmag.size()*nbands);
+  vector<float> flux(refmag.size()*nbands);
+  vector<float> ivar(refmag.size()*nbands);
+  vector<bool> idx(refmag.size(), true);
+
+  observe_des_y5(omag, flux, ivar, obmag, obmagerr, idx);
+
   //write out magnitudes
   ofstream omag_file("./des_omagtest.txt");
+  ofstream obmag_file("./des_obmagtest.txt");
   ofstream amag_file("./des_amagtest.txt");
+  ofstream cf_file("./des_cftest.txt");
   vector<float>::iterator ditr;
 
   for (ditr=omag.begin(); ditr!=omag.end(); ++ditr)
@@ -319,13 +350,35 @@ int main(int argc, char **argv)
 	} else omag_file << " ";
     }
 
+  for (ditr=coeff.begin(); ditr!=coeff.end(); ++ditr)
+    {
+      i = (ditr-coeff.begin())/nbands;
+      if (!idx[i]) continue;
+      cf_file << *ditr;
+      if ((ditr-coeff.begin()+1)%nbands==0)
+	{
+	  cf_file << "\n";
+	} else cf_file << " ";
+    }
+
   for (ditr=amag.begin(); ditr!=amag.end(); ++ditr)
     {
+      i = (ditr-amag.begin())/nbands;
+      if (!idx[i]) continue;
       amag_file << *ditr;
       if ((ditr-amag.begin()+1)%nbands==0)
 	{
 	  amag_file << "\n";
 	} else amag_file << " ";
+    }
+
+  for (ditr=obmag.begin(); ditr!=obmag.end(); ++ditr)
+    {
+      obmag_file << *ditr;
+      if ((ditr-obmag.begin()+1)%nbands==0)
+	{
+	  obmag_file << "\n";
+	} else obmag_file << " ";
     }
 
 }

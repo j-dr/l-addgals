@@ -9,16 +9,6 @@
 #include <functional>
 #include "kcorrect.h"
 
-#ifdef UNITTESTS
-//extern Cosmology cosmo;
-
-typedef std::pair<int,int> indpair;
-bool paircomp (indpair l, indpair r)
-{
-return l.first<r.first; 
-}
-#endif
-
 struct magtuple
 {
   float bands[5];
@@ -29,7 +19,6 @@ struct ginfo
   int id, central;
   float refmag, redshift;
 };
-
 
 #ifdef UNITTESTS
 std::istream & operator>>(std::istream & is, ginfo & in)
