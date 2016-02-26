@@ -18,8 +18,10 @@ extern Cosmology cosmo;
 class Particle{
   friend class Galaxy;
  public:
+  Particle(){gid=-1; hid=-1; pid=-1; mhost=0.;};
   Particle(Point pos, Point vel, float dens):
   position(pos),velocity(vel),density(dens){ gid=-1; hid=-1; pid=-1;mhost=0.;};
+  
   void Hid(int id){hid=id;};
   int Hid()const{return hid;};
   void Mhost(float mass){mhost=mass;};
@@ -38,7 +40,7 @@ class Particle{
   void VelPrint()const{cout<<Vx()<<" "<<Vy()<<" "<<Vz()<<endl;};
   void Print() const;
   void Write(ofstream &file)const{
-    file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Vx()<<" "<<Vy()<<" "<<Vz()<<" "<<Pid()<<endl;
+    file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Vx()<<" "<<Vy()<<" "<<Vz()<<" "<<" "<<Zred()<<" "<<Pid()<<endl;
   }
   void Pos2Write(ofstream &file)const{
     file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Ra()<<" "<<Dec()<<" "<<Zred()<<endl;

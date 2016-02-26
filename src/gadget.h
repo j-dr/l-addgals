@@ -24,3 +24,15 @@ struct gadget_header {
     char fill[60];                       /*!< fills to 256 Bytes */
 };
 
+struct io_header {
+
+  unsigned long npart;      /*!< npart[1] gives the number of particles in the present file, other particle types are ignored */
+  unsigned int nside;
+  unsigned int filenside;
+  float BoxSize;
+  double mass;          /*!< mass[1] gives the particle mass */
+  unsigned long npartTotal;
+  double Omega0;           /*!< matter density */
+  double OmegaLambda;      /*!< vacuum energy density */
+  double HubbleParam;      /*!< little 'h' */
+};

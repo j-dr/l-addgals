@@ -7,6 +7,7 @@ void ring2peanoindex(long pix, long order1_, long order2_, std::vector<long> &pi
 long ring2nest(long pix, long order_);
 long nest2ring(long pix, long order_);
 void higher_nest(long pix, long order1_, long order2_, long* hopix);
+long lower_nest(long pix, long order1_, long order2_);
 void nest2xyf(long pix, long *ix, long *iy, long *face_num, long order_);
 long xyf2nest(long ix, long iy, long face_num, long order_);
 void ring2xyf(long pix, long *ix, long *iy, long *face_num, long order_);
