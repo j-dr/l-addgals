@@ -1,4 +1,4 @@
-pro make_bcc_box_buzzard, dir=dir, $ 
+pro make_buzzard_flock, dir=dir, $ 
 	sim_zmin=sim_zmin, sim_zmax=sim_zmax, $
 	nproc=nproc, $
 	omegam=omegam, omegal=omegal, $
@@ -6,7 +6,8 @@ pro make_bcc_box_buzzard, dir=dir, $
 	halofile=halofile, rnn_halofile=rnn_halofile, $
 	simname=simname, boxsize=boxsize, denspdfstr=denspdfstr,$
 	npix=npix, bcg_mass_lim = bcg_mass_lim, paramfile=paramfile, $
-	catdir=catdir, hfile=hfile, ddir=ddir, execdir=execdir
+	catdir=catdir, hfile=hfile, ddir=ddir, execdir=execdir, $
+        srcdir=srcdir                
 
 
 ;;;parameters that need to be specified
@@ -148,7 +149,7 @@ for i = 0, nproc - 1 do begin
    ;;;define out denspdf and lbcg files
    if not KEYWORD_SET(denspdfstr) then denspdfstr = ' /u/ki/mbusha/projects/modules/idl/addgals/rdel/denspdf_Consuelo02_AGES_rescale_0'+LDnum[i]+'.dat'
    denspdfstr = ' '+denspdfstr
-   lbcgstr = ' /afs/slac.stanford.edu/u/ki/mbusha/projects/modules/idl/addgals/rdel/lbcg_m200_Consuelo_scatter0.20_histograms_0'+LDnum[i]+'.txt'
+   lbcgstr = ' '+srcdir+'/training/buzzard_model/lbcg_m200_Consuelo_scatter0.20_histograms_0'+LDnum[i]+'.txt'
 
    ;;;write our LF for this redshift to a temporary file
    tlf_file = 'tLF.dat'
@@ -164,36 +165,15 @@ for i = 0, nproc - 1 do begin
      out_lf_file = this_dir+'/LF.dat'
 
      ;;generate our executables, etc
-; Joe removed paramfile for faber tests
-;     command = './make_params_files.sh '+zminstr+zmaxstr+pathstr+mminstr+$
-;	denspdfstr+lbcgstr+phistarstr+' '+$
-;	pixstr+' '+num2str+' '+$
-;	this_dir+' '+simfile+' '+' '+rnnfile+' '+$
-;	halofile+' '+rnn_halofile+' '+$
-;	simname+' '+boxsize+' '+paramfile+' '+bcg_mass_lim
-     command = './make_params_files_buzzard.sh '+zminstr+zmaxstr+pathstr+mminstr+$
+     command = './make_params_files.sh '+zminstr+zmaxstr+pathstr+mminstr+$
 	denspdfstr+lbcgstr+phistarstr+' '+$
 	pixstr+' '+num2str+' '+$
 	this_dir+' '+simfile+' '+' '+rnnfile+' '+$
 	halofile+' '+rnn_halofile+' '+$
-	simname+' '+boxsize+' '+bcg_mass_lim+' '+ddir
+	simname+' '+boxsize+' '+paramfile+' '+bcg_mass_lim+' '+ddir+' '+$
+        srcdir
 
      spawn, command
-;     spawn, 'cp '+tlf_file+' '+out_lf_file
-;     spawn, 'mkdir -p '+this_dir+'/idl'
-;     spawn, 'cp hv '+this_dir+'/hv'
-;     spawn, 'cp StringParameters '+this_dir
-;     spawn, 'cp NumericalParameters '+this_dir
-
-     ;;;seup idl programs
-;     idl_file = this_dir+'/idl/run.idl'
-;     go_file = this_dir+'/idl/go.sh'
-;     spawn, 'echo ".compile ./add_bcgs.pro" > '+idl_file
-;     spawn, 'echo "name = '+"'"+'PO_Aardvark_1050_'+pixstr+'.'+num2str+"'"+'"'+'>> '+idl_file
-;     spawn, 'echo "create_catalog, name, g, h, /des,/vista,/deep,/johnson,/flamex" >> '+idl_file
-;     spawn, 'echo "exit" >> '+idl_file
-;     spawn, 'echo "/afs/slac.stanford.edu/g/ek/rsi/idl_6.3/bin/idl run.idl" > '+go_file
-;     spawn, 'chmod 744 '+go_file
 
    endfor
 endfor
@@ -202,11 +182,6 @@ endfor
 cmd = './make_submission_files.sh '+simname+' '+boxsize+' '+dir
 spawn, cmd
 
-; make the combining files
-fbase = 'PO_'+simname+'_'+boxsize
-spawn, 'mkdir -p '+dir+'/make_bcc_file_logs/'
-command = './prepare_make_bcc_file.sh '+dir+' '+$
- 	fbase+' '+catdir+'/individual_box_files '+hfile+' '+string(nproc)
-spawn, command
+spawn, 'mkdir -p '+dir+'/logs/'
 
 end
