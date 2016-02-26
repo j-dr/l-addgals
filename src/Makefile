@@ -76,7 +76,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-OMPFLAG = -fopenmp
+#OMPFLAG = -fopenmp
 endif
 
 ifeq ($(catalog_type),"SHAM_TEST")
@@ -153,8 +153,10 @@ endif
 #CPPFLAGS += -DDEBUG_PDF
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
 #CPPFLAGS += -DUNITTESTS
+#CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUGLC
+#CPPFLAGS += -DRF_TEST
 #CXX = mpic++
 
 
@@ -198,7 +200,7 @@ EXEC8 = cov_file
 OBJS8 = cov_file.o chainel.o
 
 EXEC9 = kcorrect_utils
-OBJS9 = kcorrect_utils.o cosmology.o
+OBJS9 = kcorrect_utils.o cosmology.o errormodel.o
 
 EXEC10 = shapes
 OBJS10 = shapes.o efunc.o shapeconfig.o gno.o calcparams.o

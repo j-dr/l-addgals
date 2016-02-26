@@ -643,10 +643,12 @@ void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr,
 {
   int i;
   vector<Galaxy *>::iterator itr;
+  Particle * p;
   for (i=0; i<gal.size(); i++)
     {
+      p = gal[i]->P();
       mr[i] = gal[i]->Mr();
-      z[i] = gal[i]->Z();
+      z[i] = p->Zred();
       sed_cat_id[i] = seds[sed_id[i]].CatId();
     }
 }
