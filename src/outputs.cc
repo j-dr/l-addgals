@@ -136,10 +136,10 @@ void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles,
 #endif
 
 void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles, 
-			 vector<float> amag, vector<float> tmag, vector<float> mr, 
-			 vector<float> omag, vector<float> omagerr, vector<float> flux, 
-			 vector<float> ivar, vector<double> e, vector<double> s,
-			 vector<bool> idx, vector <Halo *> &halos,
+			 vector<float> &amag, vector<float> &tmag, vector<float> &mr, 
+			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux, 
+			 vector<float> &ivar, vector<double> &e, vector<double> &s,
+			 vector<bool> &idx, vector <Halo *> &halos,
 			 vector<int> &sed_ids, vector<float> &coeffs,
 			 string outgfn, string outghfn)
 {
@@ -277,7 +277,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5);
+    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5), ecatid(keep);
   
   //Go through the galaxies and get the info we want
   int count=0;
@@ -299,12 +299,13 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       z[count] = p->Zred();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
+      ecatid[count] = sed_ids[i];
       for (int c=0; c<5; c++)
 	{
 	  cf[count*5+c] = coeffs[i*5+c];
 	  am[count*5+c] = amag[i*5+c];
 	}
-      if (central[count]==1) 
+      if ((central[count]==1) & (hid>=0))
 	{
 	  haloid[count] = halos[hid]->Id();
 	}
@@ -338,7 +339,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cout << "writing id 2" << endl;
     newTable->column(tcolName[1]).write(id,1); //should this be something else?
     cout << "writing sed_ids" << endl;
-    newTable->column(tcolName[2]).write(sed_ids,1);
+    newTable->column(tcolName[2]).write(ecatid,1);
     cout << "writing coeffs" << endl;
     newTable->column(tcolName[3]).write(cf,count,1);
     cout << "writing tmag" << endl;
@@ -386,7 +387,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cout << "writing 25" << endl;
     newTable->column(tcolName[25]).write(empty,1);
     cout << "writing 26" << endl;
-    newTable->column(tcolName[26]).write(mr,1);
+    newTable->column(tcolName[26]).write(sdssr,1);
     cout << "writing 27" << endl;
     newTable->column(tcolName[27]).write(s,1);
     cout << "writing 28" << endl;

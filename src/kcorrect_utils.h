@@ -1,6 +1,5 @@
 #ifndef kcorrect_utils_h
 #define kcorrect_utils_h
-#include "cosmology.h"
 #include <cmath>
 #include <istream>
 #include <utility>

@@ -573,6 +573,7 @@ int main(void){
   int nbands = 5;
   int nelem = 3;
   int ntemp = 5;
+  float band_shift = 0.1;
   char filterfile[2000];
   vector<float> mr(galaxies.size());
   vector<float> z(galaxies.size());
@@ -580,16 +581,16 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
-  read_out_galaxy_info(galaxies, mr, z);
-  match_coeff(sed_ids, &coeff[0]);
+  read_out_galaxy_info(galaxies, mr, z, galseds, sed_ids, id);
+  match_coeff(id, &coeff[0]);
 
   strcpy(filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/des_filters.txt");
 
-  int zmin = ZREDMIN-0.1 < 0 ? 0.0 : ZREDMIN-0.1;
-  int zmax = ZREDMAX+0.1;
+  float zmin = 0.0;
+  float zmax = 2.5;
 
   assign_colors(mr, coeff, z, zmin, zmax,
-		0.1, nbands, filterfile, tmag, amag);
+		band_shift, nbands, filterfile, tmag, amag);
 
   vector<float> omag(galaxies.size()*nbands);
   vector<float> omagerr(galaxies.size()*nbands);
@@ -605,7 +606,7 @@ int main(void){
   
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
 		     omag, omagerr, flux, ivar, e, s,
-		     idx, halos, sed_ids, coeff, outgfn, 
+		     idx, halos, id, coeff, outgfn, 
 		     outghfn);
 #else
   MSG("[hv] Printing galaxies in volume");
