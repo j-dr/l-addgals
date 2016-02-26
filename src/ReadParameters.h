@@ -19,7 +19,7 @@ void readParameters();
 extern string simtype;
 extern string simlabel;
 //extern string simnum ;
-//extern string flabel ;
+extern string flabel ;
 extern string datadir ;
 extern string halofile ;
 extern string rnn_halofile ;
@@ -56,6 +56,8 @@ extern long PixelNum;
 #endif
 #ifdef BCC
 extern int LCNUM;
+extern string PSTR;
+extern string ZSTR;
 #endif
 extern float minrnn, maxrnn;
 #ifdef SHAM_TEST
