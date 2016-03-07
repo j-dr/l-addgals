@@ -6,7 +6,6 @@
 #include <CCfits/CCfits>
 #include "outputs.h"
 
-#ifndef UNITTESTS
 int GalaxyZBin(float zRed);
 
 void PrintMinMaxDens(vector <Galaxy *> &galaxies, vector <Particle *> &particles)
@@ -51,101 +50,23 @@ void PrintMinMaxDens(vector <Galaxy *> &galaxies, vector <Particle *> &particles
   cout<<"For galaxies "<<min_g<<", "<<max_g<<endl;
 }
 
-
 void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles, vector <Halo *> &halos, vector <GalSED> galseds, vector <int> sed_ids, vector <float> nndist, vector <float> nndist_percent, string outpfn, string outdfn, string outgfn, string outghfn, string outgzfn, string outrfn)
-//void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles, vector <Halo *> &halos, vector <GalSED> galseds, vector <int> sed_ids, vector <float> nndist)
 {
-  ofstream outpfile(outpfn.c_str());
-  ofstream outdfile(outdfn.c_str());
-  ofstream outgfile(outgfn.c_str());
-  ofstream outghfile(outghfn.c_str());
-  ofstream outgzfile(outgzfn.c_str());
-  ofstream outrfile(outrfn.c_str());
-
-  int NNotPrinted = 0;
-  int NNotPrintedInVol = 0;
-  for(int gi=0;gi<galaxies.size();gi++){
-    Galaxy * gal = galaxies[gi];
-    Particle * p = gal->P();
-    assert(p);  //this better be true since you removed the other ones.
-    int hid = p->Hid();
-#ifdef COLORS
-    int sedid = sed_ids[gi];
-    if((nndist[gi]>0)&&(sedid>=0)){
-      if(galseds[sed_ids[gi]].CatId() == 773)
-	cout<<"Missing galaxy info = "<<gal->Mr()<<endl;
-      //      outgfile<<sed_ids[gi]<<" ";
-      outgfile<<galseds[sed_ids[gi]].CatId()<<" ";
-      //      SEDs[sed_ids[gi]].Write(outgfile);
-#else //make a dummy for the color index
-    if(1){
-      outgfile<<0<<" ";
-#endif
-      gal->Write(outgfile);
-      outgzfile<<gal->zGal()<<" "<<GalaxyZBin(gal->zGal())<<" "<<gal->Central()<<endl;
-      p->Write(outpfile);
-      if(hid<0 || hid>=halos.size()){
-	outghfile<<"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "<<endl;
-      }
-      else{
-	outghfile//<<in_vol<<" "
-	  //<<hid<<" "
-	  <<halos[hid]->Id()<<" "
-	  <<halos[hid]->M()<<" "
-	  <<halos[hid]->Ngal()<<" "
-	  <<halos[hid]->R200()<<" "
-	  <<p->Distance(halos[hid]->Position())<<" "
-	  <<halos[hid]->Sig()<<" "
-	  <<halos[hid]->X()<<" "
-	  <<halos[hid]->Y()<<" "
-	  <<halos[hid]->Z()<<" "
-	  <<halos[hid]->Vx()<<" "
-	  <<halos[hid]->Vy()<<" "
-	  <<halos[hid]->Vz()<<" "
-	  <<halos[hid]->Ra()<<" "
-	  <<halos[hid]->Dec()<<" "
-	  <<halos[hid]->Zred()<<endl;
-	}
-      outdfile<<gal->Dist8()<<" "<<gal->P()->Dist8()<<endl;
-#ifdef COLORS
-#ifdef COLORS_FROM_RELATIVE_DENSITY
-      outrfile<<nndist[gi]<<" "<<nndist_percent[gi]<<endl;
-#else
-      outrfile<<nndist[gi]<<endl;
-#endif
-#endif
-    }
-    else{
-      NNotPrinted++;
-      if(p->Save()){
-	NNotPrintedInVol++;
-	cout<<"[hv] didn't print galaxy "
-	    <<gi<<" "
-#ifdef COLORS
-	    <<nndist[gi]<<" "
-	    <<sedid<<" "
-#endif
-	    <<p->X()<<" "
-	    <<p->Y()<<" "
-	    <<p->Z()<<endl;
-      }
-    }
-  }
-    cout<<"Didn't print "<<NNotPrinted<<" galaxies.  Of these "<<NNotPrintedInVol<<" were in the specified volume."<<endl;  
+  return;
 }
-#endif
 
-void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles, 
-			 vector<float> &amag, vector<float> &tmag, vector<float> &mr, 
+void write_bcc_catalogs(vector<float> &am, vector<float> &tmag, vector<float> &sdssr, 
 			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux, 
 			 vector<float> &ivar, vector<double> &e, vector<double> &s,
-			 vector<bool> &idx, vector <Halo *> &halos,
-			 vector<int> &sed_ids, vector<float> &coeffs,
+			 vector<float> &ra, vector<float> &dec, vector<float> &px,
+			 vector<float> &py, vector<float> &pz, vector<float> &vx,
+			 vector<float> &vy, vector<float> &vz, vector<float> &z,
+			 vector<int> &gid, vector<int> &central, vector<int> &haloid,
+			 vector<int> &ecatid, vector<float> &cf,
 			 string outgfn, string outghfn)
 {
   using namespace CCfits;
   std::auto_ptr<FITS> tFits;
-  int size = galaxies.size();
   int keep = s.size();
   unsigned long rows(5);
   
@@ -273,52 +194,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[34] = "2E";
   tcolForm[35] = "E";
 
-
-  cout << "Extracting relevant galaxy information" << endl;
-  vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
-    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5), ecatid(keep);
-  
-  //Go through the galaxies and get the info we want
-  int count=0;
-  Particle * p;
-  for (int i=0; i<size; i++)
-    {
-      if (!idx[i]) continue;
-      p = galaxies[i]->P();
-      int hid = p->Hid();
-      ra[count] = galaxies[i]->Ra();
-      dec[count] = galaxies[i]->Dec();
-      id[count] = p->Gid();
-      px[count] = p->X();
-      py[count] = p->Y();      
-      pz[count] = p->Z();
-      vx[count] = p->Vx();
-      vy[count] = p->Vy();
-      vz[count] = p->Vz();
-      z[count] = p->Zred();
-      central[count] = galaxies[i]->Central();
-      sdssr[count] = mr[i];
-      ecatid[count] = sed_ids[i];
-      for (int c=0; c<5; c++)
-	{
-	  cf[count*5+c] = coeffs[i*5+c];
-	  am[count*5+c] = amag[i*5+c];
-	}
-      if ((central[count]==1) & (hid>=0))
-	{
-	  haloid[count] = halos[hid]->Id();
-	}
-      else
-	{
-	  haloid[count] = -1;
-	}
-      count++;
-    }
-
-  cout << "Number of galaxies with idx == true: " << count << endl;
-  cout << "Number of galaxies with shapes: " << keep << endl;
-  //assert(count==keep);
+  vector<float> empty(keep, -1);
 
   cout << "Creating TRUTH HDU" << endl;
   static string ttablename("TRUTH");
@@ -335,25 +211,25 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   cout << "Writing columns" << endl;
   try{
     cout << "writing id 1" << endl;
-    newTable->column(tcolName[0]).write(id,1);
+    newTable->column(tcolName[0]).write(gid,1);
     cout << "writing id 2" << endl;
-    newTable->column(tcolName[1]).write(id,1); //should this be something else?
+    newTable->column(tcolName[1]).write(gid,1); //should this be something else?
     cout << "writing sed_ids" << endl;
     newTable->column(tcolName[2]).write(ecatid,1);
     cout << "writing coeffs" << endl;
-    newTable->column(tcolName[3]).write(cf,count,1);
+    newTable->column(tcolName[3]).write(cf,keep,1);
     cout << "writing tmag" << endl;
-    newTable->column(tcolName[4]).write(tmag,count,1);
+    newTable->column(tcolName[4]).write(tmag,keep,1);
     cout << "writing omag" << endl;
-    newTable->column(tcolName[5]).write(omag,count,1);
+    newTable->column(tcolName[5]).write(omag,keep,1);
     cout << "writing omag" << endl;
-    newTable->column(tcolName[6]).write(flux,count,1);
+    newTable->column(tcolName[6]).write(flux,keep,1);
     cout << "writing flux" << endl;    
-    newTable->column(tcolName[7]).write(ivar,count,1);
+    newTable->column(tcolName[7]).write(ivar,keep,1);
     cout << "writing ivar" << endl;
-    newTable->column(tcolName[8]).write(omagerr,count,1);
+    newTable->column(tcolName[8]).write(omagerr,keep,1);
     cout << "writing coeffs" << endl;
-    newTable->column(tcolName[9]).write(am,count,1);
+    newTable->column(tcolName[9]).write(am,keep,1);
     cout << "writing ra" << endl;
     newTable->column(tcolName[10]).write(ra,1);
     cout << "writing dec" << endl;
@@ -377,7 +253,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cout << "writing 20" << endl;
     newTable->column(tcolName[20]).write(dec,1);
     cout << "writing 21" << endl;
-    newTable->column(tcolName[21]).write(e,count,1);
+    newTable->column(tcolName[21]).write(e,keep,1);
     cout << "writing 22" << endl;
     newTable->column(tcolName[22]).write(empty,1);
     cout << "writing 23" << endl;
@@ -403,7 +279,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cout << "writing 33" << endl;
     newTable->column(tcolName[33]).write(vz,1);
     cout << "writing 34" << endl;
-    newTable->column(tcolName[34]).write(e,count,1);
+    newTable->column(tcolName[34]).write(e,keep,1);
     cout << "writing 35" << endl;
     newTable->column(tcolName[35]).write(s,1);
     cout << "writing 36" << endl;
@@ -419,4 +295,67 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   }    
 
 }
+
+int extract_galaxy_information(vector<Galaxy *> &galaxies, vector<Particle *> &particles, 
+			       vector<float> &amag, vector<float> &mr, vector<bool> &idx, 
+			       vector <Halo *> &halos, vector<float> &coeffs, 
+			       vector<float> &ra, vector<float> &dec, vector<float> &px, 
+			       vector<float> &py, vector<float> &pz, vector<float> &vx, 
+			       vector<float> &vy, vector<float> &vz, vector<float> &sdssr, 
+			       vector<float> &z, vector<int> &gid, vector<int> &central, 
+			       vector<int> &haloid, vector<float> &cf, 
+			       vector<float> &am, vector<int> &ecatid, int nbands,
+			       int ntemp)
+{
+  cout << "Extracting relevant galaxy information" << endl;
+  int count=0;
+  int size=galaxies.size();
+  Particle * p;
+  for (int i=0; i<size; i++)
+    {
+      if (idx[i]) {
+	p = galaxies[0]->P();
+	int hid = p->Hid();
+	ra.push_back( galaxies[0]->Ra() );
+	dec.push_back( galaxies[0]->Dec() );
+	gid.push_back( p->Gid() );
+	px.push_back( p->X() );
+	py.push_back( p->Y() );
+	pz.push_back( p->Z() );
+	vx.push_back( p->Vx() );
+	vy.push_back( p->Vy() );
+	vz.push_back( p->Vz() );
+	central.push_back( galaxies[0]->Central() ) ;
+	sdssr.push_back( mr[0] );
+	ecatid[count] = ecatid[i];
+	z[count] = z[i];
+	for (int c=0; c<nbands; c++)
+	  {
+	    am.push_back( amag[c] );
+	  }
+	for (int c=0; c<ntemp; c++)
+	  {
+	    cf.push_back( coeffs[c] );
+	  }
+	if ((central[count]==1) & (hid>=0))
+	  {
+	    haloid.push_back( halos[hid]->Id() );
+	  }
+	else
+	  {
+	    haloid.push_back(-1);
+	  }
+	count++;
+      }
+      galaxies.erase(galaxies.begin());
+      mr.erase(mr.begin());
+      coeffs.erase(coeffs.begin(), coeffs.begin()+ntemp);
+      amag.erase(amag.begin(), amag.begin()+nbands);
+    }
+  z.resize(count);
+  ecatid.resize(count);
+  cout << "Got information" << endl;
+  return count;
+}
+ 
 

@@ -600,14 +600,31 @@ int main(void){
 
   observe_des_y5(tmag, flux, ivar, omag, omagerr, idx);
   assert(omag.size()%nbands == 0);
+  vector<float> ra, dec, px, py, pz, vx, vy, vz, sdssr,cf, am;
+  vector<int> gid, central, haloid;
+  int count;
+
+  count = extract_galaxy_information(galaxies, particles, amag, mr, idx, 
+				     halos, coeff, ra, dec, px, 
+				     py, pz, vx, vy, vz, sdssr, 
+				     z, gid, central, haloid, cf, 
+				     am, id, nbands, ntemp);
+  assert(count==omag.size()/nbands);
+
+  galaxies.clear();
+  particles.clear();
+  amag.clear();
+  halos.clear();
+
   vector<double> e(omag.size()/nbands*2);
   vector<double> s(omag.size()/nbands);
   generate_shapes(omag, e, s, nelem, nbands);
   
-  write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
-		     omag, omagerr, flux, ivar, e, s,
-		     idx, halos, id, coeff, outgfn, 
-		     outghfn);
+  write_bcc_catalogs(am, tmag, sdssr, omag, omagerr, flux, 
+		     ivar, e, s, ra, dec, px, py, pz, vx, 
+		     vy, vz, z, gid, central, haloid, id, 
+		     coeff, outgfn, outghfn);
+
 #else
   MSG("[hv] Printing galaxies in volume");
   cout<<galaxies.size()<<endl;
