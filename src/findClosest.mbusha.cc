@@ -979,9 +979,10 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	//int BUCKETSMR = galaxies.size()/NEARESTMR; 
 
 	cout<<"Assigning BCGs with NEARESTMR = "<<NEARESTMR<<", MAXSEARCHD = "<<MAXSEARCHD<<", BUCKETSMR = "<<BUCKETSMR<<endl;
-
+#ifdef DEBUG
 	string outcheck="./BCG_check.dat";
 	ofstream bcg_dens_file(outcheck.c_str());
+#endif 
 
 	//cout<<"Press 0 to stop assigning galaxies."<<endl;
 	//cin>>n;
@@ -1298,8 +1299,10 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		galaxies[galaxyID]->Mr(halos[hID]->Mr());
 		
 		//write out to our log file to see how well we did
+#ifdef DEBUG
 		if (hi >= ibad) cout<<"Saving to log file..."<<endl;
 		bcg_dens_file<<halos[hID]->Dist8()<<" "<<halos[hID]->Mr()<<" "<<halos[hID]->Zred()<<" "<<galaxies[galaxyID]->Dist8()<<" "<<galaxies[galaxyID]->Mr()<<" "<<galaxies[galaxyID]->zGal()<<" "<<found<<" "<<galaxyID<<endl;
+#endif
 
 
 	}
