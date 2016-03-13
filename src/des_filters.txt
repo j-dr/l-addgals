@@ -1,0 +1,6 @@
+KCORRECT_DIR
+data/filters/des_g.par
+data/filters/des_r.par
+data/filters/des_i.par
+data/filters/des_z.par
+data/filters/des_Y.par
