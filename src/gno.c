@@ -124,6 +124,8 @@ ran_gno(const gsl_rng *rng, void *params)
 	x_hi = p->xi + p->alpha / p->kappa - 1e-9;
     }
 
+    if (F.function(x_lo, params)*F.function(x_hi, params) > 0) return -99;
+
     T = gsl_root_fsolver_brent;
     s = gsl_root_fsolver_alloc(T);      
     /* Sometimes we request a random number so far out in the tail
@@ -131,6 +133,7 @@ ran_gno(const gsl_rng *rng, void *params)
        another random deviate. */
     do {
 	p->zero = gsl_rng_uniform(rng);
+	
 	status = gsl_root_fsolver_set(s, &F, x_lo, x_hi);
     } while (status == GSL_EINVAL);
     iter = 0;

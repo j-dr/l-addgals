@@ -9,7 +9,9 @@ import numpy as np
 import healpy as hp
 import fitsio
 import warnings
+import yaml
 import time
+import sys
 import os
 
 
@@ -215,8 +217,8 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
                 print('{0}: Reading took {1}s'.format(rank, tread-tstart))
             
-            #f = '{0}/Lb{1}_{2}/{3}/{4}/{5}_{1}.{3}.{4}.fits'.format(basepath, bsize, suffix, pix, zbin, prefix)
-            f = '{0}/Lb{1}_{2}/{3}/{4}/idl/{5}_{1}_{3}.{4}_galaxies.fit'.format(basepath, bsize, suffix, pix, zbin, prefix)
+            f = '{0}/Lb{1}_{2}/{3}/{4}/{5}_{1}.{3}.{4}.fits'.format(basepath, bsize, suffix, pix, zbin, prefix)
+            #f = '{0}/Lb{1}_{2}/{3}/{4}/idl/{5}_{1}_{3}.{4}_galaxies.fit'.format(basepath, bsize, suffix, pix, zbin, prefix)
             #f = '{0}/Lb{1}_{2}/{3}/{4}/hv_output/gal_ginfo1.dat'
 
             #get redshift cutoffs for this bin
@@ -252,7 +254,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 lum[hstart:hend] += l
                 
                 #create unique ID
-                pc['ID'] += (int(pix)*100+int(zbin)+int(bsize))*1000000
+                pc['ID'] += int(bsize)*1000000000000 + int(pix)*10000000000 + int(zbin)*100000000
 
                 #if writing catalogs, request permission to write
                 if not justhalos:
@@ -488,16 +490,21 @@ if __name__ == '__main__':
     else:
         justhalos = False
 
-    if 'rmp_outputs' in cfg.keys():
-        rmp_outputs = True
+    if 'rmp_output' in cfg.keys():
+        rmp_output = True
     else:
-        rmp_outputs = False
+        rmp_output = False
 
-    if 'lensing_outputs' in cfg.keys():
-        lensing_outputs = True
+    if 'lensing_output' in cfg.keys():
+        lensing_output = True
     else:
-        lensing_outputs = False
+        lensing_output = False
+
+    try:
+        os.makedirs(outpath)
+    except:
+        pass
 
     finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, zbins, 
-                      justhalos=justhalos, pixels=pixels, lensing_outputs=lensing_outputs,
-                      rmp_outputs=rmp_outputs)
+                      justhalos=justhalos, pixels=pixels, lensing_output=lensing_output,
+                      rmp_output=rmp_output)
