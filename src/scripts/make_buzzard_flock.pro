@@ -31,7 +31,7 @@ spawn, 'mkdir -p '+dir
 spawn, 'mkdir -p '+execdir
 min_dz = 0.02     ;; smallest delta_z (before buffer) of a processor
 buffer_size = 50. ;;overlap region in Mpc
-readcol, '~mbusha/projects/development/healpix_cells_in_quartant', pixnum, format = 'l'
+readcol, srcdir+'/scripts/healpix_cells_in_quartant', pixnum, format = 'l'
 if not KEYWORD_SET(npix) then npix = N_ELEMENTS(pixnum)
 
 
@@ -165,7 +165,7 @@ for i = 0, nproc - 1 do begin
      out_lf_file = this_dir+'/LF.dat'
 
      ;;generate our executables, etc
-     command = './make_params_files.sh '+zminstr+zmaxstr+pathstr+mminstr+$
+     command = './make_params_files_buzzard.sh '+zminstr+zmaxstr+pathstr+mminstr+$
 	denspdfstr+lbcgstr+phistarstr+' '+$
 	pixstr+' '+num2str+' '+$
 	this_dir+' '+simfile+' '+' '+rnnfile+' '+$

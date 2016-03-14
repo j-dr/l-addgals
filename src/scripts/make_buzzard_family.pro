@@ -6,7 +6,7 @@ omegam = 0.286
 omegal = 0.714
 boxsize = ['1050', '2600', '4000', '6000']
 bcg_mass_lim = ['3e12', '3e12', '2.4e13', '4.0e13']
-simname = 'Buzzard'
+simname = 'Buzzard-1'
 ;simfile = '/lustre/ki/pfs/mbusha/projects/Chinchilla-1/Lb'+boxsize+$
 ;	   '/output/snapshot_Lightcone_000_healpix'
 simfile = '/nfs/slac/g/ki/ki21/cosmo/jderose/simulations/lightcone/Buzzard/Lb'+boxsize+$
@@ -18,22 +18,21 @@ rnnfile = '/nfs/slac/g/ki/ki21/cosmo/jderose/simulations/rnn/Buzzard/Lb'+boxsize
 halofile = '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb'+boxsize+'/Octants_01/rockstar/out_0.parents'
 hfile = '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb'+boxsize+'/Octants_01/rockstar/halos_'+boxsize+'.fit'
 rnn_halofile = '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchillas-midway/Chinchilla-1/Lb'+boxsize+'/Octants_01/calcrnn_halos/outputs/rnn_out_0.parents'
-dir = '/tmp/'+boxsize
-catdir = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard_v1.2/Catalog_v1.2'
+dir = '/tmp/'+simname+'/'+boxsize
+catdir = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard_v1.4/Catalog_v1.4'
 ddir = '/lustre/ki/pfs/jderose/simulations/Chinchilla-1/Lb'+boxsize+'_goodidx/'
-execdir = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard_v1.2/Lb'+boxsize+'_v1.2'
+execdir = '/nfs/slac/des/fs1/g/sims/jderose/l-addgals/catalogs/Buzzard_v1.4/Lb'+boxsize+'_v1.4'
 srcdir = '/nfs/slac/g/ki/ki23/des/jderose/l-addgals/'
 paramfile = '/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/scripts/Buzzard_params.txt'
 denspdfstr = '/nfs/slac/g/ki/ki21/cosmo/mbusha/Simulations/Chinchilla-tuning/analysis/rdel/denspdf_Chinchilla.dat'
 
-i=2
-make_buzzard_flock, dir=dir[i], $
-              sim_zmin=sim_zmin[i], sim_zmax=sim_zmax[i], $
-              nproc=nproc[i], $
-              omegam=omegam, omegal=omegal, $
-              simfile=simfile[i], rnnfile=rnnfile[i], $
-              halofile=halofile[i], rnn_halofile=rnn_halofile[i], $
-              simname=simname, boxsize=boxsize[i], $
-              hfile=hfile[i], bcg_mass_lim=bcg_mass_lim[i], paramfile=paramfile, $
-              catdir=catdir, ddir=ddir[i], execdir=execdir[i], srcdir=srcdir
-end
+for i=1,3 do make_buzzard_flock, dir=dir[i], $
+                                 sim_zmin=sim_zmin[i], sim_zmax=sim_zmax[i], $
+                                 nproc=nproc[i], $
+                                 omegam=omegam, omegal=omegal, $
+                                 simfile=simfile[i], rnnfile=rnnfile[i], $
+                                 halofile=halofile[i], rnn_halofile=rnn_halofile[i], $
+                                 simname=simname, boxsize=boxsize[i], $
+                                 hfile=hfile[i], bcg_mass_lim=bcg_mass_lim[i], paramfile=paramfile, $
+                                 catdir=catdir, ddir=ddir[i], execdir=execdir[i], srcdir=srcdir
+
