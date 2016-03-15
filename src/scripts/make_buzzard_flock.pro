@@ -168,8 +168,7 @@ for i = 0, nproc - 1 do begin
      command = './make_params_files_buzzard.sh '+zminstr+zmaxstr+pathstr+mminstr+$
 	denspdfstr+lbcgstr+phistarstr+' '+$
 	pixstr+' '+num2str+' '+$
-	this_dir+' '+simfile+' '+' '+rnnfile+' '+$
-	halofile+' '+rnn_halofile+' '+$
+	this_dir+' '+halofile+' '+rnn_halofile+' '+$
 	simname+' '+boxsize+' '+paramfile+' '+bcg_mass_lim+' '+ddir+' '+$
         srcdir
 
@@ -179,7 +178,7 @@ for i = 0, nproc - 1 do begin
 endfor
 
 ;;;make the checking/resubmission scripts
-cmd = './make_submission_files.sh '+simname+' '+boxsize+' '+dir
+cmd = './make_l-addgals_submission_files.sh '+simname+' '+boxsize+' '+dir
 spawn, cmd
 
 spawn, 'mkdir -p '+dir+'/logs/'
