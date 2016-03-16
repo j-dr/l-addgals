@@ -3,6 +3,6 @@ for PIX in 0 1 4 5 6 7 12 13 14 15 16 17 24 25 26 27 28 29 30 31 40 41 42 43 44 
 do
 for Z in 
 do
-./runscript.sh $PIX $Z
+echo "./run_cell.sh $PIX $Z"
 done
 done
