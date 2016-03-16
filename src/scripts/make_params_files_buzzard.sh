@@ -35,8 +35,8 @@ STRINGFILE=StringParameters
 NUMFILE=NumericalParameters
 
 
-cp StringParameters_BCC_template $STRINGFILE
-cp NumericalParameters_BCC_template $NUMFILE
+cp $SRCDIR/scripts/StringParameters_BCC_template $STRINGFILE
+cp $SRCDIR/scripts/NumericalParameters_BCC_template $NUMFILE
 #cp StringParameters_BCC_template $STRINGFILE
 #cp NumericalParameters_faber_4000_template.Buzzard $NUMFILE
 
@@ -66,3 +66,5 @@ echo "PixelNum $PIXELNUM" >> $NUMFILE
 mkdir -p ${OUTDIR}
 cp ${SRCDIR}/hv $OUTDIR
 cp StringParameters $OUTDIR
+cp NumericalParameters $OUTDIR
+

@@ -173,7 +173,7 @@ for i = 0, nproc - 1 do begin
         srcdir
 
      spawn, command
-
+     spawn, 'cp '+tlf_file+' '+out_lf_file
    endfor
 endfor
 
