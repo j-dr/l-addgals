@@ -13,7 +13,7 @@
 #include "constants.h" 
 #include "pi.h"
 #include "simplefunc.h" //for sqr
-#include "/afs/slac.stanford.edu/u/ki/mbusha/projects/addgals/RisaLibs/utils/integrator.h" 
+#include "integrator.h" 
 #include "cosmology.h"
 
 extern Cosmology cosmo;
