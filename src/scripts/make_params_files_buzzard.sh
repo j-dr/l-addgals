@@ -44,7 +44,7 @@ cp $SRCDIR/scripts/NumericalParameters_BCC_template $NUMFILE
 echo "ZREDMIN $ZMIN" >> $NUMFILE
 echo "ZREDMAX $ZMAX" >> $NUMFILE
 echo "Magmin $MMAG" >> $NUMFILE
-echo $PARAMFILE >> $NUMFILE
+cat $PARAMFILE >> $NUMFILE
 echo "BCG_Mass_lim $BCG_MASS_LIM" >> $NUMFILE
 
 # set the string parameters
