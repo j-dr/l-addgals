@@ -689,8 +689,7 @@ struct io_header readLCCellHeader(std::string fname)
 
   if (pfile.fail()) {
     cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
-    header.npart = 0;  
-    return header;
+    exit(2031);
   }
 
   pfile.read((char *)(&header), sizeof(struct io_header));
@@ -705,7 +704,7 @@ unsigned int getIndexNSide()
 
   while (true) {
     std::ostringstream convert;
-    convert << datadir << simlabel << "_000_" << r << "_0";
+    convert << datadir << simlabel << "_" << r << "_0";
     std::string fname = convert.str();
     std::ifstream pfile(fname.c_str());
     
@@ -726,7 +725,7 @@ unsigned int getFileNSide()
 
   while (true) {
     std::ostringstream convert;
-    convert << datadir << simlabel << "_000_" << r << "_0";
+    convert << datadir << simlabel << "_" << r << "_0";
     std::string fname = convert.str();
     std::ifstream pfile(fname.c_str());
     
@@ -735,8 +734,8 @@ unsigned int getFileNSide()
       continue;
     }
     
-    pfile.read((char *)(&header), sizeof(struct io_header));
-    return header.filenside;
+  pfile.read((char *)(&header), sizeof(struct io_header));
+  return header.filenside;
   }
 }
 
@@ -766,20 +765,14 @@ std::vector<long> getFilePixels(string datadir, string simlabel, int pix,
 
   //Look for first pixel with particles in it for this radial bin
   //get the file nside from this file
-  while (true) {
-    std::ostringstream convert;
-    convert << datadir << simlabel << "_000_" << r << "_" <<pc;
-    fname = convert.str();
-    header = readLCCellHeader(fname);
-    if ((header.npart == 0) & (r!=0))
-      {
-	pc++;
-	continue;
-      }
-    temp = header.filenside;
-    while(temp >>= 1) order2_++;
-    break;
-  }
+  std::ostringstream convert;
+  convert << datadir << simlabel << "_" << r << "_" <<pc;
+  fname = convert.str();
+  header = readLCCellHeader(fname);
+
+  temp = header.filenside;
+  while(temp >>= 1) order2_++;
+
   pix = ring2nest(pix, order1_);
 
   std::vector<long> fpix;
@@ -798,10 +791,6 @@ std::vector<long> getFilePixels(string datadir, string simlabel, int pix,
       fpix.push_back(pix);
     }
   
-  //this was for when lightcone files were written out to ring ordered pix
-  //should now be nest ordered
-  //std::transform(fpix.begin(), fpix.end(), fpix.begin(), ToRing(order2_));
-
   return fpix;
 }
 
@@ -820,51 +809,48 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
   struct io_header header;
   
   // Only using first two octants
-  for (i=0; i<2; i++)
+  for (r=minrb; r<=maxrb; r++)
     {
-      for (r=minrb; r<=maxrb; r++)
+      //Determine which file pixels contain particles in the 
+      //healpix cell we are using now
+      fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
+      
+      //Add up parts from each lightcone pixel associated with PixelNum
+      for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	{
-	  //Determine which file pixels contain particles in the 
-	  //healpix cell we are using now
-	  fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
-
-	  //Add up parts from each lightcone pixel associated with PixelNum
-	  for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
+	  pc = *itr;
+	  std::ostringstream convert;
+	  convert << datadir << simlabel << "_" << r << "_" << pc;
+	  fname = convert.str();
+	  std::ifstream pfile(fname.c_str());
+	  
+	  //Sometimes a pixel will be empty, if so raise a warning but continue
+	  if (pfile.fail()) {
+	    cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
+	    continue;
+	  }
+	  
+	  pfile.read((char *)(&header), sizeof(struct io_header));
+	  if (header.npart == 0) continue;
+	  
+	  //Read in the index, make sure it agrees with npart from header
+	  pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
+	  partial_sum(idx.begin(), idx.end(), idx.begin());
+	  assert(header.npart == idx[idx.size()-1]);
+	  
+	  long fpos = 0;
+	  //Add up the particles that are in the right peano indices
+	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 	    {
-	      pc = *itr;
-	      std::ostringstream convert;
-	      convert << datadir << simlabel << "_00" << i << "_" << r << "_" << pc;
-	      fname = convert.str();
-	      std::ifstream pfile(fname.c_str());
- 	      
-	      //Sometimes a pixel will be empty, if so raise a warning but continue
-	      if (pfile.fail()) {
-		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
-		continue;
-	      }
-
-	      pfile.read((char *)(&header), sizeof(struct io_header));
-	      if (header.npart == 0) continue;
-
-	      //Read in the index, make sure it agrees with npart from header
-	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
-	      partial_sum(idx.begin(), idx.end(), idx.begin());
-	      assert(header.npart == idx[idx.size()-1]);
-
-	      long fpos = 0;
-	      //Add up the particles that are in the right peano indices
-	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	      if (*itr==0)
 		{
-		  if (*itr==0)
-		    {
-		      np = idx[*itr];
-		    }
-		  else
-		    {
-		      np = idx[*itr] - idx[(*itr)-1];
-		    }
-		  nparts += np;
+		  np = idx[*itr];
 		}
+	      else
+		{
+		  np = idx[*itr] - idx[(*itr)-1];
+		}
+	      nparts += np;
 	    }
 	}
     }
@@ -930,156 +916,153 @@ vector <Particle *> ReadGadgetLCCell()
   //vfac = sqrt(header.time); does this do anything with LCs?
   xfac = 1./(sim.LengthUnit());
   accum = 0;
-  for (i=0; i<2; i++)
+  for (r=minrb; r<=maxrb; r++)
     {
-      for (r=minrb; r<=maxrb; r++)
+      
+      fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
+      for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	{
-
-	  fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
-	  for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
+	  pix = *itr;
+	  
+	  std::ostringstream convert;
+	  convert << datadir << simlabel << "_" << r 
+		  << "_" << pix;
+	  fname = convert.str();
+	  std::ifstream pfile(fname.c_str());
+	  if (pfile.fail()) {
+	    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
+	    exit(3031);
+	  }
+	  
+	  pfile.read((char *)(&header), sizeof(struct io_header));
+	  if (header.npart == 0) continue;
+	  
+	  std::ostringstream rconvert;
+	  rconvert << datadir << "rnn_" << simlabel << "_" << r 
+		   << "_" << pix;
+	  rnnfname = rconvert.str();
+	  std::ifstream rfile(rnnfname.c_str());
+	  if (rfile.fail()) {
+	    cerr<<"error: cannot open file '" <<rnnfname<<"'"<<endl;
+	    exit (2031);
+	  }
+	  
+	  pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
+	  partial_sum(idx.begin(), idx.end(), idx.begin());
+	  assert(header.npart == idx[idx.size()-1]);
+	  cout << "number of particles in this file is " << header.npart << endl;
+	  
+	  
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  rfile.read((char*) &buf, 4); 
+	  
+	  // read in positions and densities
+	  long fpos = 0;
+	  fnp = 0;
+	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
 	    {
-	      pix = *itr;
-
-	      std::ostringstream convert;
-	      convert << datadir << simlabel << "_00" << i << "_" << r 
-		      << "_" << pix;
-	      fname = convert.str();
-	      std::ifstream pfile(fname.c_str());
-	      if (pfile.fail()) {
-		cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
-		continue;
-	      }
-
-	      pfile.read((char *)(&header), sizeof(struct io_header));
-	      if (header.npart == 0) continue;
-
-	      std::ostringstream rconvert;
-	      rconvert << datadir << "rnn_" << simlabel << "_00" << i << "_" << r 
-		       << "_" << pix;
-	      rnnfname = rconvert.str();
-	      std::ifstream rfile(rnnfname.c_str());
-	      if (rfile.fail()) {
-		cerr<<"error: cannot open file '" <<rnnfname<<"'"<<endl;
-		exit (2031);
-	      }
-	      
-	      pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
-	      partial_sum(idx.begin(), idx.end(), idx.begin());
-	      assert(header.npart == idx[idx.size()-1]);
-	      cout << "number of particles in this file is " << header.npart << endl;
-
-	      
-	      rfile.read((char*) &buf, 4); 
-	      rfile.read((char*) &buf, 4); 
-	      rfile.read((char*) &buf, 4); 
-	      rfile.read((char*) &buf, 4); 
-	      rfile.read((char*) &buf, 4); 
-	      
-	      // read in positions and densities
-	      long fpos = 0;
-	      fnp = 0;
-	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	      if (*itr==0)
 		{
-		  if (*itr==0)
-		    {
-		      step = 0;
-		      pnp = idx[*itr];
-		    }
-		  else if (itr==pidx.begin())
-		    {
-		      step = idx[(*itr)-1];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-		  else
-		    {
-		      step = idx[(*itr)-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-
-		  fpos += step + pnp;
-		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
-		  rfile.seekg( step*sizeof(float), rfile.cur );
-		  for (j=0; j<pnp; j++)
-		    {
-		      //cout << j << endl;
-		      pfile.read((char *)&cart, sizeof(struct triple));
-		      rfile.read((char *)&td, sizeof(float));
-		      Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
-		      parts[accum+fnp] = new Particle();
-		      parts[accum+fnp]->PosAssign(xx);
-		      parts[accum+fnp]->DensAssign(td);
-		      fnp+=1;
-		    }
+		  step = 0;
+		  pnp = idx[*itr];
 		}
-	      //Seek to the end of the positions
-	      step = (idx.back())-idx[pidx.back()];
+	      else if (itr==pidx.begin())
+		{
+		  step = idx[(*itr)-1];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+	      else
+		{
+		  step = idx[(*itr)-1] - idx[*(itr-1)];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+	      
+	      fpos += step + pnp;
 	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
-	      cout << "Read in " << fnp << " particles" << endl;
-	      // read in velocities
-	      fnp = 0;
-	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	      rfile.seekg( step*sizeof(float), rfile.cur );
+	      for (j=0; j<pnp; j++)
 		{
-		  if (*itr==0)
-		    {
-		      step = 0;
-		      pnp = idx[*itr];
-		    }
-		  else if (itr==pidx.begin())
-		    {
-		      step = idx[(*itr)-1];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-		  else
-		    {
-		      step = idx[(*itr)-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-		  
-		  pfile.seekg( 3*step*sizeof(float), pfile.cur );
-		  for (j=0; j<pnp; j++)
-		    {
-		      pfile.read((char *)&cart, sizeof(struct triple));
-		      Point vv(cart.x,cart.y,cart.z);
-		      parts[accum+fnp]->VelAssign(vv);
-		      fnp+=1;
-		    }
+		  //cout << j << endl;
+		  pfile.read((char *)&cart, sizeof(struct triple));
+		  rfile.read((char *)&td, sizeof(float));
+		  Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
+		  parts[accum+fnp] = new Particle();
+		  parts[accum+fnp]->PosAssign(xx);
+		  parts[accum+fnp]->DensAssign(td);
+		  fnp+=1;
 		}
-	      //Seek to the end of the velocities
-	      step = idx.back()-idx[pidx.back()];
-	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
-	      // read in particle ids
-	      fnp = 0;
-	      for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
-		{
-		  if (*itr==0)
-		    {
-		      step = 0;
-		      pnp = idx[*itr];
-		    }
-		  else if (itr==pidx.begin())
-		    {
-		      step = idx[(*itr)-1];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-		  else
-		    {
-		      step = idx[(*itr)-1] - idx[*(itr-1)];
-		      pnp = idx[*itr] - idx[(*itr)-1];
-		    }
-		  
-		  pfile.seekg( step*sizeof(long), pfile.cur );
-		  for (j=0; j<pnp; j++)
-		    {
-		      pfile.read((char *)&tid, sizeof(long));
-		      parts[accum+fnp]->Pid(tid);
-		      fnp+=1;
-		    }
-		}
-	      accum += fnp;
-	      cout << "Have read " << accum << " particles in total" << endl;
-	      pfile.close();
-	      rfile.close();
 	    }
+	  //Seek to the end of the positions
+	  step = (idx.back())-idx[pidx.back()];
+	  pfile.seekg( 3*step*sizeof(float), pfile.cur );
+	  cout << "Read in " << fnp << " particles" << endl;
+	  // read in velocities
+	  fnp = 0;
+	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	    {
+	      if (*itr==0)
+		{
+		  step = 0;
+		  pnp = idx[*itr];
+		}
+	      else if (itr==pidx.begin())
+		{
+		  step = idx[(*itr)-1];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+	      else
+		{
+		  step = idx[(*itr)-1] - idx[*(itr-1)];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+
+	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
+	      for (j=0; j<pnp; j++)
+		{
+		  pfile.read((char *)&cart, sizeof(struct triple));
+		  Point vv(cart.x,cart.y,cart.z);
+		  parts[accum+fnp]->VelAssign(vv);
+		  fnp+=1;
+		}
+	    }
+	  //Seek to the end of the velocities
+	  step = idx.back()-idx[pidx.back()];
+	  pfile.seekg( 3*step*sizeof(float), pfile.cur );
+	  // read in particle ids
+	  fnp = 0;
+	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
+	    {
+	      if (*itr==0)
+		{
+		  step = 0;
+		  pnp = idx[*itr];
+		}
+	      else if (itr==pidx.begin())
+		{
+		  step = idx[(*itr)-1];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+	      else
+		{
+		  step = idx[(*itr)-1] - idx[*(itr-1)];
+		  pnp = idx[*itr] - idx[(*itr)-1];
+		}
+
+	      pfile.seekg( step*sizeof(long), pfile.cur );
+	      for (j=0; j<pnp; j++)
+		{
+		  pfile.read((char *)&tid, sizeof(long));
+		  parts[accum+fnp]->Pid(tid);
+		  fnp+=1;
+		}
+	    }
+	  accum += fnp;
+	  cout << "Have read " << accum << " particles in total" << endl;
+	  pfile.close();
+	  rfile.close();
 	}
     }
   assert( accum == nparts );
