@@ -17,7 +17,7 @@
 #include "galaxy_global.h"
 #include "galaxy.h"
 #ifdef HEALPIX
-#include "chealpix.h"
+#include "healpix_utils.h"
 #endif
 
 //#define COLORS

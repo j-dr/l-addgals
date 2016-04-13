@@ -2,7 +2,7 @@
 #define halo_h
 #include "cosmology.h"
 #ifdef HEALPIX
-#include "chealpix.h"
+#include "healpix_utils.h"
 #endif
 
 extern Cosmology cosmo;

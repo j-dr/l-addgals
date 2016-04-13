@@ -12,6 +12,7 @@ void nest2xyf(long pix, long *ix, long *iy, long *face_num, long order_);
 long xyf2nest(long ix, long iy, long face_num, long order_);
 void ring2xyf(long pix, long *ix, long *iy, long *face_num, long order_);
 long xyf2ring(long ix, long iy, long face_num, long order_);
+void ang2pix_ring(long nside, double theta, double phi, long *pix);
 void tablefiller(void);
 
 

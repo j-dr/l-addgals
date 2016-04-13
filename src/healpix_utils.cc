@@ -23,6 +23,12 @@ struct ToPeano : public std::unary_function<long,long> {
 };
 
 
+long imodulo(long v1, long v2)
+{ 
+  return (v1>=0) ? ((v1<v2) ? v1 : (v1%v2)) : ((v1%v2)+v2);
+}
+
+
 long isqrt(long i)
 {
   return sqrt(((double) (i)) + 0.5);
@@ -143,6 +149,31 @@ long lower_nest(long pix, long order1_, long order2_)
   return base * ( 1 << ( 2 * order2_ ) ) + losubpix;
 }
 
+long xyf2nest(long ix, long iy, long face_num, long order_)
+{
+  if(HEALPIX_TOOLS_INIT)
+    {
+      tablefiller();
+      HEALPIX_TOOLS_INIT = 0;
+    }
+  
+  long pix = ((face_num)<<(2*order_)) +
+    (   ((utab[ ix     &0xff]))
+	| ((utab[(ix>> 8)&0xff])<<16)
+	| ((utab[(ix>>16)&0xff])<<32)
+	| ((utab[(ix>>24)&0xff])<<48)
+	| ((utab[ iy     &0xff])<<1)
+	| ((utab[(iy>> 8)&0xff])<<17)
+	| ((utab[(iy>>16)&0xff])<<33)
+	| ((utab[(iy>>24)&0xff])<<49) ); 
+  
+  long npix_ = 1;
+  npix_ = 12*(npix_ << (2*order_));
+  assert(pix >= 0 && pix < npix_);
+  
+  return pix;
+}
+
 long xyf2ring(long ix, long iy, long face_num, long order_)
 {
   long npix_ = 1;
@@ -190,6 +221,43 @@ long xyf2ring(long ix, long iy, long face_num, long order_)
   
   return pix;
 }
+
+void nest2xyf(long pix, long *ix, long *iy, long *face_num, long order_)
+{
+  if(HEALPIX_TOOLS_INIT)
+    {
+      tablefiller();
+      HEALPIX_TOOLS_INIT = 0;
+    }
+  
+  long npix_ = 1;
+  npix_ = 12*(npix_ << (2*order_));
+  assert(pix >= 0 && pix < npix_);
+  
+  long npface_ = 1;
+  npface_ = npface_ << (2*order_);
+  
+  *face_num = pix>>(2*order_);
+  pix &= (npface_-1);
+  long raw = ((pix&0x555500000000ull)>>16) 
+    | ((pix&0x5555000000000000ull)>>31)
+    | (pix&0x5555)
+    | ((pix&0x55550000)>>15);
+  *ix =  ctab[raw&0xff]
+    | (ctab[(raw>>8)&0xff]<<4)
+    | (ctab[(raw>>16)&0xff]<<16)
+    | (ctab[(raw>>24)&0xff]<<20);
+  pix >>= 1;
+  raw = ((pix&0x555500000000ull)>>16) 
+    | ((pix&0x5555000000000000ull)>>31)
+    | (pix&0x5555)
+    | ((pix&0x55550000)>>15);
+  *iy =  ctab[raw&0xff]
+    | (ctab[(raw>>8)&0xff]<<4)
+    | (ctab[(raw>>16)&0xff]<<16)
+    | (ctab[(raw>>24)&0xff]<<20);
+}
+
 
 void ring2xyf(long pix, long *ix, long *iy, long *face_num, long order_)
 {
@@ -276,73 +344,65 @@ void ring2xyf(long pix, long *ix, long *iy, long *face_num, long order_)
 	}
       if (tmp>=nr) (*face_num) = (*face_num) + 1;
     }
-
-  long irt = iring - (jrll[*face_num]*nside_) + 1;
-  long ipt = 2*iphi- jpll[*face_num]*nr - kshift -1;
-  if (ipt>=nl2) ipt-=8*nside_;
-
-  *ix =  (ipt-irt) >>1;
-  *iy =(-(ipt+irt))>>1;
-}
-  
-long xyf2nest(long ix, long iy, long face_num, long order_)
-{
-  if(HEALPIX_TOOLS_INIT)
-    {
-      tablefiller();
-      HEALPIX_TOOLS_INIT = 0;
-    }
-  
-  long pix = ((face_num)<<(2*order_)) +
-    (   ((utab[ ix     &0xff]))
-	| ((utab[(ix>> 8)&0xff])<<16)
-	| ((utab[(ix>>16)&0xff])<<32)
-	| ((utab[(ix>>24)&0xff])<<48)
-	| ((utab[ iy     &0xff])<<1)
-	| ((utab[(iy>> 8)&0xff])<<17)
-	| ((utab[(iy>>16)&0xff])<<33)
-	| ((utab[(iy>>24)&0xff])<<49) ); 
-  
-  long npix_ = 1;
-  npix_ = 12*(npix_ << (2*order_));
-  assert(pix >= 0 && pix < npix_);
-  
-  return pix;
 }
 
-void nest2xyf(long pix, long *ix, long *iy, long *face_num, long order_)
+void ang2pix_ring(long nside, double theta, double phi, long *pix)
 {
-  if(HEALPIX_TOOLS_INIT)
-    {
-      tablefiller();
-      HEALPIX_TOOLS_INIT = 0;
-    }
-  
+  int order_, temp;
+
+  temp = nside;
+  order_ = 0;
+  while(temp >>= 1) order_++;
+
   long npix_ = 1;
   npix_ = 12*(npix_ << (2*order_));
-  assert(pix >= 0 && pix < npix_);
+  
+  long nside_ = 1;
+  nside_ = nside_ << order_;
   
   long npface_ = 1;
   npface_ = npface_ << (2*order_);
   
-  *face_num = pix>>(2*order_);
-  pix &= (npface_-1);
-  long raw = ((pix&0x555500000000ull)>>16) 
-    | ((pix&0x5555000000000000ull)>>31)
-    | (pix&0x5555)
-    | ((pix&0x55550000)>>15);
-  *ix =  ctab[raw&0xff]
-    | (ctab[(raw>>8)&0xff]<<4)
-    | (ctab[(raw>>16)&0xff]<<16)
-    | (ctab[(raw>>24)&0xff]<<20);
-  pix >>= 1;
-  raw = ((pix&0x555500000000ull)>>16) 
-    | ((pix&0x5555000000000000ull)>>31)
-    | (pix&0x5555)
-    | ((pix&0x55550000)>>15);
-  *iy =  ctab[raw&0xff]
-    | (ctab[(raw>>8)&0xff]<<4)
-    | (ctab[(raw>>16)&0xff]<<16)
-    | (ctab[(raw>>24)&0xff]<<20);
-}
+  long ncap_ = (npface_-nside_)<<1;
+  
+  double z = cos(theta);
+  double za = fabs(z);
+  double tt = phi;
+  long tt_long = (floor(tt/2/M_PI));
+  tt = tt - ((double) (tt_long))*2*M_PI;
+  tt *= M_2_PI; // in [0,4)
 
+  if(za <= 2.0/3.0) // Equatorial region
+    {
+      double temp1 = nside_*(0.5+tt);
+      double temp2 = nside_*z*0.75;
+      long jp = (long) (temp1-temp2); // index of  ascending edge line
+      long jm = (long) (temp1+temp2); // index of descending edge line
+      
+      // ring number counted from z=2/3
+      long ir = nside_ + 1 + jp - jm; // in {1,2n+1}
+      long kshift = 1-(ir&1); // kshift=1 if ir even, 0 otherwise
+      
+      long ip = (jp+jm-nside_+kshift+1)/2; // in {0,4n-1}
+      ip = imodulo(ip,4*nside_);
+      
+      *pix = ncap_ + (ir-1)*4*nside_ + ip;
+    }
+  else  // North & South polar caps
+    {
+      double tp = tt- ((long) (tt));
+      double tmp = nside_*sqrt(3*(1-za));
+      
+      long jp = (long) (tp*tmp); // increasing edge line index
+      long jm = (long) ((1.0-tp)*tmp); // decreasing edge line index
+      
+      long ir = jp+jm+1; // ring number counted from the closest pole
+      long ip = (long) (tt*ir); // in {0,4*ir-1}
+      ip = imodulo(ip,4*ir);
+      
+      if(z>0)
+	*pix = 2*ir*(ir-1) + ip;
+      else
+	*pix = npix_ - 2*ir*(ir+1) + ip;
+    }
+}

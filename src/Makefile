@@ -30,8 +30,8 @@ ifeq "$(HOSTNAME)" "orange"
 	WARN=
 	END_FLAG = -DLITTLEENDIAN
 	#END_FLAG = -DBIGENDIAN
-	HEALPIX_LIB = -L/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/lib
-	HEALPIX_INC = -I/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/include
+	HEALPIX_LIB = #-L/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/lib
+	HEALPIX_INC = #-I/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/include
 	OMPFLAG = 
 endif
 
@@ -45,7 +45,7 @@ INCL = -I. ${ANN_INC} ${NR_INC} ${HEALPIX_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFI
 LDFLAGS = ${ANN_LIB} ${NR_LIB} ${HEALPIX_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
 
 #libraries to link
-LOADLIBES = -lANN -lrecipes -lchealpix -lkcorrect -lgsl -lgslcblas -lCCfits 
+LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lCCfits 
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
