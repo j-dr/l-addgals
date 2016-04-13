@@ -6,6 +6,7 @@ from mpi4py import MPI
 import fast3tree as f3t
 import numpy.lib.recfunctions as rf
 import numpy as np
+import pandas as pd
 import healpy as hp
 import fitsio
 import warnings
@@ -13,7 +14,6 @@ import yaml
 import time
 import sys
 import os
-
 
 
 TZERO = None
@@ -28,10 +28,11 @@ def tprint(info, stime=None):
     return tnow
 
 
+
 def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans, 
                       bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05, 
                       nside=8, justhalos=True, pixels=None, rmp_output=False,
-                      lensing_output=False):
+                      lensing_output=False, skyfactory=True):
 
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
@@ -51,7 +52,10 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
         lum = [None, None, None]
         pixpaths = deque()
         for i, bsize in enumerate(['1050', '2600', '4000']):
-            pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
+            if skyfactory:
+                pix = glob('{0}/Lb{1}_{2}/addgals/[0-9]*/0*'.format(basepath, bsize, suffix))
+            else:
+                pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
             zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
             if pixels!=None:
                 pix = pixels
@@ -347,8 +351,8 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
                rmp_output=False, lensing_output=False):
 
     for p in upix:
-        fits = fitsio.FITS('{0}/{1}.{2}.fits'.format(outpath, prefix, p) ,'rw')
-        print('Writing to {0}/{1}.{2}.fits'.format(outpath, prefix, p))
+        fits = fitsio.FITS('{0}/truth/{1}.{2}.fits'.format(outpath, prefix, p) ,'rw')
+        print('Writing to {0}/truth/{1}.{2}.fits'.format(outpath, prefix, p))
         pidx = hpix==p
         try:
             h = fits[-1].read_header()
@@ -361,7 +365,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
 
         if rmp_output:
             columns = ['ID', 'RA', 'DEC', 'OMAG', 'OMAGERR', 'M200', 'CENTRAL', 'RHALO', 'Z']
-            fits = fitsio.FITS('{0}/{1}.{2}.rmp.fits'.format(outpath, prefix, p) ,'rw')
+            fits = fitsio.FITS('{0}/rmp/{1}.{2}.rmp.fits'.format(outpath, prefix, p) ,'rw')
             try:
                 h = fits[-1].read_header()
                 fits[-1].write_key('NAXIS2', h['NAXIS2']+len(catalog[pidx]))
@@ -373,7 +377,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
 
         if lensing_output:
             columns = ['ID', 'PX', 'PY', 'PZ']
-            fits = fitsio.FITS('{0}/{1}.{2}.rmp.fits'.format(outpath, prefix, p) ,'rw')
+            fits = fitsio.FITS('{0}/lens/{1}.{2}.lens.fits'.format(outpath, prefix, p) ,'rw')
             try:
                 h = fits[-1].read_header()
                 fits[-1].write_key('NAXIS2', h['NAXIS2']+len(catalog[pidx]))
@@ -428,8 +432,8 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
         fits.close()
 
 
-def combine_parents_list_fits(parentpath, listpath, prefix, outpath, bsize, occ, lum, mmin=5e12):
-    hdtype = np.dtype([('id',np.int), ('mvir',np.float), ('vmax',np.float), ('vrms',np.float),
+def join_halofiles(basepath, mmin=5e12):
+    ldtype = np.dtype([('id',np.int), ('mvir',np.float), ('vmax',np.float), ('vrms',np.float),
                        ('rvir',np.float), ('rs',np.float), ('np',np.int), ('x',np.float), ('y',np.float),
                        ('z',np.float), ('vx',np.float), ('vy',np.float), ('vz',np.float), ('jx',np.float),
                        ('jy',np.float), ('jz',np.float), ('spin',np.float), ('rs_klypin',np.float),
@@ -437,34 +441,34 @@ def combine_parents_list_fits(parentpath, listpath, prefix, outpath, bsize, occ,
                        ('m2500c',np.float), ('xoff',np.float), ('voff',np.float), ('lambda',np.float),
                        ('b_to_a',np.float), ('c_to_a',np.float), ('ax',np.float), ('ay',np.float),
                        ('az',np.float), ('virial_ratio', np.float)])
-    usecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+
+    pdtype = np.dtype([('id',np.int), ('mvir', np.float), ('pid', np.int)])
+    
+    lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+    pusecols = [0,2,-1]
+
     print('Reading parents')
-    parents = np.genfromtxt(parentpath, usecols=[2,14])
-    parents = parents[parents[:,0]>mmin]
-    print('Reading hlist')
-    hlist = np.loadtxt(listpath, usecols=usecols, dtype=hdtype)
+    parents = pd.read_csv("{0}/out_0.parents".format(basepath), usecols=pusecols, dtype=pdtype)
+    parents = parents.to_records(index=False)
+    parents = parents[parents['mvir']>mmin]
+
+    print('Reading list')
+    hlist = pd.read_csv("{0}/out_0.list", usecols=lusecols, dtype=ldtype)
+    hlist = hlist.to_records(index=False)
     hlist = hlist[hlist['mvir']>mmin]
-    print('Making data')
+
+    print('Joining files')
+    hlist = rf.join_by('id', hlist, parents[['id', 'pid']], r1postfix=None, r2postfix=None, usemask=False, asrecarray=True)
     adtype = np.dtype([('lumtot',np.float), ('lum20',np.float), ('lbcg', np.float),
                        ('ngals',np.int), ('n18',np.int), ('n19',np.int), ('n20',np.int),
-                       ('n21',np.int), ('n22',np.int), ('host_haloid',np.int)])
-    data = np.zeros(len(hlist), dtype=adtype)
-    data['lumtot'] = lum[:,0]
-    data['lum20'] = lum[:,1]
-    data['lbcg'] = lum[:,2]
-    data['ngals'] = occ[:,0]
-    data['n18'] = occ[:,1]
-    data['n19'] = occ[:,2]
-    data['n20'] = occ[:,3]
-    data['n21'] = occ[:,4]
-    data['n22'] = occ[:,5]
-    data['host_haloid'] = parents[:,1]
+                       ('n21',np.int), ('n22',np.int)])
+
     print('Adding fields')
     rf.append_field(hlist,['lumtot', 'lum20', 'lbcg', 'ngals', 'n18',
-                           'n19', 'n20', 'n21', 'n22', 'host_haloid'],
-                    data, adtype)
+                           'n19', 'n20', 'n21', 'n22'], dtype=adtype)
+
     print('Writing file')
-    fitsio.write('{0}/{1}_halos_{2}.fits'.format(outpath,prefix,bsize), hlist)
+    fitsio.write('{0}/out_0.fits'.format(basepath), hlist)
 
 
 if __name__ == '__main__':
@@ -499,12 +503,30 @@ if __name__ == '__main__':
         lensing_output = True
     else:
         lensing_output = False
+        
+    if 'skyfactory' in cfg.keys():
+        skyfactory = cfg['skyfactory']
+    else:
+        skyfactory = False
+
+    if 'mmin' in cfg.keys():
+        mmin = [float(m) for m in mmin]
+    else:
+        mmin = [3e12,3e12,2.4e13]
 
     try:
         os.makedirs(outpath)
     except:
         pass
 
-    finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, zbins, 
+    jhalopaths = []
+    for i, hp in enumerate(halopaths):
+        hs = hp.split('.')
+        if 'fit' not in hs[-1]:
+            jhalopaths.append(join_halofiles('.'.join(hs[:-1]), mmin=mmin[i]))
+        else:
+            jhalopaths.append(hp)
+            
+    finalize_catalogs(basepath, prefix, suffix, outpath, jhalopaths, zbins, 
                       justhalos=justhalos, pixels=pixels, lensing_output=lensing_output,
-                      rmp_output=rmp_output)
+                      rmp_output=rmp_output, skyfactory=skyfactory)

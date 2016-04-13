@@ -72,13 +72,11 @@ Simulation DefineBCCGadgetSimulation(void){
     break;
   }
 
-  npart = head.npartTotal;
-  np13 = int(pow((double) npart, (double)1/3));
   Cosmology cosmo(head.Omega0, 0.0, head.HubbleParam);
   Simulation sim(simtype, cosmo);
   sim.Boxsize(head.BoxSize);
   sim.ParticleMass(head.mass*pow(10.0,10.0));
-  sim.Np(np13);
+  sim.Np(0);
 
   return sim;
 }
