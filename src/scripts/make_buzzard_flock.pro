@@ -7,7 +7,7 @@ pro make_buzzard_flock, dir=dir, $
 	simname=simname, boxsize=boxsize, denspdfstr=denspdfstr,$
 	npix=npix, bcg_mass_lim = bcg_mass_lim, paramfile=paramfile, $
 	catdir=catdir, hfile=hfile, ddir=ddir, execdir=execdir, $
-        srcdir=srcdir                
+        srcdir=srcdir, pardir=pardir
 
 
 ;;;parameters that need to be specified
@@ -149,7 +149,7 @@ for i = 0, nproc - 1 do begin
    ;;;define out denspdf and lbcg files
    if not KEYWORD_SET(denspdfstr) then denspdfstr = ' /u/ki/mbusha/projects/modules/idl/addgals/rdel/denspdf_Consuelo02_AGES_rescale_0'+LDnum[i]+'.dat'
    denspdfstr = ' '+denspdfstr
-   lbcgstr = ' '+srcdir+'/training/buzzard_model/lbcg_m200_Consuelo_scatter0.20_histograms_0'+LDnum[i]+'.txt'
+   lbcgstr = ' '+pardir+'/lbcg_m200_Consuelo_scatter0.20_histograms_0'+LDnum[i]+'.txt'
 
    ;;;write our LF for this redshift to a temporary file
    tlf_file = 'tLF.dat'
