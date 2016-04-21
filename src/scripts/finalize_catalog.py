@@ -433,39 +433,36 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
 
 
 def join_halofiles(basepath, mmin=5e12):
-    ldtype = np.dtype([('id',np.int), ('mvir',np.float), ('vmax',np.float), ('vrms',np.float),
-                       ('rvir',np.float), ('rs',np.float), ('np',np.int), ('x',np.float), ('y',np.float),
-                       ('z',np.float), ('vx',np.float), ('vy',np.float), ('vz',np.float), ('jx',np.float),
-                       ('jy',np.float), ('jz',np.float), ('spin',np.float), ('rs_klypin',np.float),
-                       ('mvir_all',np.float), ('m200b',np.float), ('m200c',np.float), ('m500c',np.float),
-                       ('m2500c',np.float), ('xoff',np.float), ('voff',np.float), ('lambda',np.float),
-                       ('b_to_a',np.float), ('c_to_a',np.float), ('ax',np.float), ('ay',np.float),
-                       ('az',np.float), ('virial_ratio', np.float)])
 
-    pdtype = np.dtype([('id',np.int), ('mvir', np.float), ('pid', np.int)])
+    lnames = ['ID', 'MVIR', 'VMAX', 'VRMS', 'VRMS', 'RVIR', 'RS', 'NP', 'HALOPX', 'HALOPY', 'HALOPZ',
+              'HALOVX', 'HALOVY', 'HALOVZ', 'JX', 'JY', 'JZ', 'SPIN', 'RS_KLYPIN', 'MVIR_ALL', 
+              'M200b', 'M200c', 'M500c', 'M2500c', 'XOFF', 'VOFF', 'LAMBDA', 'B_TO_A', 'C_TO_A',
+              'AX', 'AY', 'AZ', 'VIRIAL_RATIO']
+
+    pnames = ['ID','MVIR','PID']
     
     lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-    pusecols = [0,2,-1]
+    pusecols = [0,2,41]
 
     print('Reading parents')
-    parents = pd.read_csv("{0}/out_0.parents".format(basepath), usecols=pusecols, dtype=pdtype)
+    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = dtype=None, comment='#', sep=' ')
     parents = parents.to_records(index=False)
-    parents = parents[parents['mvir']>mmin]
+    parents = parents[parents['MVIR']>mmin]
 
     print('Reading list')
-    hlist = pd.read_csv("{0}/out_0.list", usecols=lusecols, dtype=ldtype)
+    hlist = pd.read_csv("{0}/cut_reform_out_0.list", usecols=lusecols, dtype=ldtype, comment='#', sep=' ')
     hlist = hlist.to_records(index=False)
-    hlist = hlist[hlist['mvir']>mmin]
+    hlist = hlist[hlist['MVIR']>mmin]
 
     print('Joining files')
-    hlist = rf.join_by('id', hlist, parents[['id', 'pid']], r1postfix=None, r2postfix=None, usemask=False, asrecarray=True)
-    adtype = np.dtype([('lumtot',np.float), ('lum20',np.float), ('lbcg', np.float),
-                       ('ngals',np.int), ('n18',np.int), ('n19',np.int), ('n20',np.int),
-                       ('n21',np.int), ('n22',np.int)])
+    hlist = rf.join_by('ID', hlist, parents[['ID', 'PID']], r1postfix=None, r2postfix=None, usemask=False, asrecarray=True)
+    adtype = np.dtype([('LUMTOT',np.float), ('LUM20',np.float), ('LBCG', np.float),
+                       ('NGALS',np.int), ('N18',np.int), ('N19',np.int), ('N20',np.int),
+                       ('N21',np.int), ('N22',np.int)])
 
     print('Adding fields')
-    rf.append_field(hlist,['lumtot', 'lum20', 'lbcg', 'ngals', 'n18',
-                           'n19', 'n20', 'n21', 'n22'], dtype=adtype)
+    rf.append_field(hlist,['LUMTOT', 'LUM20', 'LBCG', 'NGALS', 'N18',
+                           'N19', 'N20', 'N21', 'N22'], dtype=adtype)
 
     print('Writing file')
     fitsio.write('{0}/out_0.fits'.format(basepath), hlist)
