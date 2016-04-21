@@ -431,6 +431,21 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
 
         fits.close()
 
+        if lensing_output:
+            columns = ['HALOID', 'HALOPX', 'HALOPY', 'HALOPZ']
+            fits = fitsio.FITS('{0}/lens/{1}.{2}_halos.lens.fits'.format(outpath, prefix, p) ,'rw')
+            hp = h[columns][start:end]
+            hp.dtype.names = 'ID', 'PX', 'PY', 'PZ'
+            try:
+                hdr = fits[-1].read_header()
+                fits[-1].write_key('NAXIS2', hdr['NAXIS2']+len(h[start:end]))
+                fits[-1].append(hp)
+            except:
+                fits.write(hp)
+                
+            fits.close()
+
+
 
 def join_halofiles(basepath, mmin=5e12):
 
