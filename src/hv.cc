@@ -168,6 +168,8 @@ int main(void){
   if (evolution == 2) cout<<" (FABER)"<<endl;
   if (evolution == 3) cout<<" (TIME)"<<endl;
 
+  cout << "ring2nest test " << ring2nest(PixelNum, 2) << endl;
+
   //correct out output files
   outpfn = out_path+outpfn;
   outdfn = out_path+outdfn;

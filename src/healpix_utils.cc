@@ -344,6 +344,14 @@ void ring2xyf(long pix, long *ix, long *iy, long *face_num, long order_)
 	}
       if (tmp>=nr) (*face_num) = (*face_num) + 1;
     }
+
+  long irt = iring - (jrll[*face_num]*nside_) + 1;
+  long ipt = 2*iphi- jpll[*face_num]*nr - kshift -1;
+  if (ipt>=nl2) ipt-=8*nside_;
+
+  *ix =  (ipt-irt) >>1;
+  *iy =(-(ipt+irt))>>1;
+
 }
 
 void ang2pix_ring(long nside, double theta, double phi, long *pix)
