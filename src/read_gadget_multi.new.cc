@@ -1093,6 +1093,8 @@ vector <Particle *> ReadGadgetLCCell()
   vector<Particle*>::iterator mindecp = std::min_element(parts.begin(), parts.end(), comparedec);
   cout << "Minimum particle redshift, ra, dec before cut is : " << parts[minzpp-parts.begin()]->Zred() 
        << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
+  cout << "Cut quantities are RAMIN, RAMAX, DECMIN, DECMAX: " << RAMIN << " " << RAMAX << " " << DECMIN
+       << " " << DECMAX << endl;
 #endif
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
