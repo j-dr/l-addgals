@@ -1087,12 +1087,12 @@ vector <Particle *> ReadGadgetLCCell()
   vector<Particle*>::iterator maxrap = std::max_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator maxdecp = std::max_element(parts.begin(), parts.end(), comparedec);
   cout << "Maximum particle redshift, ra, dec before cut is : " << parts[maxzpp-parts.begin()]->Zred() 
-       << parts[maxrap-parts.begin()]->Ra() << parts[maxdecp-parts.begin()]->Dec() << endl;
+       << " " << parts[maxrap-parts.begin()]->Ra() << " " << parts[maxdecp-parts.begin()]->Dec() << endl;
   vector<Particle*>::iterator minzpp = std::min_element(parts.begin(), parts.end(), comparez);
   vector<Particle*>::iterator minrap = std::min_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator mindecp = std::min_element(parts.begin(), parts.end(), comparedec);
   cout << "Minimum particle redshift, ra, dec before cut is : " << parts[minzpp-parts.begin()]->Zred() 
-       << parts[minrap-parts.begin()]->Ra() << parts[mindecp-parts.begin()]->Dec() << endl;
+       << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
 #endif
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
