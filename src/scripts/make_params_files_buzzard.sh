@@ -18,6 +18,7 @@ PARAMFILE=${15}
 BCG_MASS_LIM=${16}
 DDIR=${17}
 SRCDIR=${18}
+PARDIR=${19}
 FLABEL=${SIMNAME}_${BOXSIZE}
 
 echo ${OUTDIR}
@@ -62,6 +63,7 @@ echo "zstr ${ZNUM}" >> $STRINGFILE
 
 echo "phistar $PHISTAR" >> $NUMFILE
 echo "PixelNum $PIXELNUM" >> $NUMFILE
+echo "colortrdir ${PARDIR}" >> $STRINGFILE
 
 mkdir -p ${OUTDIR}
 cp ${SRCDIR}/hv $OUTDIR

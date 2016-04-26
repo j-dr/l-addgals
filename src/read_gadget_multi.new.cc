@@ -163,9 +163,9 @@ vector <Halo*> ReadRockstarHalos(void){
     rfile>>hid>>rdel;
     zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
 
-//    if (hcount < 10){
-//      cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", rdel = "<<rdel<<endl;
-//    }
+    if (hcount < 5){
+      cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", rdel = "<<rdel<<endl;
+    }
 
     if(m200c < BCG_Mass_lim) continue;
     if(pid >= 0) continue;

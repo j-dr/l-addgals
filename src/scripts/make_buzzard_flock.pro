@@ -170,7 +170,7 @@ for i = 0, nproc - 1 do begin
 	pixstr+' '+num2str+' '+$
 	this_dir+' '+halofile+' '+rnn_halofile+' '+$
 	simname+' '+boxsize+' '+paramfile+' '+bcg_mass_lim+' '+ddir+' '+$
-        srcdir
+        srcdir + ' ' + pardir
 
      spawn, command
      spawn, 'cp '+tlf_file+' '+out_lf_file
