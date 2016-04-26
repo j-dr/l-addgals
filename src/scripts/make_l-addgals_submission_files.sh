@@ -3,7 +3,7 @@
 SIMNAME=$1
 BOXSIZE=$2
 DIR=$3
-ODIR=$4
+
 
 #our template file names
 RUNSCRIPT=run_cell.sh
@@ -33,7 +33,7 @@ case $BOXSIZE in
 esac
 
 sed -e 's:CATPATH=:CATPATH='$DIR':'\
-    -e 's:>&:>&'$SIMNAME'_'$BOXSIZE'.${1}.${2}'\
+    -e 's:>&:>&'$SIMNAME'_'$BOXSIZE'.${1}.${2}:'\
 	<$RUNSCRIPT > $DIR/$RUNSCRIPT
 chmod 744 $DIR/$RUNSCRIPT
 sed -e 's:for Z in:for Z in '"$ZSTR"':'\

@@ -59,7 +59,7 @@ Simulation DefineBCCGadgetSimulation(void){
 
   while (true) {
     std::ostringstream convert;
-    convert << datadir << simlabel << "_000_" << r << "_0";
+    convert << datadir << simlabel << r << "_0";
     std::string fname = convert.str();
     std::ifstream pfile(fname.c_str());
     
