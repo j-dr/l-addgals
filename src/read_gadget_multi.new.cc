@@ -758,7 +758,7 @@ void getRadialBins(int &minrb, int &maxrb)
 }
 
 std::vector<long> getFilePixels(string datadir, string simlabel, long pix, 
-				int r, int order1_)
+				int r, long order1_)
 {
   /*
     inputs:
@@ -770,8 +770,8 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
   string fname;
   struct io_header header;
   int temp;
-  int order2_=0;
-  int pc = 0;
+  long order2_=0;
+  long pc = 0;
 
   //Look for first pixel with particles in it for this radial bin
   //get the file nside from this file
@@ -788,6 +788,13 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
 #endif
 
   pix = ring2nest(pix, order1_);
+
+
+#ifdef DEBUG_PIXLC
+  cout << "Radial file order: " << order2_ << endl;
+  cout << "Working cell nested pixel number: " << pix;
+#endif
+
 
   std::vector<long> fpix;
   if (order2_ < order1_)
@@ -815,7 +822,7 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
   long pc;
   int npix = 12*(1<<(2*order2_));
   long fnpix=9999999999;
-  int forder;
+  long forder;
   long nparts = 0;
   vector<long> idx(npix);
   std::string fname;
@@ -885,7 +892,7 @@ vector <Particle *> ReadGadgetLCCell()
   int i,j,r,buf;
   int indexnside, temp;
   int nbins;
-  int order1_ = 0, order2_ = 0;
+  long order1_ = 0, order2_ = 0;
   long tid, accum;
   long step, pnp, nparts;
   float td, xfac, vfac;
