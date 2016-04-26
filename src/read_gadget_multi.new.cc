@@ -783,16 +783,11 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
   temp = header.filenside;
   while(temp >>= 1) order2_++;
 
-#ifdef DEBUG_PIXLC
-  cout << "Radial file nside: " << order2_ << endl;
-#endif
-
   pix = ring2nest(pix, order1_);
 
-
 #ifdef DEBUG_PIXLC
-  cout << "Radial file order: " << order2_ << endl;
-  cout << "Working cell nested pixel number: " << pix;
+  cout << "order1_, order2_: " << order1_ << order2_ << endl;
+  cout << "Working cell nested pixel number: " << pix << endl;
 #endif
 
 
