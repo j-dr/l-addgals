@@ -757,7 +757,7 @@ void getRadialBins(int &minrb, int &maxrb)
   maxrb = r_zmax/25;
 }
 
-std::vector<long> getFilePixels(string datadir, string simlabel, int pix, 
+std::vector<long> getFilePixels(string datadir, string simlabel, long pix, 
 				int r, int order1_)
 {
   /*
@@ -782,6 +782,10 @@ std::vector<long> getFilePixels(string datadir, string simlabel, int pix,
 
   temp = header.filenside;
   while(temp >>= 1) order2_++;
+
+#ifdef DEBUG_PIXLC
+  cout << "Radial file nside: " << order2_ << endl;
+#endif
 
   pix = ring2nest(pix, order1_);
 
@@ -912,6 +916,10 @@ vector <Particle *> ReadGadgetLCCell()
 
   temp = indexnside;
   while(temp >>= 1) order2_++;
+
+#ifdef DEBUG_PIXLC
+  cout << "order1_, order2_: " << order1_ << " " << order2_ << endl;
+#endif
 
   vector<long> idx(12*(1<<(2*order2_)));
   vector<long> pidx(1<<(2*(order2_-order1_)));
