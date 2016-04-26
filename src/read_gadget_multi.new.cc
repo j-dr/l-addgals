@@ -918,12 +918,18 @@ vector <Particle *> ReadGadgetLCCell()
   accum = 0;
   for (r=minrb; r<=maxrb; r++)
     {
+
       
       fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
+
+
       for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	{
 	  pix = *itr;
-	  
+#ifdef DEBUG_PIXLC
+	  cout << "Reading file: " << datadir << simlabel << "_" << r
+	       << "_" << pix << endl;
+#endif
 	  std::ostringstream convert;
 	  convert << datadir << simlabel << "_" << r 
 		  << "_" << pix;
@@ -1066,6 +1072,10 @@ vector <Particle *> ReadGadgetLCCell()
 	}
     }
   assert( accum == nparts );
+#ifdef DEBUG_PIXLC
+  vector<Particle*>::iterator maxzpp = std::max_element(parts.begin(), parts.end(), comparez);
+  cout << "Maximum particle redshift before cut is : " << parts[maxzpp-parts.begin()]->Zred() << endl;
+#endif
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
   
