@@ -1,4 +1,5 @@
 #include "kcorrect_utils.h"
+#include "hv.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -91,7 +92,7 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
   static int ntemps=5;
   int n;
   //Need to replace with variable passed in stringparameters
-  string filename = "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/training/cooper/combined_dr6_cooper.dat";
+  string filename = colortrdir + "/combined_dr6_cooper.dat";
   ifstream coeff_file(filename.c_str());
   if (coeff_file.fail()) {
     cerr<<"error: cannot open "<<filename<<endl;
@@ -197,7 +198,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   float ab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
   vector<float> deltam(ngal);
-  strcpy(sdss_filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/sdss_filter.txt");
+  strcpy(sdss_filterfile, (colortrdir+"/sdss_filter.txt").c_str());
   
   cout << "First few reference magnitudes: " << endl;
   for (i=0;i<5;i++) 

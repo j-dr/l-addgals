@@ -14,7 +14,7 @@ vector <GalSED> ReadSED(){
    string filename = "/nfs/slac/g/ki/ki01/mbusha/data/sdss/dr6/cooper/dr6_cooper_id.dat";
 #endif
    */
-   string filename = "/nfs/slac/g/ki/ki01/mbusha/data/sdss/dr6/cooper/dr6_cooper_id_with_red.dat";
+   string filename = colortrdir + "/dr6_cooper_id_with_red.dat";
 #endif
 
    ifstream file(filename.c_str());

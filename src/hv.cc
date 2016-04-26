@@ -586,7 +586,7 @@ int main(void){
   read_out_galaxy_info(galaxies, mr, z, galseds, sed_ids, id);
   match_coeff(id, &coeff[0]);
 
-  strcpy(filterfile, "/nfs/slac/g/ki/ki23/des/jderose/l-addgals/src/des_filters.txt");
+  strcpy(filterfile, (colortrdir+"/des_filters.txt").c_str());
 
   float zmin = 0.0;
   float zmax = 2.5;

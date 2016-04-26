@@ -28,6 +28,7 @@ extern string rnnfile ;
 extern string out_path ;
 extern string denspdffile ;
 extern string lbcgfile ;
+extern string colortrdir;
 extern float DECMIN ;
 extern float DECMAX;
 extern float RAMIN ;

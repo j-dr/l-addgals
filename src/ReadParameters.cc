@@ -13,6 +13,7 @@
  string out_path ;
  string denspdffile ;
  string lbcgfile ;
+ string colortrdir;
  float DECMIN ;
  float DECMAX;
  float RAMIN ;
@@ -208,6 +209,7 @@ void fillParameters(StringDatabase* sd)
 	out_path = sd->findParameterValue("out_path");
 	denspdffile = sd->findParameterValue("denspdffile");
 	lbcgfile = sd->findParameterValue("lbcgfile");
+	colortrdir = sd->findParameterValue("colortrdir");
 #ifdef SHAM_TEST
 	sham_file = sd->findParameterValue("SHAM_file");
 #endif
