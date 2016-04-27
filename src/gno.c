@@ -104,6 +104,9 @@ ran_gno(const gsl_rng *rng, void *params)
        function uses a numeric implementation of the transformation
        method. This is extremely slow and not really suited for
        massive Monte-Carlo problems. */
+
+    gsl_set_error_handler_off();
+
     int status;
     int iter, max_iter = 100;
     double r;
@@ -112,6 +115,8 @@ ran_gno(const gsl_rng *rng, void *params)
     gsl_function F;
     const gsl_root_fsolver_type *T;
     gsl_root_fsolver *s;
+
+
 
     p = (sparam *)params;
     F.function = &cdfgno_zero;
@@ -123,8 +128,6 @@ ran_gno(const gsl_rng *rng, void *params)
 	x_lo = p->xi - 50 * p->kappa;
 	x_hi = p->xi + p->alpha / p->kappa - 1e-9;
     }
-
-    if (F.function(x_lo, params)*F.function(x_hi, params) > 0) return -99;
 
     T = gsl_root_fsolver_brent;
     s = gsl_root_fsolver_alloc(T);      
