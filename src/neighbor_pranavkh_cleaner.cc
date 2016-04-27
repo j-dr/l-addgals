@@ -42,7 +42,7 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
   int nColorBins = floor(zmax->GetVal()/ColorBinSize)+1;
   struct GalaxyPercent tGalaxyId(0.,0);
   vector <GalaxyPercent> GalaxyId;
-  //  GalaxyId.reserve(galaxies.size());
+
   int nInColorBins = 0;
   int nInColorBin[nColorBins];
   for (int i=0;i<nColorBins;i++)
@@ -56,7 +56,7 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
   for (int bin=0;bin<nColorBins;bin++){
     float binmin = bin*ColorBinSize;
     float binmax = binmin + ColorBinSize;
-    //cout<<"  doing bin "<<bin<<" with min/max z = "<<binmin<<"/"<<binmax<<endl;
+
     for (int i=0;i<galaxies.size();i++){
       if (galaxies[i]->Z() < binmin || galaxies[i]->Z() > binmax)
 	continue;
@@ -66,13 +66,6 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
       GalaxyId.push_back(tGalaxyId);
       nInColorBin[bin]++;
     }
-    //cout<<"  sorting ID's."<<endl;
-    /*
-    cout<<"Before sort, first 3: "<<GalaxyId[0].gid()<<" "<<
-      GalaxyId[0].dens()<<", "<<GalaxyId[1].gid()<<" "<<
-      GalaxyId[1].dens()<<", "<<GalaxyId[2].gid()<<" "<<
-      GalaxyId[2].dens()<<endl;
-    */
 
     //check how many 0's are in the dens list
     int nZero = 0;
@@ -92,14 +85,7 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
     if (nZero > 0)
       cout<<" After sorting there are "<<nZero<<" 0's in the anticipated range."<<endl;
 
-    /*
-    cout<<"Sorted by dens: "<<GalaxyId[0].gid()<<" "<<
-      GalaxyId[0].dens()<<", "<<GalaxyId[1].gid()<<" "<<
-      GalaxyId[1].dens()<<", "<<GalaxyId[2].gid()<<" "<<
-      GalaxyId[2].dens()<<endl;
-    */
 
-    //cout<<"  doing final percent calculation."<<endl;
     for (int i=0;i<nInColorBin[bin];i++){
       color_percent[GalaxyId[i].gid()] = float(i)/float(nInColorBin[bin]);
       if (GalaxyId[i].gid() > max_gid)
@@ -264,28 +250,6 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
     int nsi = 0;
     int npi = 0;
 
-    //cout<<"Searching through bin "<<bi<<endl;
-    //cout<<"  allocated nsearch = "<<nsearch<<endl;
-
-    /*
-    for(int i=0;i<galaxies.size();i++){
-      if((galaxies[i]->Zbin()==bi)||
-	 (galaxies[i]->Zbin()==bi-1)||
-	 (galaxies[i]->Zbin()==bi+1)){
-	assert(nsi<nsearch);
-	data_pts[nsi][0] = galaxies[i]->Ra();
-	data_pts[nsi][1] = galaxies[i]->Dec();
-	sids.push_back(i);
-	nsi++;
-      }
-      if(galaxies[i]->Zbin()==bi){
-	data_pts1[npi][0] = galaxies[i]->Ra();
-	data_pts1[npi][1] = galaxies[i]->Dec();
-	ids[npi]=i;
-	npi++;
-      } 
-    }
-    */
     for(int i=0;i<galaxies.size();i++){
       if((galaxies[i]->Zbin()==bi)||
 	 (galaxies[i]->Zbin()==bi-1)||
@@ -306,14 +270,13 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
       } 
     }
 
-    //cout<<"The Tree."<<endl;
     the_tree = new ANNkd_tree(
 			      data_pts,  // the data points
 			      nsearch,   // number of points
 			      dim);		      // dimension of space
-    //cout<<"bi = "<<bi<<" of "<<nbins<<" npts = "<<npts<<" npi = "<<npi<<" nsi = "<<nsi<<endl;
+
     for(int i=0;i<npts;i++){
-      //cout<<"Searching for "<<i<<" of "<<npts<<endl;
+
       int gid = ids[i];
       #ifdef DEBUG
       if(pi%50000==0) {cout<<bi<<" "<<i<<" "<<pi<<endl; system("date");}
@@ -324,12 +287,10 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
       int n_found = -1; 
       int t_found = -1; 
       while(!distfound){
-	//if(npts<k_search) k_search=npts-1;
-	//if(nsi<k_search) k_search=npts-1;
 	if(nsearch<k_search) k_search=nsearch-1;
 	if(k_search>max_search) k_search=max_search;
 	int nn = 0;
-	//cout<<"doing search with k_search = "<<k_search<<endl;
+
 	the_tree->annkSearch(			// search
 			     query_pt,		// query point
 			     k_search,		// number of near neighbors
@@ -338,18 +299,12 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 			     eps);		// error bound  
 	for(int j=0;j<k_search;j++){
 	  int chosen_id = sids[nn_idx[j]];
-	  //  if((gid!=chosen_id)
-	  //&&(fabs(galaxies[gid]->Z()-galaxies[chosen_id]->Z())<delta_z)){
-	  //if((fabs(galaxies[gid]->Z()-galaxies[chosen_id]->Z())<delta_z)){
+
 	  if((fabs(points[gid]->Z()-galaxies[chosen_id]->Z())<delta_z)){
 	    ++nn;
 	  }
 	  if(nn==k_want){	
-	    //for(int jjj=0;jjj<j;jjj++){
-	    //cout<<galaxies[gid]->ComovDist(sqrt(dists[jjj]))<<" ";
-	    //}
-	    //cout<<endl;
-	    //dist = galaxies[gid]->ComovDist(sqrt(dists[j]));
+
 	    dist = points[gid]->ComovDist(sqrt(dists[j]));
 	    n_found = j;
 	    t_found = 0;
@@ -358,26 +313,23 @@ vector <float> GetNeighborDist(vector <Galaxy *> galaxies, vector <Galaxy *> poi
 	  }
 	}
 	if(!distfound){
-	  //dist = galaxies[pi]->ComovDist(sqrt(dists[k_search-1]));
+
 	  dist = points[pi]->ComovDist(sqrt(dists[k_search-1]));
-	  //if you're at the end, pretend you've found it
-	  //if((k_search==npts-1)||(k_search>=max_search)){
+
 	  if((k_search==nsearch-1)||(k_search>=max_search)){
 	    n_found = k_search-1;
 	    t_found = 1;
 	    distfound = true;
 	  }
-	  //if you're big already, pretend you've found it
-	  //	  if(dist>15){
 	  if(dist>10){
 	    n_found = -1;
 	    t_found = 2;
 	    distfound = true;
 	  }
 	  else{
-	    //nfout<<dist<<" "<<i<<" "<<galaxies[i]->Z()<<" "<<k_search<<endl;
+
 	    nfout<<dist<<" "<<i<<" "<<points[i]->Z()<<" "<<k_search<<endl;
-	    //re-search if you didn't look far out enough
+
 	    k_search = 2*k_search;
 	    delete [] nn_idx;
 	    delete [] dists;
@@ -409,61 +361,23 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
   vector <int> sed_ids(galaxies.size());
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
-  //cout<<"Need to check some magnitudes and densities: "<<endl;
-  //for(int i=-22;i<=-4;i++){
-  //cout<<"  "<<i<<", "<<LumNumberDensityInterp(float(i))<<endl;
-  //}
+
   for(int gi=0;gi<galaxies.size();gi++){
     //cout<<gi<<" "<<galaxies[gi]->Mr()<<endl;
     if(float(gi)/float(galaxies.size()) > Percent){
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
     }
-    //cout<<gi<<" of "<<galaxies.size()<<endl;
 
-    //if(galaxies[gi]->Central())
-    //{
-    //extern double normal_random(float mean, float stddev);
-    //Galaxy * gal = galaxies[gi];
-    //Particle * p = gal->P();
-    //assert(p);  //this better be true since you removed the other ones.
-    //int hid = p->Hid();
-    //double m200 = halos[hid]->M();
-    ////cout<<"lookin at central galaxy ("<<galaxies[gi]->Central()<<") with m200="<<m200<<", density = "<<nndist[gi]<<", and original Mr = "<<galaxies[gi]->Mr();
-    //double m14 = m200/1e14;
-    //double lum = 4*pow(m14,0.3);
-    //lum = pow(10.0,normal_random(log10(lum),0.15));
-    //double mr = -2.5*log10(lum) - 20.44;
-    //galaxies[gi]->Mr(mr);
-    //nndist[gi] *= 0.5; //We want to make the BCGs dense
-    ////cout<<" adjusted to "<<galaxies[gi]->Mr()<<endl;
-    ////if(mr>Magmin_col) mr = Magmin_col;
-    //}
     Particle * p = galaxies[gi]->P();
-    assert(p);  //this better be true since you removed the other ones.
-    //int hid = p->Hid();
-    //if(hid>=0){
+    assert(p);
+
 #ifdef DEBUG
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
     double mr = galaxies[gi]->Mr();
-    //if(mr>Magmin_col) mr = Magmin_col;
-    //cout<<"non central galaxy with Mr = "<<galaxies[gi]->Mr()<<", dens = "<<nndist[gi]<<endl;
-    //cout<<"Choosnig..."<<endl;
+    sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
 
-	sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-    //cout<<"Simulated galaxy: mr = "<<mr<<" nndist = "<<nndist[gi]<<endl;
-    //cout<<"SED galaxy: mr = "<<galseds[sed_ids[gi]].MR()<<" nndist = "<<galseds[sed_ids[gi]].Dens()<<endl;
-    //cout<<sed_ids[gi]<<endl;
-
-
-
-	//sed_ids[gi] = ChooseSED(galseds,mr,nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-    
-	
-	
-	//}
-    //else sed_ids[gi]=-1;
   }
   return sed_ids;
 }
@@ -473,9 +387,8 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <GalSED> & galseds){
   vector <int> sed_ids(galaxies.size());
   for(int gi=0;gi<galaxies.size();gi++){
     Particle * p = galaxies[gi]->P();
-    assert(p);  //this better be true since you removed the other ones.
-    //int hid = p->Hid();
-    //if(hid>=0){
+    assert(p);  
+
 #ifdef DEBUG
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif

@@ -168,18 +168,12 @@ int main(void){
   if (evolution == 2) cout<<" (FABER)"<<endl;
   if (evolution == 3) cout<<" (TIME)"<<endl;
 
-  cout << "ring2nest test " << ring2nest(PixelNum, 2) << endl;
-
-  //correct out output files
-  outpfn = out_path+outpfn;
-  outdfn = out_path+outdfn;
-  outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";;
-  outghfn= out_path+outghfn;
-  outhfn = out_path+outhfn;
-  outcfn = out_path+outcfn;
-  outgzfn = out_path+outgzfn;
-  outrfn = out_path+outrfn;
-  outafn = out_path+outafn;
+#ifdef DEBUG
+  string outdfn = out_path+"/dens_test.dat";
+  string outrfn = out_path+"/rnn_test.dat";
+#endif
+  string outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";;
+  string outghfn= out_path;
 
   cout << "outgfn: " << outgfn << endl;
 
@@ -559,17 +553,6 @@ int main(void){
   double TimeColor = (t2-t1)/CLOCKS_PER_SEC;
   cout<<"Assigned galaxy SEDs in "<<TimeColor<<" seconds."<<endl;
 
-#ifdef PRINTHALOS
-  MSG("[hv] Printing halos in volume");
-  ofstream outhfile(outhfn.c_str());
-  for(int hi=0;hi<halos.size();hi++){
-    Halo * h = halos[hi];
-    if(h->InVol())
-      outhfile<<h->Id()<<" "
-	      <<h->M()<<" "<<halos[hi]->R200()<<" "
-	      <<h->Ra()<<" "<<h->Dec()<<" "<<h->Zred()<<" "<<h->Ngal()<<endl;
-  }
-#endif
 #ifdef BCC
   //Eventually need to add u
   int nbands = 5;
@@ -610,11 +593,6 @@ int main(void){
 		     omag, omagerr, flux, ivar, e, s,
 		     idx, halos, id, coeff, outgfn, 
 		     outghfn);
-#else
-  MSG("[hv] Printing galaxies in volume");
-  cout<<galaxies.size()<<endl;
-  print_galaxies(galaxies, particles, halos, galseds, sed_ids, nndist, nndist_percent, outpfn, outdfn, outgfn, outghfn, outgzfn, outrfn);
-
 #endif
 
   MSG("Exiting normally");

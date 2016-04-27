@@ -24,32 +24,6 @@ vector <GalSED> ReadSED();
 vector <GalSED> ReadDimSED();
 //#endif
 
-/*
-string outpfn = out_path+"gal_pinfo.dat";
-string outdfn = out_path+"gal_dinfo.dat";
-string outgfn = out_path+"gal_ginfo1.dat";
-string outghfn= out_path+"gal_hinfo.dat";
-string outhfn = out_path+"halos.dat";
-string outcfn = out_path+"gal_cfinfo.dat";
-string outgzfn = out_path+"gal_zinfo.dat";
-string outrfn = out_path+"gal_rnninfo.dat";
-string outafn = out_path+"gal_assign.dat";
-*/
-string outpfn = "gal_pinfo.dat";
-string outdfn = "gal_dinfo.dat";
-#ifdef BCC
-string outgfn = flabel+"."+PSTR+"."+ZSTR+".fits";
-#else
-string outgfn = "gal_ginfo1.dat";
-#endif
-string outghfn= "gal_hinfo.dat";
-string outhfn = "halos.dat";
-string outcfn = "gal_cfinfo.dat";
-string outgzfn = "gal_zinfo.dat";
-string outrfn = "gal_rnninfo.dat";
-string outafn = "gal_assign.dat";
-
-
 double ptsize =0;
 
 void ReadColorDens();
