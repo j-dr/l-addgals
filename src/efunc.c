@@ -18,9 +18,12 @@ rng_efunc(const gsl_rng *rng, void *params, double *e1, double *e2, prefstruct p
     double e, phi;
     gsl_complex eps;
     eparam *p;
+    int iter = 0;
+    int max_iter = 1000;
     
     p = (eparam *)params;
     do {
+        iter++;
 	gsl_rng tst = (*rng);
 	unsigned long int x = gsl_rng_get(rng);
 	e = fabs(gsl_ran_exppow(rng, FUDGE * M_SQRT2 * p->a, p->b));
@@ -28,7 +31,15 @@ rng_efunc(const gsl_rng *rng, void *params, double *e1, double *e2, prefstruct p
 	*e1 = e * cos(2 * phi);
 	*e2 = e * sin(2 * phi);
 	eps = gsl_complex_rect(*e1, *e2);
-    } while(gsl_complex_abs(eps) >= prefs.epsmax);
+    } while(gsl_complex_abs(eps) >= prefs.epsmax && iter < max_iter);
+
+    if (iter==max_iter)
+      {
+	std::cout << "Could not generate ellipticities within max number"
+		  << "of iterations" << std::endl;
+	*e1 = -99;
+	*e2 = -99;
+      }
     //std::cout << "e1: " << *e1 << std::endl;
     //std::cout << "e2: " << *e2 << std::endl;
 }

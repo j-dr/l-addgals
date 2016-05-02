@@ -22,7 +22,7 @@ istream & operator>>(istream & is, shapemag & in)
 void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
 		     int nelem, int vl)
 {
-  cout << "generating shapes" << endl;
+  cout << "generating shapes" << endl;  
   int i, iam;
   gsl_rng *myrng;
   double mymag, e1, e2;
@@ -47,6 +47,11 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
   myrng = gsl_rng_alloc(gsl_rng_ranlxd2);
   gsl_rng_set(myrng, seed);
 
+#ifdef DEBUG_SHAPES
+  ofstream s_file("./stest.txt");
+  ofstream e_file("./etest.txt");
+#endif
+
   if (!myrng) {
     cout << "Null pointer!"<<endl;
     exit(1);
@@ -65,19 +70,37 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
   for (i=0; i<s.size(); i++)
     {
       mymag = mag[nelem - 1 + i * vl];
-      //cout << "mymag: " << mymag << endl;
       if (i==0) cout << "calculating e params" << endl;
       calceparams(mymag, &eparams, prefs);
-      if (i==0) cout << "calculating s params" << endl;
-      calcsparams(mymag, &sparams, prefs);
+#ifdef DEBUG_SHAPES
+      e_file << eparams.a << " " << eparams.b << " ";
+      e_file.flush();
+#endif
       if (i==0) cout << "drawing e" << endl;
       rng_efunc(myrng, &eparams, &e1, &e2, prefs);
-      //cout << "e1: " << e1 << endl;
-      //cout << "e2: " << e2 << endl;
+#ifdef DEBUG_SHAPES
+      e_file << e1 << " " << e2 << endl;
+#endif
+
       e[2 * i] = e1;
       e[2 * i + 1] = e2;
+    }
+
+  for (i=0; i<s.size(); i++)
+    {
+      mymag = mag[nelem - 1 + i * vl];
+      if (i==0) cout << "calculating s params" << endl;
+      calcsparams(mymag, &sparams, prefs);
+#ifdef DEBUG_SHAPES
+      s_file << sparams.xi << " " << sparams.alpha << " "
+	     << sparams.kappa << " " << sparams.zero << " ";
+      s_file.flush();
+#endif
       if (i==0) cout << "drawing s" << endl;
       s[i] = ran_gno(myrng, &sparams);
+#ifdef DEBUG_SHAPES
+      s_file << s[i] << endl;
+#endif      
     }
   
   cout << "freeing RNG" << endl;

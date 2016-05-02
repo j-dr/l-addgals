@@ -134,11 +134,19 @@ ran_gno(const gsl_rng *rng, void *params)
     /* Sometimes we request a random number so far out in the tail
        that it is outside our integration range. If this happens, draw
        another random deviate. */
+    iter = 0;
     do {
+        iter++;
 	p->zero = gsl_rng_uniform(rng);
 	
 	status = gsl_root_fsolver_set(s, &F, x_lo, x_hi);
-    } while (status == GSL_EINVAL);
+    } while (status == GSL_EINVAL && iter < max_iter);
+
+    if (status == GSL_EINVAL)
+      {
+	return -99;
+      }
+    
     iter = 0;
     do {
 	iter++;
