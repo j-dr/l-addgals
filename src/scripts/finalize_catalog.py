@@ -466,8 +466,7 @@ def join_halofiles(basepath, mmin=5e12):
     parents = parents[parents['MVIR']>mmin]
 
     print('Reading list')
-    hlist = pd.read_csv("{0}/cut_out_0.list".format(basepath), usecols=lusecols, names=pnames, comment='#', sep=' ')
-    hlist = hlist.to_records(index=False)
+    hlist = fitsio.read("{0}/cut_out_0.list.fits".format(basepath))
     hlist = hlist[hlist['MVIR']>mmin]
 
     print('Joining files')
