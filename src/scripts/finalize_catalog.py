@@ -53,7 +53,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
         pixpaths = deque()
         for i, bsize in enumerate(['1050', '2600', '4000']):
             if skyfactory:
-                pix = glob('{0}/Lb{1}_{2}/output/addgals/[0-9]*/0*'.format(basepath, bsize, suffix))
+                pix = glob('{0}/Lb{1}/output/addgals/[0-9]*/0*'.format(basepath, bsize))
             else:
                 pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
             zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
