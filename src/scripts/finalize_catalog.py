@@ -536,7 +536,7 @@ if __name__ == '__main__':
     for i, hp in enumerate(halopaths):
         hs = hp.split('.')
         if 'fit' not in hs[-1]:
-            jhalopaths.append(join_halofiles('.'.join(hs[:-1]), mmin=mmin[i]))
+            jhalopaths.append(join_halofiles('/'.join(hp.split('/')[:-1]), mmin=mmin[i]))
         else:
             jhalopaths.append(hp)
             
