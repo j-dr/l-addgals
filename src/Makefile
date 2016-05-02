@@ -1,18 +1,39 @@
 #compiler
 CXX=g++
 CC=${CXX}
-OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
-WARN =
-#END_FLAG = -DBIGENDIAN
-END_FLAG = -DLITTLEENDIAN
+OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
+WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
+END_FLAG = -DBIGENDIAN
+#END_FLAG = -DLITTLEENDIAN
 
+ANN_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/lib  #replace with your ANN library
+ANN_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/include #replace with your ANN include
+NR_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
+NR_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
+KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
+KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
+GSL_LIB = -L/afs/slac.stanford.edu/g/ki/software/gsl/1.15/lib
+GSL_INC = -I/afs/slac.stanford.edu/g/ki/software/gsl/1.15/include/gsl
+CFITSIO_LIB = -L/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CFITSIO_INC = -I/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CCFITS_LIB = -L/afs/slac/g/ki/software/ccfits/2.4/lib 
+CCFITS_INC = -I/afs/slac/g/ki/software/ccfits/2.4/include 
 
-NR_LIB = -L/home/jderose/src/recipes
-NR_INC = -I/home/jderose/src/recipes
-KCORRECT_LIB = -L${KCORRECT_DIR}/lib
-KCORRECT_INC = -I${KCORRECT_DIR}/include
-CCFITS_LIB   = -L/home/jderose/usr/local/lib
-CCFITS_INC   = -I/home/jderose/usr/local/include
+HEALPIX_LIB =
+HEALPIX_INC =
+
+ifeq "$(HOSTNAME)" "orange"
+	#CXX=icpc
+	CXX=g++
+	OPT= -O3 -Wno-deprecated #-ffast-math
+	#OPT= -g
+	WARN=
+	END_FLAG = -DLITTLEENDIAN
+	#END_FLAG = -DBIGENDIAN
+	HEALPIX_LIB = #-L/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/lib
+	HEALPIX_INC = #-I/afs/slac.stanford.edu/u/ki/mbusha/mbusha.1/lib/Healpix/Healpix_2.20a/include
+	OMPFLAG = 
+endif
 
 RM = rm -f
 LD = /usr/bin/ld
@@ -25,10 +46,9 @@ LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CCFITS_LIB}
 
 #libraries to link
 LOADLIBES = -lANN -lrecipes -lcfitsio -lkcorrect -lCCfits -lgsl -lgslcblas
-
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-catalog_type="BCC"
+#catalog_type="BCC"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"

@@ -53,7 +53,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
         pixpaths = deque()
         for i, bsize in enumerate(['1050', '2600', '4000']):
             if skyfactory:
-                pix = glob('{0}/Lb{1}_{2}/addgals/[0-9]*/0*'.format(basepath, bsize, suffix))
+                pix = glob('{0}/Lb{1}_{2}/output/addgals/[0-9]*/0*'.format(basepath, bsize, suffix))
             else:
                 pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
             zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
@@ -221,9 +221,10 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
                 print('{0}: Reading took {1}s'.format(rank, tread-tstart))
             
-            f = '{0}/Lb{1}_{2}/{3}/{4}/{5}_{1}.{3}.{4}.fits'.format(basepath, bsize, suffix, pix, zbin, prefix)
-            #f = '{0}/Lb{1}_{2}/{3}/{4}/idl/{5}_{1}_{3}.{4}_galaxies.fit'.format(basepath, bsize, suffix, pix, zbin, prefix)
-            #f = '{0}/Lb{1}_{2}/{3}/{4}/hv_output/gal_ginfo1.dat'
+            if skyfactory:
+                f = '{0}/Lb{1}/output/addgals/{2}/{3}/{4}_{1}.{2}.{3}.fits'.format(basepath, bsize, pix, zbin, prefix)
+            else:
+                f = '{0}/Lb{1}_{2}/{3}/{4}/{5}_{1}.{3}.{4}.fits'.format(basepath, bsize, suffix, pix, zbin, prefix)
 
             #get redshift cutoffs for this bin
             ztidx, = np.where((ztrans['zbin']==zbin) & (ztrans['bsize']==bsize))
