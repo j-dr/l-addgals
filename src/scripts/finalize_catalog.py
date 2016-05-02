@@ -460,12 +460,12 @@ def join_halofiles(basepath, mmin=5e12):
     pusecols = [0,2,41]
 
     print('Reading parents')
-    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = dtype=None, comment='#', sep=' ')
+    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = lnames, comment='#', sep=' ')
     parents = parents.to_records(index=False)
     parents = parents[parents['MVIR']>mmin]
 
     print('Reading list')
-    hlist = pd.read_csv("{0}/cut_reform_out_0.list", usecols=lusecols, dtype=ldtype, comment='#', sep=' ')
+    hlist = pd.read_csv("{0}/cut_reform_out_0.list".format(basepath), usecols=lusecols, names=pnames, comment='#', sep=' ')
     hlist = hlist.to_records(index=False)
     hlist = hlist[hlist['MVIR']>mmin]
 
