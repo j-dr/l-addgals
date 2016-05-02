@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from SimulationAnalysis import readHlist
+from helpers.SimulationAnalysis import readHlist
 from collections import deque
 from glob import glob
 from mpi4py import MPI
