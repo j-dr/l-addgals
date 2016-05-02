@@ -458,7 +458,7 @@ def join_halofiles(basepath, mmin=5e12):
     pnames = ['ID','MVIR','PID']
     
     lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-    pusecols = [0,2,41]
+    pusecols = [0,2,14]
 
     print('Reading parents')
     parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = lnames, comment='#', sep=' ')
@@ -466,7 +466,7 @@ def join_halofiles(basepath, mmin=5e12):
     parents = parents[parents['MVIR']>mmin]
 
     print('Reading list')
-    hlist = pd.read_csv("{0}/cut_reform_out_0.list".format(basepath), usecols=lusecols, names=pnames, comment='#', sep=' ')
+    hlist = pd.read_csv("{0}/cut_out_0.list".format(basepath), usecols=lusecols, names=pnames, comment='#', sep=' ')
     hlist = hlist.to_records(index=False)
     hlist = hlist[hlist['MVIR']>mmin]
 
