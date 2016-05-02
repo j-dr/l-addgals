@@ -318,7 +318,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;
-  //assert(count==keep);
+  assert(count==keep);
 
   cout << "Creating TRUTH HDU" << endl;
   static string ttablename("TRUTH");
