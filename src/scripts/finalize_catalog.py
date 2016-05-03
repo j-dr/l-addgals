@@ -461,7 +461,7 @@ def join_halofiles(basepath, mmin=5e12):
     pusecols = [0,2,14]
 
     print('Reading parents')
-    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = lnames, comment='#', sep=' ')
+    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = pnames, comment='#', sep=' ')
     parents = parents.to_records(index=False)
     parents = parents[parents['MVIR']>mmin]
 

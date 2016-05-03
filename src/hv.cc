@@ -555,6 +555,7 @@ int main(void){
 
 #ifdef BCC
   //Eventually need to add u
+  t1 = clock();
   int nbands = 5;
   int nelem = 3;
   int ntemp = 5;
@@ -574,8 +575,12 @@ int main(void){
   float zmin = 0.0;
   float zmax = 2.5;
 
+
   assign_colors(mr, coeff, z, zmin, zmax,
 		band_shift, nbands, filterfile, tmag, amag);
+  t2 = clock();
+
+  cout << "Generated colors in " << t2-t1 << " seconds" << endl;
 
   vector<float> omag(galaxies.size()*nbands);
   vector<float> omagerr(galaxies.size()*nbands);
@@ -585,14 +590,23 @@ int main(void){
 
   observe_des_y5(tmag, flux, ivar, omag, omagerr, idx);
   assert(omag.size()%nbands == 0);
+  t1 = clock();
   vector<double> e(omag.size()/nbands*2);
   vector<double> s(omag.size()/nbands);
   generate_shapes(omag, e, s, nelem, nbands);
-  
+  t2 = clock();
+
+  cout << "Generated ellipticities and sizes in "
+       << t2-t1 << " seconds" << endl;
+
+  t1 = clock();
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
 		     omag, omagerr, flux, ivar, e, s,
 		     idx, halos, id, coeff, outgfn, 
 		     outghfn);
+  t2 = clock();
+  cout << "Wrote outputs in " << t2-t1 << "seconds" << endl;
+  
 #endif
 
   MSG("Exiting normally");

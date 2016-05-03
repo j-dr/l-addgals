@@ -71,6 +71,12 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
     {
       mymag = mag[nelem - 1 + i * vl];
       if (i==0) cout << "calculating e params" << endl;
+      if (isnan(mymag))
+	{
+	  e[2 * i] = -99;
+	  e[2 * i + 1] = -99;
+	  continue;
+	}
       calceparams(mymag, &eparams, prefs);
 #ifdef DEBUG_SHAPES
       e_file << eparams.a << " " << eparams.b << " ";
@@ -90,6 +96,11 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
     {
       mymag = mag[nelem - 1 + i * vl];
       if (i==0) cout << "calculating s params" << endl;
+      if (isnan(mymag))
+	{
+	  s[i] = -99;
+	  continue;
+	}
       calcsparams(mymag, &sparams, prefs);
 #ifdef DEBUG_SHAPES
       s_file << sparams.xi << " " << sparams.alpha << " "
