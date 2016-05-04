@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from helpers.SimulationAnalysis import readHlist
+from SimulationAnalysis import readHlist
 from collections import deque
 from glob import glob
 from mpi4py import MPI
@@ -53,7 +53,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
         pixpaths = deque()
         for i, bsize in enumerate(['1050', '2600', '4000']):
             if skyfactory:
-                pix = glob('{0}/Lb{1}/output/addgals/[0-9]*/0*'.format(basepath, bsize))
+                pix = glob('{0}/Lb{1}_{2}/output/addgals/[0-9]*/0*'.format(basepath, bsize, suffix))
             else:
                 pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
             zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
@@ -458,15 +458,16 @@ def join_halofiles(basepath, mmin=5e12):
     pnames = ['ID','MVIR','PID']
     
     lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
-    pusecols = [0,2,14]
+    pusecols = [0,2,41]
 
     print('Reading parents')
-    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = pnames, comment='#', sep=' ')
+    parents = pd.read_csv("{0}/cut_reform_out_0.parents".format(basepath), usecols=pusecols, names = lnames, comment='#', sep=' ')
     parents = parents.to_records(index=False)
     parents = parents[parents['MVIR']>mmin]
 
     print('Reading list')
-    hlist = fitsio.read("{0}/cut_out_0.list.fits".format(basepath))
+    hlist = pd.read_csv("{0}/cut_reform_out_0.list".format(basepath), usecols=lusecols, names=pnames, comment='#', sep=' ')
+    hlist = hlist.to_records(index=False)
     hlist = hlist[hlist['MVIR']>mmin]
 
     print('Joining files')
@@ -481,6 +482,8 @@ def join_halofiles(basepath, mmin=5e12):
 
     print('Writing file')
     fitsio.write('{0}/out_0.fits'.format(basepath), hlist)
+
+    return '{0}/out_0.fits'.format(basepath)
 
 
 if __name__ == '__main__':
@@ -535,7 +538,7 @@ if __name__ == '__main__':
     for i, hp in enumerate(halopaths):
         hs = hp.split('.')
         if 'fit' not in hs[-1]:
-            jhalopaths.append(join_halofiles('/'.join(hp.split('/')[:-1]), mmin=mmin[i]))
+            jhalopaths.append(join_halofiles('.'.join(hs[:-1]), mmin=mmin[i]))
         else:
             jhalopaths.append(hp)
             
