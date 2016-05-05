@@ -534,6 +534,10 @@ int main(void){
   system("ps ux | grep hv > mem.tmp");
 
 #ifndef COLORS_FROM_RELATIVE_DENSITY
+  cout << "z_redfraction1, z_redfraction2, redfraction1, redfraction2"
+       << Z_REDFRACTION1 << " " << Z_REDFRACTION2 << " " 
+       << REDFRACTION1 << " " << REDFRACTION2 << endl;
+    
   sed_ids = GetSEDs(galaxycopy, nndist, galseds, halos);
 #else
   sed_ids = GetSEDs(galaxycopy, nndist_percent, galseds, halos);
