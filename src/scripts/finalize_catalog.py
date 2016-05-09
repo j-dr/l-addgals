@@ -15,6 +15,87 @@ import time
 import sys
 import os
 
+def rad2radec(theta, phi):
+        phi = np.rad2deg((phi+2*np.pi)%(2*np.pi))
+        theta = np.rad2deg((theta+np.pi)%np.pi)
+        theta = -theta+90.
+        
+        return theta, phi
+
+def radec2rad(theta, phi):
+    theta = -theta+90.
+    theta = np.deg2rad(theta)
+    phi = np.deg2rad(phi)
+        
+    return theta, phi
+
+def radec2vec(theta, phi):
+    theta, phi = radec2rad(theta,phi)
+    return hp.ang2vec(theta,phi)
+
+def vec2radec(vec):
+    theta, phi = hp.vec2ang(vec)
+    return rad2radec(theta,phi)
+
+def generate_z_of_r_table(omegam, omegal, zmax=2.0, npts=1000):
+
+    c = 2.9979e5
+    da = (1.0 - (1.0/(zmax+1)))/npts
+    dtype = np.dtype([('r', np.float), ('z', np.float)])
+    z_of_r_table = np.ndarray(npts, dtype=dtype)
+    Thisa = 1.0
+    z_of_r_table['z'][0] = 1.0/Thisa - 1.
+    z_of_r_table['r'][0] = 0.0
+    for i in range(1, npts):
+        Thisa = 1. - da*float(i)
+        ThisH = 100.*np.sqrt(omegam/Thisa**3 + omegal)
+        z_of_r_table['z'][i] = 1./Thisa - 1
+        z_of_r_table['r'][i] = z_of_r_table['r'][i-1] + 1./(ThisH*Thisa*Thisa)*da*c
+
+
+    return z_of_r_table
+
+
+
+def z_of_r(r, table):
+
+    npts = len(table)
+    try:
+        nz = len(r)
+    except:
+        nz = 1
+
+    zred = np.zeros(nz)-1
+
+    if nz==1:
+        for i in range(1, npts):
+            if (table['r'][i] > r): break
+        slope = (table['z'][i] - table['z'][i-1])/(table['r'][i]-table['r'][i-1])
+        zred = table['z'][i-1] + slope*(r-table['r'][i-1])
+    else:
+        for i in range(1, npts):
+            ii, = np.where((r >= table['r'][i-1]) & (r < table['r'][i]))
+            count = len(ii)
+            if (count == 0): continue
+            slope = (table['z'][i] - table['z'][i-1])/(table['r'][i]-table['r'][i-1])
+            zred[ii] = table['z'][i-1] + slope*(r[ii]-table['r'][i-1])
+
+    return zred
+
+def r_of_z(z, table):
+
+    npts = len(table)
+    rofz = np.zeros(len(z))-1
+
+    for i in range(0, npts-2):
+        ii, = np.where((z >= table['z'][i]) & (z <= table['z'][i+1]))
+        if (len(ii)==0): continue
+        slope = (table['r'][i+1] - table['r'][i])/(table['z'][i+1] - table['z'][i])
+        rofz[ii] = table['r'][i] + slope*(z[ii]-table['z'][i])
+
+    if (len(z)==1): rofz = rofz[0]
+
+    return rofz
 
 TZERO = None
 def tprint(info, stime=None):
@@ -192,8 +273,8 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     comm.send(lum, 0, tag=tags['lum'+lastbsize])
                     tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
 
-                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['ID', 'MVIR', 'RVIR', 'X', 
-                                                                      'Y', 'Z', 'PID', 'Z'])
+                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['ID', 'MVIR', 'RVIR', 'PX', 
+                                                                      'PY', 'PZ', 'PID', 'Z'])
 
                 if bsizeenum[bsize]==0:
                     hlz = 0.0
@@ -207,7 +288,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 occ = np.zeros((len(h),6))
                 lum = np.zeros((len(h),3))
             
-                pixh = hp.vec2pix(2, h['X'], h['Y'], h['Z'])
+                pixh = hp.vec2pix(2, h['PX'], h['PY'], h['PZ'])
 
                 #index the halos by healpix cell
                 pidx = pixh.argsort()
@@ -217,6 +298,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 pidx, = np.where(pidx!=0)
                 pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
                 upix = pixh[pidx]
+                print('upix: {0}'.format(upix))
                 pixmap = hp.ud_grade(np.arange(12*2**2),4)
                 tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
                 print('{0}: Reading took {1}s'.format(rank, tread-tstart))
@@ -229,17 +311,18 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             #get redshift cutoffs for this bin
             ztidx, = np.where((ztrans['zbin']==zbin) & (ztrans['bsize']==bsize))
             assert(len(ztidx)==1)
+            print('pixmap matches: {0}'.format(pixmap[int(pix)]))
 
             hidx, = np.where(upix==pixmap[int(pix)])
             hstart = pidx[hidx]
-
+            print('hstart: {0}'.format(hstart))
             if hidx==(len(pidx)-1):
                 hend = len(h)
             else:
                 hend = pidx[hidx+1]
 
             #build tree to associate galaxies and halos 
-            with f3t.fast3tree(h[hstart:hend][['X','Y','Z']].view((h.dtype['X'],3))) as ht:
+            with f3t.fast3tree(h[hstart:hend][['PX','PY','PZ']].view((h.dtype['PX'],3))) as ht:
                 try:
                     pc, hdr = fitsio.read(f, header=True)
                 except:
@@ -286,7 +369,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
     occ = np.zeros((len(halos),6))
     lum = np.zeros((len(halos),3))
     gpos = galaxies[['PX', 'PY', 'PZ']].view((galaxies.dtype['PX'],3))
-    hpos = halos[['X','Y','Z']].view((halos.dtype['X'],3))
+    hpos = halos[['PX','PY','PZ']].view((halos.dtype['PX'],3))
     d = np.zeros(len(galaxies))
     hid = np.zeros(len(galaxies), dtype=np.int)
     
@@ -395,7 +478,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
 
     h = h[h['MVIR']>mmin]
     h = h[((zmin-zbuff)<=h['Z']) & (h['Z']<(zmax+zbuff))]
-    pixh = hp.vec2pix(2, h['X'], h['Y'], h['Z'])
+    pixh = hp.vec2pix(2, h['PX'], h['PY'], h['PZ'])
     pidx = pixh.argsort()
     pixh = pixh[pidx]
     h = h[pidx]
@@ -417,9 +500,9 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
     for i, p in enumerate(upix):
         start = pidx[i]
         if i==len(upix)-1:
-            end = pidx[i+1]
-        else:
             end = len(h)
+        else:
+            end = pidx[i+1]
 
         fits = fitsio.FITS('{0}/{1}_halos.{2}.fits'.format(outpath, prefix, p) ,'rw')
         print('Writing to {0}/{1}_halos.{2}.fits'.format(outpath, prefix, p))
@@ -433,10 +516,9 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
         fits.close()
 
         if lensing_output:
-            columns = ['ID', 'X', 'Y', 'Z']
+            columns = ['ID', 'PX', 'PY', 'PZ']
             fits = fitsio.FITS('{0}/lens/{1}.{2}_halos.lens.fits'.format(outpath, prefix, p) ,'rw')
             hpo = h[columns][start:end]
-            hpo.dtype.names = 'ID', 'PX', 'PY', 'PZ'
             try:
                 hdr = fits[-1].read_header()
                 fits[-1].write_key('NAXIS2', hdr['NAXIS2']+len(h[start:end]))
@@ -448,7 +530,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
 
 
 
-def join_halofiles(basepath, mmin=5e12):
+def join_halofiles(basepath, omega_m, omega_l, mmin=5e12):
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -471,20 +553,39 @@ def join_halofiles(basepath, mmin=5e12):
     hlist = fitsio.read("{0}/cut_out_0.list.fits".format(basepath))
     n = hlist.dtype.names
     n = [nm.upper() for nm in n]
+    tempn = []
+    for nm in n:
+        if nm=='X':
+            tempn.append('PX')
+        elif nm=='Y':
+            tempn.append('PY')
+        elif nm=='Z':
+            tempn.append('PZ')
+        else:
+            tempn.append(nm)
+    n = tempn
     hlist.dtype.names = n
     hlist = hlist[hlist['MVIR']>mmin]
-
 
     print('Joining files')
     hlist = rf.join_by('ID', hlist, parents[['ID', 'PID']], r1postfix=None, r2postfix=None, usemask=False, asrecarray=True)
 
+    table = generate_z_of_r_table(omega_m, omega_l, zmax=3.0, npts=10000)
+    r = np.sqrt(hlist['PX']**2 + hlist['PY']**2 + hlist['PZ']**2)
+    redshift = z_of_r(r, table)
+    dec, ra = vec2radec(hlist[['PX', 'PY', 'PZ']])
+
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
-                       np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
-                       np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)])]
-    data = [np.zeros(len(hlist)) for i in range(len(adtype))]
+              np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
+              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA', np.float)])
+              np.dtype([('DEC', np.float)])]
+    data = [np.zeros(len(hlist)) for i in range(len(adtype)-3)]
+    data.append(redshift)
+    data.append(ra)
+    data.append(dec)
     hlist = rf.append_fields(hlist,['LUMTOT', 'LUM20', 'LBCG', 'NGALS', 'N18',
-                                    'N19', 'N20', 'N21', 'N22'], data=data,
+                                    'N19', 'N20', 'N21', 'N22', 'Z', 'RA', 'DEC'], data=data,
                              dtypes=adtype, usemask=False)
 
     print('Writing file')
@@ -544,8 +645,11 @@ if __name__ == '__main__':
     jhalopaths = []
     for i, hpth in enumerate(halopaths):
         hs = hpth.split('.')
+        omega_m = cfg['omega_m']
+        omega_l = cfg['omega_l']
         if 'fit' not in hs[-1]:
-            jhalopaths.append(join_halofiles('/'.join(hpth.split('/')[:-1]), mmin=mmin[i]))
+            jhalopaths.append(join_halofiles('/'.join(hpth.split('/')[:-1]),
+                                             omega_m, omega_l, mmin=mmin[i]))
         else:
             jhalopaths.append(hpth)
 
