@@ -15,28 +15,6 @@ import time
 import sys
 import os
 
-def rad2radec(theta, phi):
-        phi = np.rad2deg((phi+2*np.pi)%(2*np.pi))
-        theta = np.rad2deg((theta+np.pi)%np.pi)
-        theta = -theta+90.
-        
-        return theta, phi
-
-def radec2rad(theta, phi):
-    theta = -theta+90.
-    theta = np.deg2rad(theta)
-    phi = np.deg2rad(phi)
-        
-    return theta, phi
-
-def radec2vec(theta, phi):
-    theta, phi = radec2rad(theta,phi)
-    return hp.ang2vec(theta,phi)
-
-def vec2radec(vec):
-    theta, phi = hp.vec2ang(vec)
-    return rad2radec(theta,phi)
-
 def generate_z_of_r_table(omegam, omegal, zmax=2.0, npts=1000):
 
     c = 2.9979e5
@@ -108,7 +86,7 @@ def tprint(info, stime=None):
     
     return tnow
 
-
+bsizeenum = {'1050':0, '2600':1, '4000':2}
 
 def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans, 
                       bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05, 
@@ -121,7 +99,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
 
     tags = {'write':0, 'fwrite':1, 'occ1050':2, 'occ2600':3, 'occ4000':4,
             'lum1050':5, 'lum2600':6, 'lum4000':7, 'exit':8, 'recv':9}
-    bsizeenum = {'1050':0, '2600':1, '4000':2}
+
     message = None
 
     if rank == 0:
@@ -138,7 +116,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             else:
                 pix = glob('{0}/Lb{1}_{2}/[0-9]*/0*'.format(basepath, bsize, suffix))
             zbins = np.unique(np.array([p.split('/')[-1] for p in pix]))
-            if pixels!=None:
+            if pixels is not None:
                 pix = pixels
             else:
                 pix = np.unique(np.array([p.split('/')[-2] for p in pix]))
@@ -201,32 +179,32 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             elif tag==tags['recv']:
                 rwaiting.append(status.Get_source())
             elif tag==tags['occ1050']:
-                if occ[0]==None:
+                if occ[0] is None:
                     occ[0] = message
                 else:
                     occ[0] += message
             elif tag==tags['occ2600']:
-                if occ[1]==None:
+                if occ[1] is None:
                     occ[1] = message
                 else:
                     occ[1] += message
             elif tag==tags['occ4000']:
-                if occ[2]==None:
+                if occ[2] is None:
                     occ[2] = message
                 else:
                     occ[2] += message
             elif tag==tags['lum1050']:
-                if lum[0]==None:
+                if lum[0] is None:
                     lum[0] = message
                 else:
                     lum[0] += message
             elif tag==tags['lum2600']:
-                if lum[1]==None:
+                if lum[1] is None:
                     lum[1] = message
                 else:
                     lum[1] += message
             elif tag==tags['lum4000']:
-                if lum[2]==None:
+                if lum[2] is None:
                     lum[2] = message
                 else:
                     lum[2] += message
@@ -251,9 +229,9 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             tprint('    {0}: Requesting new bin'.format(rank))
             comm.send(message, 0, tag=tags['recv'])
             message = comm.recv(tag=tags['recv'])
-            if message==None:
+            if message is None:
                 tocc = tprint('    {0}: Sending occupations and finishing'.format(rank))
-                if (occ!=None) and (lum!=None):
+                if (occ is not None) and (lum is not None):
                     comm.send(occ, 0, tag=tags['occ'+bsize])
                     comm.send(lum, 0, tag=tags['lum'+bsize])
                     tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
@@ -267,7 +245,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             
             #If starting on a new box, read in the correct halo file
             if bsize!=lastbsize:
-                if lastbsize!=None:
+                if lastbsize is not None:
                     tocc = tprint('    {0}: Sending occupations'.format(rank))
                     comm.send(occ, 0, tag=tags['occ'+lastbsize])
                     comm.send(lum, 0, tag=tags['lum'+lastbsize])
@@ -388,18 +366,29 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
 
     cen = galaxies['CENTRAL']==1
     nn = hid!=-1
+    galaxies['HALOID'] = hid
+    galaxies['M200']   = halos['MVIR'][hid]
+    galaxies['RHALO']  = d
+
     galaxies['RHALO'][cen] = 0.0
-    galaxies['RHALO'][~cen] = 999999
-    galaxies['RHALO'][~cen & nn] = d[~cen & nn]
-    galaxies['HALOID'][~cen & nn] = halos['ID'][hid[~cen & nn]]
-    galaxies['M200'][~cen & nn] = halos['MVIR'][hid[~cen & nn]]
-    galaxies['M200'][cen & nn] = halos['MVIR'][hid[cen & nn]]
+    galaxies['RHALO'][~nn] = 999999
+    galaxies['M200'][~nn]  = -1
+
+    #galaxies['HALOID'][~cen & nn] = halos['ID'][hid[~cen & nn]]
+    #galaxies['M200'][~cen & nn] = halos['MVIR'][hid[~cen & nn]]
+    #galaxies['M200'][cen & nn] = halos['MVIR'][hid[cen & nn]]
+
+    if any(cen&~nn):
+        nbad = np.sum(cen&(~nn))
+        print("{0} galaxies assigned as centrals have no associated halo in the halo catalog. Calling them satellites".format(nbad))
+
+    galaxies['CENTRAL'][~nn] = 0
+    galaxies['RHALO'][~nn] = 999999
+    galaxies['HALOID'][~nn] = -1
+
+    cen = galaxies['CENTRAL']==1
     bound = galaxies['RHALO']<=halos['RVIR'][hid]
-
-    nmt, = np.where(halos['ID'][hid[cen]]==galaxies[cen]['HALOID'])
-    tprint('    Number of centrals with unidentified halos: {0}'.format(len(galaxies[cen])-len(nmt)))
-
-    galaxies[cen]['M200'] = halos[hid[cen]]['MVIR']
+    
     lum[hid[cen],2] = galaxies[cen]['AMAG'][:,1]
 
     for i, mr in enumerate([-10,-18,-19,-20,-21,-22]):
@@ -409,6 +398,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
         #sort halo indices of these galaxies
         hidx = hid[bound][midx].argsort()
         mhid = hid[bound][midx][hidx]
+
         if len(mhid)==0:continue
 
         #get magnitudes of these galaxies
@@ -420,6 +410,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
         hidx = np.hstack([np.zeros(1,dtype=np.int),hidx+1])
         uhid = mhid[hidx]
         hidx = np.hstack([hidx, np.array([len(mhid)])])
+        
         if (mr==-10):
             for j, uid in enumerate(uhid):
                 lum[uid,0]+=np.sum(mgr[hidx[j]:hidx[j+1]])
@@ -438,12 +429,18 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
         fits = fitsio.FITS('{0}/truth/{1}.{2}.fits'.format(outpath, prefix, p) ,'rw')
         print('Writing to {0}/truth/{1}.{2}.fits'.format(outpath, prefix, p))
         pidx = hpix==p
+        c = catalog[pidx]
+
         try:
             h = fits[-1].read_header()
-            fits[-1].write_key('NAXIS2', h['NAXIS2']+len(catalog[pidx]))
-            fits[-1].append(catalog[pidx])
+            assert((h['NAXIS2'] + len(c)) < 1e9 )
+            
+            c['ID'] = p*1e9 + h['NAXIS2'] + np.arange(len(c), dtype=np.int)
+            fits[-1].write_key('NAXIS2', h['NAXIS2']+len(c))
+            fits[-1].append(c)
         except:
-            fits.write(catalog[pidx], header=header)
+            c['ID'] = p*1e9 + np.arange(len(c), dtype=np.int)
+            fits.write(c, header=header)
 
         fits.close()
 
@@ -452,10 +449,10 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
             fits = fitsio.FITS('{0}/rmp/{1}.{2}.rmp.fits'.format(outpath, prefix, p) ,'rw')
             try:
                 h = fits[-1].read_header()
-                fits[-1].write_key('NAXIS2', h['NAXIS2']+len(catalog[pidx]))
-                fits[-1].append(catalog[columns][pidx])
+                fits[-1].write_key('NAXIS2', h['NAXIS2']+len(c))
+                fits[-1].append(c[columns])
             except:
-                fits.write(catalog[columns][pidx], header=header)
+                fits.write(c[columns], header=header)
                 
             fits.close()
 
@@ -464,10 +461,10 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
             fits = fitsio.FITS('{0}/lens/{1}.{2}.lens.fits'.format(outpath, prefix, p) ,'rw')
             try:
                 h = fits[-1].read_header()
-                fits[-1].write_key('NAXIS2', h['NAXIS2']+len(catalog[pidx]))
-                fits[-1].append(catalog[columns][pidx])
+                fits[-1].write_key('NAXIS2', h['NAXIS2']+len(c))
+                fits[-1].append(c[columns])
             except:
-                fits.write(catalog[columns][pidx], header=header)
+                fits.write(c[columns], header=header)
                 
             fits.close()
 
@@ -530,7 +527,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
 
 
 
-def join_halofiles(basepath, omega_m, omega_l, mmin=5e12):
+def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -539,6 +536,7 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12):
     
     lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
     pusecols = [0,2,14]
+    idoff = np.array([0, 1e8, 1e9], dtype=np.int)
 
     if rank!=0: return
     
@@ -573,20 +571,19 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12):
     table = generate_z_of_r_table(omega_m, omega_l, zmax=3.0, npts=10000)
     r = np.sqrt(hlist['PX']**2 + hlist['PY']**2 + hlist['PZ']**2)
     redshift = z_of_r(r, table)
-    dec, ra = vec2radec(hlist[['PX', 'PY', 'PZ']])
 
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
               np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
-              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA', np.float)])
-              np.dtype([('DEC', np.float)])]
-    data = [np.zeros(len(hlist)) for i in range(len(adtype)-3)]
+              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('LBOX',np.int)])]
+    data = [np.zeros(len(hlist)) for i in range(len(adtype)-2)]
     data.append(redshift)
-    data.append(ra)
-    data.append(dec)
+    data.append(np.ones(len(hlist), dtype=np.int)*bsizeenum[lbox])
     hlist = rf.append_fields(hlist,['LUMTOT', 'LUM20', 'LBCG', 'NGALS', 'N18',
-                                    'N19', 'N20', 'N21', 'N22', 'Z', 'RA', 'DEC'], data=data,
+                                    'N19', 'N20', 'N21', 'N22', 'Z', 'LBOX'], data=data,
                              dtypes=adtype, usemask=False)
+
+    hlist['ID'] = hlist['ID'] + idoff[bsizeenum[lbox]]
 
     print('Writing file')
     fitsio.write('{0}/out_0.fits'.format(basepath), hlist)
@@ -633,9 +630,14 @@ if __name__ == '__main__':
         skyfactory = False
 
     if 'mmin' in cfg.keys():
-        mmin = [float(m) for m in mmin]
+        mmin = [float(m) for m in cfg['mmin']]
     else:
         mmin = [3e12,3e12,2.4e13]
+
+    if 'lbox' in cfg.keys():
+        lbox = [str(l) for l in cfg['lbox']]
+    else:
+        lbox = ['1050', '2600', '4000']
 
     try:
         os.makedirs(outpath)
@@ -649,7 +651,7 @@ if __name__ == '__main__':
         omega_l = cfg['omega_l']
         if 'fit' not in hs[-1]:
             jhalopaths.append(join_halofiles('/'.join(hpth.split('/')[:-1]),
-                                             omega_m, omega_l, mmin=mmin[i]))
+                                             omega_m, omega_l, mmin=mmin[i], lbox=lbox[i]))
         else:
             jhalopaths.append(hpth)
 
@@ -659,6 +661,3 @@ if __name__ == '__main__':
     finalize_catalogs(basepath, prefix, suffix, outpath, jhalopaths, zbins, 
                       justhalos=justhalos, pixels=pixels, lensing_output=lensing_output,
                       rmp_output=rmp_output, skyfactory=skyfactory)
-
-
-
