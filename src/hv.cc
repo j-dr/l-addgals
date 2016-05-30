@@ -584,7 +584,7 @@ int main(void){
 		band_shift, nbands, filterfile, tmag, amag);
   t2 = clock();
 
-  cout << "Generated colors in " << t2-t1 << " seconds" << endl;
+  cout << "Generated colors in " << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
 
   vector<float> omag(galaxies.size()*nbands);
   vector<float> omagerr(galaxies.size()*nbands);
@@ -601,7 +601,7 @@ int main(void){
   t2 = clock();
 
   cout << "Generated ellipticities and sizes in "
-       << t2-t1 << " seconds" << endl;
+       << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
 
   t1 = clock();
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
@@ -609,7 +609,7 @@ int main(void){
 		     idx, halos, id, coeff, outgfn, 
 		     outghfn);
   t2 = clock();
-  cout << "Wrote outputs in " << t2-t1 << "seconds" << endl;
+  cout << "Wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;
   
 #endif
 
