@@ -366,7 +366,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
 
     cen = galaxies['CENTRAL']==1
     nn = hid!=-1
-    galaxies['HALOID'] = hid
+    galaxies['HALOID'] = halos['ID'][hid]
     galaxies['M200']   = halos['MVIR'][hid]
     galaxies['RHALO']  = d
 
@@ -378,7 +378,7 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
     #galaxies['M200'][~cen & nn] = halos['MVIR'][hid[~cen & nn]]
     #galaxies['M200'][cen & nn] = halos['MVIR'][hid[cen & nn]]
 
-    if any(cen&~nn):
+    if any(cen&(~nn)):
         nbad = np.sum(cen&(~nn))
         print("{0} galaxies assigned as centrals have no associated halo in the halo catalog. Calling them satellites".format(nbad))
 
