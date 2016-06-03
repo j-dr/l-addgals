@@ -4,15 +4,20 @@ from glob import glob
 import numpy as np
 import numpy.lib.recfunctions as rf
 import fitsio
+import yaml
 import sys
 
-def compute_lensing(g, shear):
-  
-    if 'W' not in g.dtype:
-        adtype = [np.dtype([('W',np.float)])]
-        data = [np.zeros(len(g))]
-        g = rf.append_fields(g,['W'], data=data,
-                             dtypes=adtype, usemask=False)
+def compute_lensing(g, shear, halos=False):
+
+
+    lensfields = ['GAMMA1', 'GAMMA2', 'KAPPA', 'W', 'MU', 'TRA', 'TDEC']
+
+    for f in lensfields:
+        if f not in g.dtype.names:
+            adtype = [np.dtype([(f,np.float)])]
+            data = [np.zeros(len(g))]
+            g = rf.append_fields(g,[f], data=data,
+                                 dtypes=adtype, usemask=False)
 
     for i in range(len(shear)):
         tind = shear['index'][i]
@@ -21,8 +26,11 @@ def compute_lensing(g, shear):
             g = np.hstack([g, g[tind]])
             tind = len(g)-1
 
-        g[tind].ra = shear[i].ra
-        g[tind].dec = shear[i].dec
+        g[tind]['TRA'] = g[tind]['RA']
+        g[tind]['TDEC'] = g[tind]['DEC']
+        
+        g[tind]['RA'] = shear['RA'][i]
+        g[tind]['DEC'] = shear['DEC'][i]
   
         #extract g1,g2,kappa,w from A using formulas from Vale & White (2003)
         # A = |1-kappa-gamma1      -gamma2-w|
@@ -35,43 +43,73 @@ def compute_lensing(g, shear):
     
         #compute mu = 1/detA
         g[tind]['MU'] = 1./(shear[i]['A11']*shear[i]['A00'] - shear[i]['A01']*shear[i]['A10'])
-  
-        #lens the size and magnitudes
-        g[tind]['SIZE'] = g[tind]['TSIZE']*np.sqrt(g[tind]['MU'])
-        for im in range(g['AMAG'].shape[1]):
-            g[tind]['LMAG'][im] = g[tind]['TMAG'][im] - 2.5*np.log10(g[tind]['MU'])
-  
-        #get intrinsic shape
-        epss = complex(g[tind]['TE'][0], g[tind]['TE'][1])
-  
-        #;;get reduced complex shear g = (gamma1 + i*gamma2)/(1-kappa)
-        gquot = complex(g[tind]['GAMMA1'], g[tind]['GAMMA2']) / complex(1.-g[tind]['KAPPA'], 0.)
-  
-        #;;lens the shapes - see Bartelmann & Schneider (2001), Section 4.2
-        if (abs(gquot) < 1):
-            eps = (epss+gquot)/(complex(1.0,0.0)+(epss*gquot.conjugate()))
-        else:
-            eps = (complex(1.0, 0.0)+(gquot*epss.conjugate()))/(epss.conjugate()+gquot.conjugate())
 
-        g[tind]['EPSILON'][0] = eps.real
-        g[tind]['EPSILON'][1] = eps.imag
+        if not halos:
+            #lens the size and magnitudes
+            g[tind]['SIZE'] = g[tind]['TSIZE']*np.sqrt(g[tind]['MU'])
+            for im in range(g['AMAG'].shape[1]):
+                g[tind]['LMAG'][im] = g[tind]['TMAG'][im] - 2.5*np.log10(g[tind]['MU'])
+  
+            #get intrinsic shape
+            epss = complex(g[tind]['TE'][0], g[tind]['TE'][1])
+  
+            #;;get reduced complex shear g = (gamma1 + i*gamma2)/(1-kappa)
+            gquot = complex(g[tind]['GAMMA1'], g[tind]['GAMMA2']) / complex(1.-g[tind]['KAPPA'], 0.)
+  
+            #;;lens the shapes - see Bartelmann & Schneider (2001), Section 4.2
+            if (abs(gquot) < 1):
+                eps = (epss+gquot)/(complex(1.0,0.0)+(epss*gquot.conjugate()))
+            else:
+                eps = (complex(1.0, 0.0)+(gquot*epss.conjugate()))/(epss.conjugate()+gquot.conjugate())
 
-    return g
+            g[tind]['EPSILON'][0] = eps.real
+            g[tind]['EPSILON'][1] = eps.imag
+
+        return g
 
 
-def add_lensing(gfiles, sbase):
+def add_lensing(gfiles, sfiles):
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
 
-    for gf in gfiles[rank::size]:
+    assert(len(gfiles)==len(sfiles))
+
+    gpix = np.array([int(gf.split('.')[-2]) for gf in gfiles])
+    spix = np.array([int(sf.split('.')[-3].split('_')[0]) for sf in sfiles])
+
+    gidx = gpix.argsort()
+    sidx = spix.argsort()
+    gpix = gpix[gidx]
+    spix = spix[sidx]
+    
+    assert(all(gpix==spix))
+    
+    gfiles = gfiles[gidx]
+    sfiles = sfiles[sidx]
+
+    for i, f in enumerate(gfiles):
+        if ('halo' in f) and ('halo' not in sfiles[i]):
+            if ((i+1)<len(gpix)) and (gpix[i]==spix[i+1]):
+                temp = sfiles[i+1]
+                sfiles[i+1] = sfiles[i]
+                sfiles[i] = temp
+            elif gpix[i]==spix[i-1]:
+                temp = sfiles[i-1]
+                sfiles[i-1] = sfiles[i]
+                sfiles[i] = temp
+
+            assert(('halo' in f) and ('halo' in sfiles[i]))
+                
+
+    for gf,sf in zip(gfiles[rank::size],sfiles[rank::size]):
         print("Lensing {0}".format(gf))
         gfs = gf.split('/')
         gbase = "/".join(gfs[:-1])
-        sfile = "{0}/lensed_{1}".format(sbase, gfs[-1])
+
         g     = fitsio.read(gf)
-        shear = fitsio.read(sfile)
+        shear = fitsio.read(sf)
 
         if 'halo' in gf:
             g     = compute_lensing(g, shear, halos=True)
@@ -86,12 +124,12 @@ def add_lensing(gfiles, sbase):
 
 if __name__=='__main__':
 
-  gpath = sys.argv[1]
-  sbase = sys.argv[2]
+    cfgfile = sys.argv[1]
 
-  if '*' in gpath:
-      gnames = glob(gpath)
-  else:
-      gnames = np.loadtxt(gpath)
+    with open(cfgfile, 'r') as fp:
+        cfg = yaml.load(fp)
+
+    snames = np.loadtxt(cfg['LensGalsList'], dtype=str)
+    gnames = np.loadtxt(cfg['TruthGalsList'], dtype=str)
   
-  add_lensing(gnames, sbase)
+    add_lensing(gnames, snames)
