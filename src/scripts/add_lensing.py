@@ -14,13 +14,6 @@ def compute_lensing(g, shear):
         g = rf.append_fields(g,['W'], data=data,
                              dtypes=adtype, usemask=False)
 
-    if 'W' not in g.dtype:
-        adtype = [np.dtype([('W',np.float)])]
-        data = [np.zeros(len(g))]
-        g = rf.append_fields(g,['W'], data=data,
-                             dtypes=adtype, usemask=False)
-
-    
     for i in range(len(shear)):
         tind = shear['index'][i]
 
@@ -99,6 +92,6 @@ if __name__=='__main__':
   if '*' in gpath:
       gnames = glob(gpath)
   else:
-      gnames = np.readtxt(gpath)
+      gnames = np.loadtxt(gpath)
   
   add_lensing(gnames, sbase)
