@@ -567,8 +567,8 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
     table = generate_z_of_r_table(omega_m, omega_l, zmax=3.0, npts=10000)
     r = np.sqrt(hlist['PX']**2 + hlist['PY']**2 + hlist['PZ']**2)
     redshift = z_of_r(r, table)
-    theta, phi = hp.vec2ang(hlist['PX'], hlist['PY'], hlist['PZ'])
-    dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
+    theta, phi = hp.vec2ang(hlist[['PX','PY','PZ']].view((hlist.dtype['PX'],3)))
+    dec, ra =  -np.degrees(theta-np.pi/2.), np.degrees(np.pi*2.-phi)
 
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
