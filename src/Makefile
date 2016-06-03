@@ -131,11 +131,11 @@ endif
 #CPPFLAGS += -DOLDPDF
 #CPPFLAGS += -DDEBUG_PDF
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
-#CPPFLAGS += -DUNITTESTS
+CPPFLAGS += -DUNITTESTS
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
-CPPFLAGS += -DDEBUG_SHAPES
+#CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++
 
@@ -191,6 +191,9 @@ OBJS11 = errormodel.o
 EXEC12 = unittests
 OBJS12 = unittests.o particle.o  read_MGS.o read_gadget_multi.new.o color.o galaxy_global.o assigngals.new.o neighbor_pranavkh_cleaner.o findClosest.mbusha.o read.o singleton.o mystring.o swap.o random.o  outputs.o read_galaxies.o split_volume.o cosmology.o global_vars.o ReadParameters.o ParameterDatabase.o StringDatabase.o StringDatabase.o Logger.o Utility.o simulation.o integrator.o myrand.o biniostream.o stl_util.o owens.o kcorrect_utils.o errormodel.o shapes.o efunc.o shapeconfig.o gno.o calcparams.o healpix_utils.o galaxy.o
 
+EXEC13 = readfits
+OBSJ13 = read.o
+
 EXEC_TEST = test_gasdev
 OBJS_TEST = test_gasdev.o
 
@@ -243,6 +246,9 @@ $(EXEC11): $(OBJS11)
 
 $(EXEC12): $(OBJS12)
 	$(CXX) -o $(EXEC12) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
+
+$(EXEC13): $(OBJS13)
+	$(CXX) -o $(EXEC13) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)
 
 $(EXEC_TEST): $(OBJS_TEST)
 	$(CXX) -o $(EXEC_TEST) $^ $(CPPFLAGS) $(LDFLAGS) $(LOADLIBES)

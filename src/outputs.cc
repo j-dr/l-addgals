@@ -198,6 +198,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolName[33] = "VZ";
   tcolName[34] = "TE";
   tcolName[35] = "TSIZE";
+  tcolName[36] = "LMAG";
+  tcolName[37] = "W";
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -235,6 +237,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolUnit[33] = "km/s";
   tcolUnit[34] = "";
   tcolUnit[35] = "arcseconds";
+  tcolUnit[36] = "mag";
+  tcolUnit[37] = "";
   
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -272,6 +276,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[33] = "E";
   tcolForm[34] = "2E";
   tcolForm[35] = "E";
+  tcolForm[36] = "5E";
+  tcolForm[37] = "E";
 
 
   cout << "Extracting relevant galaxy information" << endl;
@@ -362,30 +368,10 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(tcolName[12]).write(z,1);
     cout << "writing haloid" << endl;
     newTable->column(tcolName[13]).write(haloid,1);
-    cout << "writing 14" << endl;
-    newTable->column(tcolName[14]).write(empty,1);
-    cout << "writing 15" << endl;
-    newTable->column(tcolName[15]).write(empty,1);
-    cout << "writing 16" << endl;
-    newTable->column(tcolName[16]).write(empty,1);
-    cout << "writing 17" << endl;
-    newTable->column(tcolName[17]).write(empty,1);
     cout << "writing 18" << endl;
     newTable->column(tcolName[18]).write(central,1);
-    cout << "writing 19" << endl;
-    newTable->column(tcolName[19]).write(ra,1);
-    cout << "writing 20" << endl;
-    newTable->column(tcolName[20]).write(dec,1);
     cout << "writing 21" << endl;
     newTable->column(tcolName[21]).write(e,count,1);
-    cout << "writing 22" << endl;
-    newTable->column(tcolName[22]).write(empty,1);
-    cout << "writing 23" << endl;
-    newTable->column(tcolName[23]).write(empty,1);
-    cout << "writing 24" << endl;
-    newTable->column(tcolName[24]).write(empty,1);
-    cout << "writing 25" << endl;
-    newTable->column(tcolName[25]).write(empty,1);
     cout << "writing 26" << endl;
     newTable->column(tcolName[26]).write(sdssr,1);
     cout << "writing 27" << endl;
@@ -406,7 +392,6 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(tcolName[34]).write(e,count,1);
     cout << "writing 35" << endl;
     newTable->column(tcolName[35]).write(s,1);
-    cout << "writing 36" << endl;
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");

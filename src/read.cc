@@ -1,6 +1,9 @@
 #include "particle.h"
 #include "halo.h"
+#include "read.h"
 #include <vector>
+#include <fstream>
+#include <CCfits/CCfits>
 
 vector <Halo*> ReadWHalos(void);
 vector <Halo*> ReadHVHalos(void);
@@ -76,3 +79,41 @@ vector <Halo*> ReadHalos(void){
   else {cout<<"[ReadHalos] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}
   return halos;
 }
+
+int readFitsHeader(std::string filename)
+{
+  std::vector<std::string> hdukeys = {"MAG_R", "COEFF"};
+  
+  //Create fits object
+  std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1, false, hdukeys));
+
+  ExtHDU& table = pInfile->extension(1);
+
+  table.readAllKeys();
+
+  std::cout << table << std::endl;
+
+  return 0;
+}
+
+
+#ifdef UNITTESTS
+
+int main(int argc, char *argv[])
+{
+
+  std::string filename(argv[1]);
+  readFitsHeader(filename);
+
+}
+
+#endif
+
+
+
+
+  
+  
+
+			      
+
