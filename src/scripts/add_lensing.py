@@ -1,8 +1,9 @@
 from __future__ import print_function, division
 from mpi4py import MPI
 from glob import glob
-import numpy as np
 import numpy.lib.recfunctions as rf
+import healpy as hp
+import numpy as np
 import fitsio
 import yaml
 import sys
