@@ -370,10 +370,6 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
     galaxies['M200']   = halos['MVIR'][hid]
     galaxies['RHALO']  = d
 
-    galaxies['RHALO'][cen] = 0.0
-    galaxies['RHALO'][~nn] = 999999
-    galaxies['M200'][~nn]  = -1
-
     #galaxies['HALOID'][~cen & nn] = halos['ID'][hid[~cen & nn]]
     #galaxies['M200'][~cen & nn] = halos['MVIR'][hid[~cen & nn]]
     #galaxies['M200'][cen & nn] = halos['MVIR'][hid[cen & nn]]
@@ -571,16 +567,21 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
     table = generate_z_of_r_table(omega_m, omega_l, zmax=3.0, npts=10000)
     r = np.sqrt(hlist['PX']**2 + hlist['PY']**2 + hlist['PZ']**2)
     redshift = z_of_r(r, table)
+    theta, phi = hp.vec2ang(hlist['PX'], hlist['PY'], hlist['PZ'])
+    dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
 
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
               np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
-              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('LBOX',np.int)])]
-    data = [np.zeros(len(hlist)) for i in range(len(adtype)-2)]
+              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA',np.int)]),
+              np.dtype([('DEC',np.int)])]
+    data = [np.zeros(len(hlist)) for i in range(len(adtype)-3)]
     data.append(redshift)
+    data.append(ra)
+    data.append(dec)
     data.append(np.ones(len(hlist), dtype=np.int)*bsizeenum[lbox])
     hlist = rf.append_fields(hlist,['LUMTOT', 'LUM20', 'LBCG', 'NGALS', 'N18',
-                                    'N19', 'N20', 'N21', 'N22', 'Z', 'LBOX'], data=data,
+                                    'N19', 'N20', 'N21', 'N22', 'Z', 'RA', 'DEC'], data=data,
                              dtypes=adtype, usemask=False)
 
     hlist['ID'] = hlist['ID'] + idoff[bsizeenum[lbox]]

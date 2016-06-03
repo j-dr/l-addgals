@@ -10,12 +10,22 @@ import sys
 def compute_lensing(g, shear, halos=False):
 
 
-    lensfields = ['GAMMA1', 'GAMMA2', 'KAPPA', 'W', 'MU', 'TRA', 'TDEC']
+    lensfields = ['GAMMA1', 'GAMMA2', 'KAPPA', 'W', 'MU', 'TRA', 'TDEC', 'RA', 'DEC']
 
     for f in lensfields:
         if f not in g.dtype.names:
             adtype = [np.dtype([(f,np.float)])]
-            data = [np.zeros(len(g))]
+            if f == 'RA':
+                theta, phi = hp.vec2ang(g['PX'], g['PY'], g['PZ'])
+                dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
+                data = [ra]
+            elif f == 'DEC':
+                theta, phi = hp.vec2ang(g['PX'], g['PY'], g['PZ'])
+                dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
+                data = [dec]
+            else:
+                data = [np.zeros(len(g))]
+                
             g = rf.append_fields(g,[f], data=data,
                                  dtypes=adtype, usemask=False)
 
