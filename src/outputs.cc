@@ -208,7 +208,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolUnit[4] = "mag";
   tcolUnit[5] = "mag";
   tcolUnit[6] = "nmgy";
-  tcolUnit[7] = "nmgy^2";
+  tcolUnit[7] = "nmgy^{-2}";
   tcolUnit[8] = "mag";
   tcolUnit[9] = "mag";
   tcolUnit[10] = "deg";
@@ -343,7 +343,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cout << "writing id 1" << endl;
     newTable->column(tcolName[0]).write(id,1);
     cout << "writing id 2" << endl;
-    newTable->column(tcolName[1]).write(id,1); //should this be something else?
+    newTable->column(tcolName[1]).write(id,1);
     cout << "writing sed_ids" << endl;
     newTable->column(tcolName[2]).write(ecatid,1);
     cout << "writing coeffs" << endl;

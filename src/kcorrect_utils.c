@@ -2,6 +2,9 @@
 #include "hv.h"
 #include <math.h>
 #include <iostream>
+#include <stdio.h>
+#include <sstream>
+#include <stdlib.h>
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +12,8 @@
 #include <string>
 #include <iomanip>
 #include <algorithm>
+#include <CCfits/CCfits>
+#include <valarray>
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
@@ -31,6 +36,13 @@ istream & operator>>(istream & is, magtuple & in)
 
   return is;
 }
+
+#ifdef MAKEMAGS
+string colortrdir;
+#endif
+#ifdef UNITTESTS
+string colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals";
+#endif
 
 void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
 			 float zmax, float band_shift, char filterfile[], float *maggies)
@@ -190,12 +202,14 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 void assign_colors(vector<float> &reference_mag, vector<float> &coeff, 
 		   vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
-		   vector<float> &omag, vector<float> &amag){
+		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
+		   bool refflag=true){
+
   int i;
   int ngal = reference_mag.size();
   int ntemp = 5;
   float sdss_bandshift = 0.1;
-  float ab_corr = 0.012;
+  float sdssab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
   vector<float> deltam(ngal);
   strcpy(sdss_filterfile, (colortrdir+"/sdss_filter.txt").c_str());
@@ -219,13 +233,21 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
 			 1, sdss_filterfile, omag, amag);
 
-  //apply ab magnitude correction
-  transform(amag.begin(), amag.end(), amag.begin(),
-  	    bind2nd(minus<float>(), ab_corr));
-
   //determine shift needed to get reference_mag from sdss_amag
-  transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
-	    deltam.begin(), minus<float>());
+  if (refflag)
+    {
+      transform(amag.begin(), amag.end(), amag.begin(),
+  	    bind2nd(minus<float>(), sdssab_corr));
+      transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
+		deltam.begin(), minus<float>());
+    } else 
+    {
+      transform(omag.begin(), omag.end(), omag.begin(),
+  	    bind2nd(minus<float>(), sdssab_corr));
+
+      transform(reference_mag.begin(), reference_mag.end(), omag.begin(),
+		deltam.begin(), minus<float>());
+    }
 
   cout<<"10-100 deltam"<<endl;
   for (i=10;i<100;i++){
@@ -243,8 +265,8 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   vector<float>::iterator it;
   for (it=deltam.begin();it!=deltam.end();it++){
     for (i=0;i<nbands;i++){
-      omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it);
-      amag[(it-deltam.begin())*nbands+i] = amag[(it-deltam.begin())*nbands+i]+(*it);
+      omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
+      amag[(it-deltam.begin())*nbands+i] = amag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
     }
   }
 
@@ -263,6 +285,305 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 #endif
 
 }
+
+long readNRowsFits(std::string filename)
+{
+  using namespace CCfits;
+
+  std::vector<std::string> hdukeys(2,"");
+  hdukeys[0] = "MAG_R";
+  hdukeys[1] = "COEFF";
+  
+  //Create fits object
+  std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1, false, hdukeys));
+
+  ExtHDU& table = pInfile->extension(1);
+
+  std::cout << "NAXIS2: " << table.rows() << std::endl;
+
+  return table.rows();
+}
+
+//void readSEDInfoFITS(std::string filename, std::vector< valarray<float> > &coeffs, std::vector<float> &sdss_mag_r)
+void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift)
+{
+  using namespace CCfits;
+
+  const long nrows = sdss_mag_r.size();
+  long i;
+  std::vector< std::valarray<float> > temp(nrows);
+
+  //Create fits object
+  std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1));
+  ExtHDU& table = pInfile->extension(1);
+
+  //read sdss mag, kcorrect coeffs, and redshifts
+  table.column("MAG_U").read(sdss_mag_r,1,nrows);
+  table.column("Z").read(redshift,1,nrows);
+
+  vector<float>::iterator itr=coeffs.begin();
+  vector< valarray<float> >::iterator titr;
+  table.column("COEFFS").readArrays(temp, 1, nrows);
+  for (titr=temp.begin();titr<temp.end();titr++)
+    {
+      for (i=0;i<5;i++)
+	{
+	  coeffs[(titr-temp.begin())*5+i] = (*titr)[i];
+	}
+    }
+}
+
+void write_colors(std::vector<float> amag, std::vector<float> omag, const int nbands, 
+		  std::string outname, std::string surveyname)
+{
+
+  using namespace CCfits;
+  std::auto_ptr<FITS> tFits;
+  int size = amag.size()/nbands;
+  unsigned long rows(nbands);
+  
+  //Write truth file
+  cout << "Opening fits file" << endl;
+  try{
+    tFits.reset(new FITS(outname,Write));
+  }
+  catch (CCfits::FITS::CantOpen){
+    cerr << "Can't open " << outname << endl;
+  }
+
+  vector<string> tcolName(6,"");
+  vector<string> tcolUnit(6,"");
+  vector<string> tcolForm(6,"");
+
+  tcolName[0] = "AMAG";
+  tcolName[1] = "TMAG";
+  tcolName[2] = "OMAG";
+  tcolName[3] = "OMAGERR";
+  tcolName[4] = "FLUX";
+  tcolName[5] = "IVAR";
+
+  tcolUnit[0] = "mag";
+  tcolUnit[1] = "mag";
+  tcolUnit[2] = "mag";
+  tcolUnit[3] = "mag";
+  tcolUnit[4] = "nmgy";
+  tcolUnit[5] = "nmgy^{-2}";
+
+
+  std::string cf;
+  std::stringstream strstream;
+  strstream << nk << "E";
+  strstream >> cf;
+  
+  tcolForm[0] = cf;
+  tcolForm[1] = cf;
+  tcolForm[2] = cf;
+  tcolForm[3] = cf;
+  tcolForm[4] = cf;
+  tcolForm[5] = cf;
+
+  Table* newTable;
+
+  try{
+    newTable = tFits->addTable(surveyname,size,tcolName,tcolForm,tcolUnit);
+  }
+  catch(...){
+    printf("Could not create table\n");
+    exit(1);
+  }
+
+  try{
+    newTable->column(tcolName[0]).write(amag,size,1);
+    newTable->column(tcolName[1]).write(omag,size,1);
+  }
+  catch(FitsException &except){
+    printf("Caught Save Error: Column Write -- ");
+    printf("%s\n",except.message().c_str());
+    exit(1);
+  }
+  catch(...){
+    printf("Caught Save Error: Column Write\n");
+    exit(1);
+  }    
+
+
+}
+  
+
+#ifdef MAKEMAGS
+
+enum string_code 
+  {
+  TWOMASS,
+  BCS,
+  CFHTLS,
+  CANDELS,
+  DEEP2,
+  DR8,
+  DECAM,
+  Euclid,
+  FLAMEX,
+  HSC,
+  IRAC,
+  Johnson,
+  LSST,
+  NDWFS,
+  RCS,
+  SVA,
+  Stripe82,
+  VHS,
+  VIKING,
+  WFIRST,
+  WISE
+};
+
+string_code hashit (std::string const& inString) 
+{
+  if (inString == "TWOMASS") return TWOMASS;
+  if (inString == "BCS") return BCS;
+  if (inString == "CFHTLS") return CFHTLS;
+  if (inString == "CANDELS") return CANDELS;
+  if (inString == "DEEP2") return DEEP2;
+  if (inString == "DR8") return DR8;
+  if (inString == "DECAM") return DECAM;
+  if (inString == "Euclid") return Euclid;
+  if (inString == "FLAMEX") return FLAMEX;
+  if (inString == "HSC") return HSC;
+  if (inString == "IRAC") return IRAC;
+  if (inString == "Johnson") return Johnson;
+  if (inString == "LSST") return LSST;
+  if (inString == "NDWFS") return NDWFS;
+  if (inString == "RCS") return RCS;
+  if (inString == "SVA") return SVA;
+  if (inString == "Stripe82") return Stripe82;
+  if (inString == "VHS") return VHS;
+  if (inString == "VIKING") return VIKING;
+  if (inString == "WFIRST") return WFIRST;
+  if (inString == "WISE") return WISE;
+}
+
+int main(int argc, char *argv[])
+{
+  long nrows;
+  int ntemp = 5;
+  float band_shift=0.0;
+
+  std::string filename(argv[1]);
+  std::string outname(argv[2]);
+  std::string survey(argv[3]);
+  //std::string colortrdir;
+  char filterfile[FILESIZE];
+  if (argc>4)
+    {
+      colortrdir = argv[4];
+    } 
+  else 
+    {
+      colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals"; 
+    }
+
+  //Load filter information
+  float aabcorr [5] = {-0.036, 0.012, 0.010, 0.028, 0.040};
+  vector<float> abcorr( aabcorr, aabcorr+5 );
+  
+  switch(hashit(survey))
+    {
+      case TWOMASS:
+	strcpy(filterfile, (colortrdir+"/twomass_filters.txt").c_str());
+	break;
+      case BCS:
+	strcpy(filterfile, (colortrdir+"/bcs_filters.txt").c_str());
+	break;
+      case CFHTLS:
+	strcpy(filterfile, (colortrdir+"/cfhtls_filters.txt").c_str());
+	break;
+      case CANDELS:
+	strcpy(filterfile, (colortrdir+"/candels_filters.txt").c_str());
+	break;
+      case DEEP2:
+	strcpy(filterfile, (colortrdir+"/deep2_filters.txt").c_str());
+	break;
+      case DR8:
+	strcpy(filterfile, (colortrdir+"/dr8_filters.txt").c_str());
+	band_shift = 0.1;
+	break;
+      case DECAM:
+	strcpy(filterfile, (colortrdir+"/decam_filters.txt").c_str());
+	band_shift = 0.1;
+	break;
+      case Euclid:
+	strcpy(filterfile, (colortrdir+"/euclid_filters.txt").c_str());
+	break;
+      case FLAMEX:
+	strcpy(filterfile, (colortrdir+"/flamex_filters.txt").c_str());
+	break;
+      case HSC:
+	strcpy(filterfile, (colortrdir+"/hsc_filters.txt").c_str());
+	break;
+      case IRAC:
+	strcpy(filterfile, (colortrdir+"/irac_filters.txt").c_str());
+	break;
+      case Johnson:
+	strcpy(filterfile, (colortrdir+"/johnson_filters.txt").c_str());
+	break;
+      case LSST:
+	strcpy(filterfile, (colortrdir+"/lsst_filters.txt").c_str());
+	break;
+      case NDWFS:
+	strcpy(filterfile, (colortrdir+"/ndwfs_filters.txt").c_str());
+	break;
+      case RCS:
+	strcpy(filterfile, (colortrdir+"/rcs_filters.txt").c_str());
+	break;
+      case SVA:
+	strcpy(filterfile, (colortrdir+"/sva_filters.txt").c_str());
+	break;
+      case Stripe82:
+	strcpy(filterfile, (colortrdir+"/stripe82_filters.txt").c_str());
+	break;
+      case VHS:
+	strcpy(filterfile, (colortrdir+"/vhs_filters.txt").c_str());
+	band_shift = 0.1;
+	break;
+      case VIKING:
+	strcpy(filterfile, (colortrdir+"/viking_filters.txt").c_str());
+	break;
+      case WFIRST:
+	strcpy(filterfile, (colortrdir+"/wfirst_filters.txt").c_str());
+	break;
+      case WISE:
+	strcpy(filterfile, (colortrdir+"/wise_filters.txt").c_str());
+	break;
+    }
+  
+  cout<<"Loading filters from "<<filterfile<<endl;
+  k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
+  cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
+
+  //Read in galaxy SED information
+  nrows = readNRowsFits(filename);
+
+  std::vector< float > coeffs(nrows*ntemp);
+  std::vector<float> sdss_mag_r(nrows);
+  std::vector<float> redshift(nrows);
+
+  std::vector<float> omag(nrows*nk);
+  std::vector<float> amag(nrows*nk);
+
+  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift);
+
+  std::cout << "COEFF size: " << coeffs.size() << std::endl;
+  std::cout << "MAG_R size: " << sdss_mag_r.size() << std::endl;
+  std::cout << "Z size: " << redshift.size() << std::endl;
+
+  //generate survey magnitudes
+  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
+		nk, filterfile, omag, amag, abcorr, false);
+
+  write_colors(amag, omag, nk, outname, survey);
+}
+
+#endif
 
 #ifdef UNITTESTS
 

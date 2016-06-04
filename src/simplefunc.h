@@ -8,10 +8,10 @@ using namespace std;
 template <class T> inline T sqr(T x) {return (x)*(x);}
 template <class T> inline T cube(T x) { return (x)*(x)*(x);}
 template <class T> inline T cuberoot(T x) { return pow((x),1/.3);}
-template <class T> inline T abs(T x) {
-  if (x>=0) return x;
-  else return 0-x;
-}
+//template <class T> inline T abs(T x) {
+//  if (x>=0) return x;
+//  else return 0-x;
+//}
 
 //#define max(a,b) ((a)>(b)?(a):(b))
 //#define min(a,b) ((a)<(b)?(a):(b))

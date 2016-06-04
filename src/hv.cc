@@ -578,10 +578,11 @@ int main(void){
 
   float zmin = 0.0;
   float zmax = 2.5;
-
-
+  
+  vector<float> abcorr(5,0.0);
+  
   assign_colors(mr, coeff, z, zmin, zmax,
-		band_shift, nbands, filterfile, tmag, amag);
+		band_shift, nbands, filterfile, tmag, amag, abcorr);
   t2 = clock();
 
   cout << "Generated colors in " << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;

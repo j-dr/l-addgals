@@ -80,34 +80,6 @@ vector <Halo*> ReadHalos(void){
   return halos;
 }
 
-int readFitsHeader(std::string filename)
-{
-  std::vector<std::string> hdukeys = {"MAG_R", "COEFF"};
-  
-  //Create fits object
-  std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1, false, hdukeys));
-
-  ExtHDU& table = pInfile->extension(1);
-
-  table.readAllKeys();
-
-  std::cout << table << std::endl;
-
-  return 0;
-}
-
-
-#ifdef UNITTESTS
-
-int main(int argc, char *argv[])
-{
-
-  std::string filename(argv[1]);
-  readFitsHeader(filename);
-
-}
-
-#endif
 
 
 
