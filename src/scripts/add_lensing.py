@@ -1,8 +1,9 @@
 from __future__ import print_function, division
 from mpi4py import MPI
 from glob import glob
-import numpy as np
 import numpy.lib.recfunctions as rf
+import healpy as hp
+import numpy as np
 import fitsio
 import yaml
 import sys
@@ -12,18 +13,29 @@ def compute_lensing(g, shear, halos=False):
 
     lensfields = ['GAMMA1', 'GAMMA2', 'KAPPA', 'W', 'MU', 'TRA', 'TDEC', 'RA', 'DEC']
 
+    if not halos:
+        lensfields.append("LMAG")
+
+    nmimg = 0
+
     for f in lensfields:
         if f not in g.dtype.names:
-            adtype = [np.dtype([(f,np.float)])]
+
             if f == 'RA':
-                theta, phi = hp.vec2ang(g['PX'], g['PY'], g['PZ'])
-                dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
+                adtype = [np.dtype([(f,np.float)])]
+                theta, phi = hp.vec2ang(g[['PX','PY','PZ']].view((g.dtype['PX'],3)))
+                dec, ra =  -np.degrees(theta-np.pi/2.), np.degrees(np.pi*2.-phi)
                 data = [ra]
             elif f == 'DEC':
-                theta, phi = hp.vec2ang(g['PX'], g['PY'], g['PZ'])
-                dec, ra =  -np.degrees(theta-pi/2.), np.degrees(pi*2.-phi)
+                adtype = [np.dtype([(f,np.float)])]
+                theta, phi = hp.vec2ang(g[['PX','PY','PZ']].view((g.dtype['PX'],3)))
+                dec, ra =  -np.degrees(theta-np.pi/2.), np.degrees(np.pi*2.-phi)
                 data = [dec]
+            elif f == 'LMAG':
+                adtype = [np.dtype([(f,(np.float,5))])]
+                data = [np.zeros((len(g),5))]
             else:
+                adtype = [np.dtype([(f,np.float)])]
                 data = [np.zeros(len(g))]
                 
             g = rf.append_fields(g,[f], data=data,
@@ -33,14 +45,15 @@ def compute_lensing(g, shear, halos=False):
         tind = shear['index'][i]
 
         if (g[tind]['GAMMA1'] != 0.):
+            nmimg += 1
             g = np.hstack([g, g[tind]])
             tind = len(g)-1
 
         g[tind]['TRA'] = g[tind]['RA']
         g[tind]['TDEC'] = g[tind]['DEC']
         
-        g[tind]['RA'] = shear['RA'][i]
-        g[tind]['DEC'] = shear['DEC'][i]
+        g[tind]['RA'] = shear['ra'][i]
+        g[tind]['DEC'] = shear['dec'][i]
   
         #extract g1,g2,kappa,w from A using formulas from Vale & White (2003)
         # A = |1-kappa-gamma1      -gamma2-w|
@@ -74,6 +87,8 @@ def compute_lensing(g, shear, halos=False):
 
             g[tind]['EPSILON'][0] = eps.real
             g[tind]['EPSILON'][1] = eps.imag
+
+        print("Number of multiply imaged galaxies: {0}".format(nmimg))
 
         return g
 
