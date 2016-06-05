@@ -415,11 +415,10 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, const int nb
 enum string_code 
   {
   TWOMASS,
-  BCS,
   CFHTLS,
   CANDELS,
   DEEP2,
-  DR8,
+  SDSS,
   DECAM,
   Euclid,
   FLAMEX,
@@ -427,12 +426,8 @@ enum string_code
   IRAC,
   Johnson,
   LSST,
-  NDWFS,
-  RCS,
-  SVA,
   Stripe82,
-  VHS,
-  VIKING,
+  VISTA,
   WFIRST,
   WISE
 };
@@ -440,11 +435,10 @@ enum string_code
 string_code hashit (std::string const& inString) 
 {
   if (inString == "TWOMASS") return TWOMASS;
-  if (inString == "BCS") return BCS;
   if (inString == "CFHTLS") return CFHTLS;
   if (inString == "CANDELS") return CANDELS;
   if (inString == "DEEP2") return DEEP2;
-  if (inString == "DR8") return DR8;
+  if (inString == "SDSS") return SDSS;
   if (inString == "DECAM") return DECAM;
   if (inString == "Euclid") return Euclid;
   if (inString == "FLAMEX") return FLAMEX;
@@ -491,9 +485,6 @@ int main(int argc, char *argv[])
       case TWOMASS:
 	strcpy(filterfile, (colortrdir+"/twomass_filters.txt").c_str());
 	break;
-      case BCS:
-	strcpy(filterfile, (colortrdir+"/bcs_filters.txt").c_str());
-	break;
       case CFHTLS:
 	strcpy(filterfile, (colortrdir+"/cfhtls_filters.txt").c_str());
 	break;
@@ -503,8 +494,8 @@ int main(int argc, char *argv[])
       case DEEP2:
 	strcpy(filterfile, (colortrdir+"/deep2_filters.txt").c_str());
 	break;
-      case DR8:
-	strcpy(filterfile, (colortrdir+"/dr8_filters.txt").c_str());
+      case SDSS:
+	strcpy(filterfile, (colortrdir+"/sdss_filters.txt").c_str());
 	band_shift = 0.1;
 	break;
       case DECAM:
@@ -529,24 +520,12 @@ int main(int argc, char *argv[])
       case LSST:
 	strcpy(filterfile, (colortrdir+"/lsst_filters.txt").c_str());
 	break;
-      case NDWFS:
-	strcpy(filterfile, (colortrdir+"/ndwfs_filters.txt").c_str());
-	break;
-      case RCS:
-	strcpy(filterfile, (colortrdir+"/rcs_filters.txt").c_str());
-	break;
-      case SVA:
-	strcpy(filterfile, (colortrdir+"/sva_filters.txt").c_str());
-	break;
       case Stripe82:
 	strcpy(filterfile, (colortrdir+"/stripe82_filters.txt").c_str());
 	break;
-      case VHS:
-	strcpy(filterfile, (colortrdir+"/vhs_filters.txt").c_str());
+      case VISTA:
+	strcpy(filterfile, (colortrdir+"/vista_filters.txt").c_str());
 	band_shift = 0.1;
-	break;
-      case VIKING:
-	strcpy(filterfile, (colortrdir+"/viking_filters.txt").c_str());
 	break;
       case WFIRST:
 	strcpy(filterfile, (colortrdir+"/wfirst_filters.txt").c_str());
