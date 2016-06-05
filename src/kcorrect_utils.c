@@ -456,110 +456,145 @@ string_code hashit (std::string const& inString)
   if (inString == "WISE") return WISE;
 }
 
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+  std::stringstream ss(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    elems.push_back(item);
+  }
+  return elems;
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+  std::vector<std::string> elems;
+  split(s, delim, elems);
+  return elems;
+}
+
 int main(int argc, char *argv[])
 {
   long nrows;
+  int i;
   int ntemp = 5;
   float band_shift=0.0;
 
   std::string filename(argv[1]);
-  std::string outname(argv[2]);
-  std::string survey(argv[3]);
-  //std::string colortrdir;
+  std::string outdir(argv[2]);
+  std::string outbase(argv[3]);
+  colortrdir = argv[4];
+
+  std::string survey;
+  std::string outname;
   char filterfile[FILESIZE];
-  if (argc>4)
-    {
-      colortrdir = argv[4];
-    } 
-  else 
-    {
-      colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals"; 
-    }
 
-  //Load filter information
-  float aabcorr [5] = {-0.036, 0.012, 0.010, 0.028, 0.040};
-  vector<float> abcorr( aabcorr, aabcorr+5 );
+  std::vector<std::string> psplt = split(filename, ".");
   
-  switch(hashit(survey))
-    {
-      case TWOMASS:
-	strcpy(filterfile, (colortrdir+"/twomass_filters.txt").c_str());
-	break;
-      case CFHTLS:
-	strcpy(filterfile, (colortrdir+"/cfhtls_filters.txt").c_str());
-	break;
-      case CANDELS:
-	strcpy(filterfile, (colortrdir+"/candels_filters.txt").c_str());
-	break;
-      case DEEP2:
-	strcpy(filterfile, (colortrdir+"/deep2_filters.txt").c_str());
-	break;
-      case SDSS:
-	strcpy(filterfile, (colortrdir+"/sdss_filters.txt").c_str());
-	band_shift = 0.1;
-	break;
-      case DECAM:
-	strcpy(filterfile, (colortrdir+"/decam_filters.txt").c_str());
-	band_shift = 0.1;
-	break;
-      case Euclid:
-	strcpy(filterfile, (colortrdir+"/euclid_filters.txt").c_str());
-	break;
-      case FLAMEX:
-	strcpy(filterfile, (colortrdir+"/flamex_filters.txt").c_str());
-	break;
-      case HSC:
-	strcpy(filterfile, (colortrdir+"/hsc_filters.txt").c_str());
-	break;
-      case IRAC:
-	strcpy(filterfile, (colortrdir+"/irac_filters.txt").c_str());
-	break;
-      case Johnson:
-	strcpy(filterfile, (colortrdir+"/johnson_filters.txt").c_str());
-	break;
-      case LSST:
-	strcpy(filterfile, (colortrdir+"/lsst_filters.txt").c_str());
-	break;
-      case Stripe82:
-	strcpy(filterfile, (colortrdir+"/stripe82_filters.txt").c_str());
-	break;
-      case VISTA:
-	strcpy(filterfile, (colortrdir+"/vista_filters.txt").c_str());
-	band_shift = 0.1;
-	break;
-      case WFIRST:
-	strcpy(filterfile, (colortrdir+"/wfirst_filters.txt").c_str());
-	break;
-      case WISE:
-	strcpy(filterfile, (colortrdir+"/wise_filters.txt").c_str());
-	break;
-    }
-  
-  cout<<"Loading filters from "<<filterfile<<endl;
-  k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
-  cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
-
   //Read in galaxy SED information
   nrows = readNRowsFits(filename);
 
-  std::vector< float > coeffs(nrows*ntemp);
+  std::vector<float> coeffs(nrows*ntemp);
   std::vector<float> sdss_mag_r(nrows);
   std::vector<float> redshift(nrows);
 
-  std::vector<float> omag(nrows*nk);
-  std::vector<float> amag(nrows*nk);
-
   readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift);
 
-  std::cout << "COEFF size: " << coeffs.size() << std::endl;
-  std::cout << "MAG_R size: " << sdss_mag_r.size() << std::endl;
-  std::cout << "Z size: " << redshift.size() << std::endl;
+  //Loop over surveys
+  for (i=4;i<argc;i++)
+    {
+      survey = argv[i];
+      //Load filter information
+      float aabcorr[5] = {-0.036, 0.012, 0.010, 0.028, 0.040};
+      vector<float> abcorr;
+  
+      switch(hashit(survey))
+	{
+	case TWOMASS:
+	  strcpy(filterfile, (colortrdir+"/twomass_filters.txt").c_str());
+	  break;
+	case CFHTLS:
+	  strcpy(filterfile, (colortrdir+"/cfhtls_filters.txt").c_str());
+	  break;
+	case CANDELS:
+	  strcpy(filterfile, (colortrdir+"/candels_filters.txt").c_str());
+	  break;
+	case DEEP2:
+	  strcpy(filterfile, (colortrdir+"/deep2_filters.txt").c_str());
+	  break;
+	case SDSS:
+	  strcpy(filterfile, (colortrdir+"/sdss_filters.txt").c_str());
+	  band_shift = 0.1;
+	  break;
+	case DECAM:
+	  strcpy(filterfile, (colortrdir+"/decam_filters.txt").c_str());
+	  band_shift = 0.1;
+	  break;
+	case Euclid:
+	  strcpy(filterfile, (colortrdir+"/euclid_filters.txt").c_str());
+	  break;
+	case FLAMEX:
+	  strcpy(filterfile, (colortrdir+"/flamex_filters.txt").c_str());
+	  break;
+	case HSC:
+	  strcpy(filterfile, (colortrdir+"/hsc_filters.txt").c_str());
+	  break;
+	case IRAC:
+	  strcpy(filterfile, (colortrdir+"/irac_filters.txt").c_str());
+	  break;
+	case Johnson:
+	  strcpy(filterfile, (colortrdir+"/johnson_filters.txt").c_str());
+	  break;
+	case LSST:
+	  strcpy(filterfile, (colortrdir+"/lsst_filters.txt").c_str());
+	  break;
+	case Stripe82:
+	  strcpy(filterfile, (colortrdir+"/stripe82_filters.txt").c_str());
+	  break;
+	case VISTA:
+	  strcpy(filterfile, (colortrdir+"/vista_filters.txt").c_str());
+	  band_shift = 0.1;
+	  break;
+	case WFIRST:
+	  strcpy(filterfile, (colortrdir+"/wfirst_filters.txt").c_str());
+	  break;
+	case WISE:
+	  strcpy(filterfile, (colortrdir+"/wise_filters.txt").c_str());
+	  break;
+	}
+  
+      cout<<"Loading filters from "<<filterfile<<endl;
+      k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
+      cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
 
-  //generate survey magnitudes
-  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
-		nk, filterfile, omag, amag, abcorr, false);
+      std::vector<float> omag(nrows*nk);
+      std::vector<float> amag(nrows*nk);
 
-  write_colors(amag, omag, nk, outname, survey);
+      //generate survey magnitudes
+      if (hashit(survey)==SDSS)
+	{
+	  for (i=0;i<nk;i++)
+	    {
+	      abcorr.push_back(aabcorr[i]);
+	    }
+
+	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
+			nk, filterfile, omag, amag, abcorr, false);
+	}
+      else
+	{
+	  for (i=0;i<nk;i++)
+	    {
+	      abcorr.push_back(0.0);
+	    }
+
+	  abcorr(nk,0.0);
+      	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
+			nk, filterfile, omag, amag, abcorr, false);
+	}
+      
+      outname = outdir + outbase + "_" + survey + "." + psplt[psplt.end()-2] + ".fits";
+      cout << "Writing to " outname << endl;
+      write_colors(amag, omag, nk, outname, survey);
+    }
 }
 
 #endif

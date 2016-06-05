@@ -223,7 +223,6 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
     
     g = fitsio.read(fname)
 
-
     if rot is not None:
         vec = np.dot(rot, g[['PX','PY','PZ']].view((g['PX'].dtype,3)))
 
@@ -389,18 +388,18 @@ if __name__ == "__main__":
     with open(cfgfile, 'r') as fp:
         cfg = yaml.load(fp)
 
-    gpath = cfg['GALPATH']
-    model = cfg['MODEL']
-    obase = cfg['OUTBASE']
+    gpath = cfg['GalPath']
+    model = cfg['Model']
+    obase = cfg['OutBase']
 
     fnames = glob(gpath)
     
-    if 'DEPTHFILE' in cfg.keys()
-        dfile = cfg['DEPTHFILE']
+    if 'DepthFile' in cfg.keys()
+        dfile = cfg['DepthFile']
         uniform = False
 
-    if 'MAGPATH' in cfg.keys():
-        mnames  = glob(cfg['MAGPATH'])
+    if 'MagPath' in cfg.keys():
+        mnames  = glob(cfg['MagPath'])
 
         fpix = np.array([int(f.split('.')[-2]) for f in fnames])
         mpix = np.array([int(f.split('.')[-2]) for f in mnames])
@@ -416,15 +415,15 @@ if __name__ == "__main__":
     else:
         mnames = [None]*len(fnames)
 
-    if 'ROTATION' in cfg.keys():
-        rfile = cfg['ROTATION']
+    if 'Rotation' in cfg.keys():
+        rfile = cfg['Rotation']
         with open(rfile, 'r') as fp:
             rot   = pickle.load(fp)
     else:
         rot = None
 
-    if 'USEMAGS' in cfg.keys():
-        usemags = cfg['USEMAGS']
+    if 'UseMags' in cfg.keys():
+        usemags = cfg['UseMags']
 
     if rank==0:
         try:
