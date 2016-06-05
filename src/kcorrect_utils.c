@@ -203,7 +203,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 		   vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[], 
 		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
-		   bool refflag=true){
+		   bool refflag){
 
   int i;
   int ngal = reference_mag.size();
@@ -240,7 +240,8 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   	    bind2nd(minus<float>(), sdssab_corr));
       transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
 		deltam.begin(), minus<float>());
-    } else 
+    } 
+  else 
     {
       transform(omag.begin(), omag.end(), omag.begin(),
   	    bind2nd(minus<float>(), sdssab_corr));
@@ -426,7 +427,6 @@ enum string_code
   IRAC,
   Johnson,
   LSST,
-  Stripe82,
   VISTA,
   WFIRST,
   WISE
@@ -446,12 +446,7 @@ string_code hashit (std::string const& inString)
   if (inString == "IRAC") return IRAC;
   if (inString == "Johnson") return Johnson;
   if (inString == "LSST") return LSST;
-  if (inString == "NDWFS") return NDWFS;
-  if (inString == "RCS") return RCS;
-  if (inString == "SVA") return SVA;
-  if (inString == "Stripe82") return Stripe82;
-  if (inString == "VHS") return VHS;
-  if (inString == "VIKING") return VIKING;
+  if (inString == "VISTA") return VISTA;
   if (inString == "WFIRST") return WFIRST;
   if (inString == "WISE") return WISE;
 }
@@ -487,7 +482,7 @@ int main(int argc, char *argv[])
   std::string outname;
   char filterfile[FILESIZE];
 
-  std::vector<std::string> psplt = split(filename, ".");
+  std::vector<std::string> psplt = split(filename, '.');
   
   //Read in galaxy SED information
   nrows = readNRowsFits(filename);
@@ -546,9 +541,6 @@ int main(int argc, char *argv[])
 	case LSST:
 	  strcpy(filterfile, (colortrdir+"/lsst_filters.txt").c_str());
 	  break;
-	case Stripe82:
-	  strcpy(filterfile, (colortrdir+"/stripe82_filters.txt").c_str());
-	  break;
 	case VISTA:
 	  strcpy(filterfile, (colortrdir+"/vista_filters.txt").c_str());
 	  band_shift = 0.1;
@@ -586,13 +578,12 @@ int main(int argc, char *argv[])
 	      abcorr.push_back(0.0);
 	    }
 
-	  abcorr(nk,0.0);
       	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
 			nk, filterfile, omag, amag, abcorr, false);
 	}
       
-      outname = outdir + outbase + "_" + survey + "." + psplt[psplt.end()-2] + ".fits";
-      cout << "Writing to " outname << endl;
+      outname = outdir + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
+      cout << "Writing to " << outname << endl;
       write_colors(amag, omag, nk, outname, survey);
     }
 }
@@ -639,6 +630,7 @@ int main(int argc, char **argv)
   vector<float> omag(ngal*nbands);
   vector<float> amag(ngal*nbands);
   vector<float> coeff(ngal*ntemp);
+  vector<float> abcorr(5,0.0);
   vector<ginfo>::iterator itr;
 
   for (itr=sdss_ginfo.begin();itr<sdss_ginfo.end();++itr)
@@ -655,7 +647,8 @@ int main(int argc, char **argv)
 
   match_coeff(sed_ids, &coeff[0]);
   assign_colors(refmag, coeff, redshift, zmin, zmax,
-		band_shift, nbands, filterfile, omag, amag);
+		band_shift, nbands, filterfile, omag,
+		amag,abcorr,false);
 
   //write out magnitudes
   ofstream omag_file("./des_omagtest.txt");
