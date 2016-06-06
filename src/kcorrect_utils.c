@@ -293,7 +293,7 @@ long readNRowsFits(std::string filename)
 
   std::vector<std::string> hdukeys(2,"");
   hdukeys[0] = "MAG_R";
-  hdukeys[1] = "COEFF";
+  hdukeys[1] = "COEFFS";
   
   //Create fits object
   std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1, false, hdukeys));
@@ -319,7 +319,7 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
   ExtHDU& table = pInfile->extension(1);
 
   //read sdss mag, kcorrect coeffs, and redshifts
-  table.column("MAG_U").read(sdss_mag_r,1,nrows);
+  table.column("MAG_R").read(sdss_mag_r,1,nrows);
   table.column("Z").read(redshift,1,nrows);
 
   vector<float>::iterator itr=coeffs.begin();
@@ -478,6 +478,11 @@ int main(int argc, char *argv[])
   std::string outbase(argv[3]);
   colortrdir = argv[4];
 
+  cout << "Input file name  : " << filename << endl;
+  cout << "Output directory : " << outdir << endl;
+  cout << "Outbase          : " << outbase << endl;
+  cout << "Colortrdir       : " << colortrdir << endl;
+
   std::string survey;
   std::string outname;
   char filterfile[FILESIZE];
@@ -494,9 +499,10 @@ int main(int argc, char *argv[])
   readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift);
 
   //Loop over surveys
-  for (i=4;i<argc;i++)
+  for (i=5;i<argc;i++)
     {
       survey = argv[i];
+      cout << "Survey      : " << survey << endl;
       //Load filter information
       float aabcorr[5] = {-0.036, 0.012, 0.010, 0.028, 0.040};
       vector<float> abcorr;
@@ -569,7 +575,7 @@ int main(int argc, char *argv[])
 	    }
 
 	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
-			nk, filterfile, omag, amag, abcorr, false);
+			nk, filterfile, omag, amag, abcorr);
 	}
       else
 	{
@@ -579,7 +585,7 @@ int main(int argc, char *argv[])
 	    }
 
       	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
-			nk, filterfile, omag, amag, abcorr, false);
+			nk, filterfile, omag, amag, abcorr);
 	}
       
       outname = outdir + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
