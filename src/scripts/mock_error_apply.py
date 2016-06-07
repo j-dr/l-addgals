@@ -139,7 +139,7 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10
     fsky1[fsky1<0.001] = 0.001
 
     if inlup:
-        bnmgy = b*1d9
+        bnmgy = b*1e9
         tflux = exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
     else:
         tflux = exptimes*10**((mag_in - zp)/(-2.5))
@@ -159,7 +159,7 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10
         mag_err = noise/exptimes
     else:
         if b is not None:
-            bnmgy = b*1d9
+            bnmgy = b*1e9
             flux_new = flux/exptimes
             noise_new = noise/exptimes
             mag = 2.5*np.log10(1.0/b) - asinh2(0.5*flux_new/(bnmgy))/(0.4*np.log(10.0))
@@ -225,7 +225,7 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
     g = fitsio.read(fname)
 
     if rot is not None:
-        vec = np.dot(rot, g[['PX','PY','PZ']].view((g['PX'].dtype,3)))
+        vec = np.dot(rot, g[['PX','PY','PZ']].view((g['PX'].dtype,3)).T)
         
         if rotcols is not None:
             adtype = [np.dtype([(f,np.float)]) for f in rotcols]
@@ -413,16 +413,16 @@ if __name__ == "__main__":
     model = cfg['Model']
     obase = cfg['OutBase']
 
-    fnames = glob(gpath)
+    fnames = np.array(glob(gpath))
     
-    if 'DepthFile' in cfg.keys()
+    if 'DepthFile' in cfg.keys():
         dfile = cfg['DepthFile']
         uniform = False
     else:
         uniform = True
 
     if ('MagPath' in cfg.keys()) and (cfg['MagPath'] is not None):
-        mnames  = glob(cfg['MagPath'])
+        mnames  = np.array(glob(cfg['MagPath']))
 
         fpix = np.array([int(f.split('.')[-2]) for f in fnames])
         mpix = np.array([int(f.split('.')[-2]) for f in mnames])
@@ -430,7 +430,7 @@ if __name__ == "__main__":
         fidx = fpix.argsort()
         midx = mpix.argsort()
 
-        assert(fpix[fidx]==mpix[midx])
+        assert((fpix[fidx]==mpix[midx]).all())
 
         fnames = fnames[fidx]
         mnames = mnames[midx]
@@ -444,6 +444,8 @@ if __name__ == "__main__":
             rot   = pickle.load(fp)
         if 'RotCols' in cfg.keys():
             rotcols = cfg['RotCols']
+        else:
+            rotcols = None
             
 
     else:
@@ -462,4 +464,4 @@ if __name__ == "__main__":
         if uniform:
             apply_uniform_errormodel(fname, obase, model, magfile=mname, usemags=usemags)
         else:
-            apply_nonuniform_errormodel(fname,obase,dfile,magfile=mname,survey=model,rot=rot, rotcols=rotcals)
+            apply_nonuniform_errormodel(fname,obase,dfile,magfile=mname,survey=model,rot=rot, rotcols=rotcols)

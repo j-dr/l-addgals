@@ -469,7 +469,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 int main(int argc, char *argv[])
 {
   long nrows;
-  int i;
+  int i,j;
   int ntemp = 5;
   float band_shift=0.0;
 
@@ -569,9 +569,9 @@ int main(int argc, char *argv[])
       //generate survey magnitudes
       if (hashit(survey)==SDSS)
 	{
-	  for (i=0;i<nk;i++)
+	  for (j=0;j<nk;j++)
 	    {
-	      abcorr.push_back(aabcorr[i]);
+	      abcorr.push_back(aabcorr[j]);
 	    }
 
 	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
@@ -579,7 +579,7 @@ int main(int argc, char *argv[])
 	}
       else
 	{
-	  for (i=0;i<nk;i++)
+	  for (j=0;j<nk;j++)
 	    {
 	      abcorr.push_back(0.0);
 	    }
@@ -588,7 +588,7 @@ int main(int argc, char *argv[])
 			nk, filterfile, omag, amag, abcorr);
 	}
       
-      outname = outdir + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
+      outname = outdir + "/" + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
       cout << "Writing to " << outname << endl;
       write_colors(amag, omag, nk, outname, survey);
     }
