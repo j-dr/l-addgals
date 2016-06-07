@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 from glob import glob
 from mpi4py import MPI
+import numpy.lib.recfunctions as rf
 import numpy as np
 import fitsio
 import pickle
@@ -219,12 +220,27 @@ def calc_uniform_errors(model, tmag, maglims, exptimes, lnscat):
     return omag, omagerr, oflux, ofluxerr
 
 def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=None,
-                                survey=None, rot=None):
+                                survey=None, rot=None, rotcols=None):
     
     g = fitsio.read(fname)
 
     if rot is not None:
         vec = np.dot(rot, g[['PX','PY','PZ']].view((g['PX'].dtype,3)))
+        
+        if rotcols is not None:
+            adtype = [np.dtype([(f,np.float)]) for f in rotcols]
+            theta, phi = hp.vec2ang(vec[:,0], vec[:,1], vec[:,2])
+                                                     
+            dec = 90-theta*180./np.pi
+            ra  = phi*180./np.pi
+            
+            if 'DEC' in rotcols[0]:
+                data = [dec, ra]
+            else:
+                data = [ra, dec]
+
+                g = rf.append_fields(g,rotcols, data=data,
+                                     dtypes=adtype, usemask=False)
 
     if magfile is not None:
         mags = fitsio.read(magfile)
@@ -335,6 +351,11 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
 
     
     fitsio.write(oname, obs)
+
+    if rotcols is not None:
+        fitsio.write(fname+'.test', g)
+
+        
     
 
 def apply_uniform_errormodel(fname, obase, model, detonly=False, magname=None, usemags=None):
@@ -397,8 +418,10 @@ if __name__ == "__main__":
     if 'DepthFile' in cfg.keys()
         dfile = cfg['DepthFile']
         uniform = False
+    else:
+        uniform = True
 
-    if 'MagPath' in cfg.keys():
+    if ('MagPath' in cfg.keys()) and (cfg['MagPath'] is not None):
         mnames  = glob(cfg['MagPath'])
 
         fpix = np.array([int(f.split('.')[-2]) for f in fnames])
@@ -419,6 +442,10 @@ if __name__ == "__main__":
         rfile = cfg['Rotation']
         with open(rfile, 'r') as fp:
             rot   = pickle.load(fp)
+        if 'RotCols' in cfg.keys():
+            rotcols = cfg['RotCols']
+            
+
     else:
         rot = None
 
@@ -435,4 +462,4 @@ if __name__ == "__main__":
         if uniform:
             apply_uniform_errormodel(fname, obase, model, magfile=mname, usemags=usemags)
         else:
-            apply_nonuniform_errormodel(fname,obase,dfile,magfile=mname,survey=model,rot=rot)
+            apply_nonuniform_errormodel(fname,obase,dfile,magfile=mname,survey=model,rot=rot, rotcols=rotcals)
