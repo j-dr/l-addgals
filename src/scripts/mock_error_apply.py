@@ -3,6 +3,7 @@ from glob import glob
 from mpi4py import MPI
 import numpy.lib.recfunctions as rf
 import numpy as np
+import healpy as hp
 import fitsio
 import pickle
 import yaml
@@ -244,7 +245,7 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
 
     if magfile is not None:
         mags = fitsio.read(magfile)
-        if ('LMAG' in mags.dtype.names) & (mags['LMAG']!=0).any():
+        if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
             imtag = 'LMAG'
             omag = mags['LMAG']
         else:
@@ -253,7 +254,7 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
         fs = magfile.split('/')
         oname = "{0}/{1}".format(obase,magfile)
     else:
-        if ('LMAG' in mags.dtype.names) & (mags['LMAG']!=0).any():
+        if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
             imtag = 'LMAG'
             omag = g['LMAG']
         else:
@@ -289,15 +290,19 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
         minra = 0.0
         maxra = 360.
 
-        maxtheta=(90.0-mindec)*np.pi/180.
-        mintheta=(90.0-maxdec)*np.pi/180.
-        minphi=minra*np.pi/180.
-        maxphi=maxra*np.pi/180.
+    elif survey=="SDSS":
+        mindec = -20
+        maxdec = 90
+        minra = 0.0
+        maxra = 360.
 
-    elif survey=="SDSS_NORTH":
-        #cut on galactic latitude greater than 0
         pass
 
+    maxtheta=(90.0-mindec)*np.pi/180.
+    mintheta=(90.0-maxdec)*np.pi/180.
+    minphi=minra*np.pi/180.
+    maxphi=maxra*np.pi/180.
+    
     #keep pixels in footprint
     theta, phi = hp.pix2ang(dhdr['NSIDE'],d['HPIX'])
     infp = np.where(((mintheta < theta) and (theta < maxtheta)) and ((minphi < phi) and (phi < maxphi)))
