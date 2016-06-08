@@ -3,6 +3,7 @@ from glob import glob
 from mpi4py import MPI
 import numpy.lib.recfunctions as rf
 import numpy as np
+import healpy as hp
 import fitsio
 import pickle
 import yaml
@@ -99,14 +100,14 @@ models = {
         'exptimes' : [838.00,1252.00,772.00,98.00],
         'lnscat' : [0.276,0.272,0.278,0.279]
         },
-    
-    'DES_SV': 
+
+    'DES_SV':
     {
 	'maglims' : [23.621,23.232,23.008,22.374,20.663],
 	'exptimes' : [4389.00,1329.00,1405.00,517.00,460.00],
-	'lnscat' : [0.276,0.257,0.247,0.241,0.300] 
+	'lnscat' : [0.276,0.257,0.247,0.241,0.300]
         },
-    
+
     'DES_SV_OPTIMISTIC':
         {
         'maglims' : [23.621+0.5,23.232+0.5,23.008,22.374,20.663],
@@ -129,8 +130,9 @@ models = {
 
 }
 
-def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10.0,
-                           fluxmode=False,lnscat=None,b=None,inlup=False,detonly=False):
+def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
+                            nsig=10.0,fluxmode=False,lnscat=None,b=None,
+                            inlup=False,detonly=False):
 
     seed = time()
 
@@ -139,11 +141,11 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10
     fsky1[fsky1<0.001] = 0.001
 
     if inlup:
-        bnmgy = b*1d9
+        bnmgy = b*1e9
         tflux = exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
     else:
         tflux = exptimes*10**((mag_in - zp)/(-2.5))
-        
+
     noise = np.sqrt(fsky1*exptimes + tflux)
 
     if nonoise:
@@ -159,7 +161,7 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10
         mag_err = noise/exptimes
     else:
         if b is not None:
-            bnmgy = b*1d9
+            bnmgy = b*1e9
             flux_new = flux/exptimes
             noise_new = noise/exptimes
             mag = 2.5*np.log10(1.0/b) - asinh2(0.5*flux_new/(bnmgy))/(0.4*np.log(10.0))
@@ -175,7 +177,7 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,nsig=10
             if (detonly):
                 mag[bad]=99.0
                 mag_err[bad]=99.0
-                
+
     return mag, mag_err
 
 
@@ -187,10 +189,10 @@ def calc_uniform_errors(model, tmag, maglims, exptimes, lnscat):
 
     zp=22.5
     #calculate fsky1 -- sky in 1 second
-    flux1_lim = 10**((maglims-zp)/(-2.5)) 
+    flux1_lim = 10**((maglims-zp)/(-2.5))
     flux1_lim[flux1_lim < 120/exptimes] = 120/exptimes[flux1_lim < 120/exptimes]
     fsky1 = (flux1_lim**2*exptimes)/100. - flux1_lim
-    
+
     oflux=np.zeros((ngal, nmag))
     ofluxerr=np.zeros((ngal, nmag))
     omag=np.zeros((ngal, nmag))
@@ -199,14 +201,14 @@ def calc_uniform_errors(model, tmag, maglims, exptimes, lnscat):
 
     for i in range(nmag):
         tflux = exptimes[i] * 10**((tmag[:,i]-offset-zp)/(-2.5))
-        noise = np.exp(np.log(np.sqrt(fsky1[i]*exptimes[i] + tflux)) 
+        noise = np.exp(np.log(np.sqrt(fsky1[i]*exptimes[i] + tflux))
                     + lnscat[i]*np.random.randn(ngal))
 
         flux = tflux + noise*np.random.randn(ngal)
-        
+
         oflux[:,i] = flux / exptimes[i]
         ofluxerr[:,i] = noise/exptimes[i]
-        
+
         omag[:,i] = 22.5-2.5*np.log10(oflux[:,i])
         omagerr[:,i] = (2.5/np.log(10.))*(ofluxerr[:,i]/oflux[:,i])
 
@@ -216,71 +218,117 @@ def calc_uniform_errors(model, tmag, maglims, exptimes, lnscat):
             omag[bad,i] = 99.0
             omagerr[bad,i] = 99.0
 
-    
+
     return omag, omagerr, oflux, ofluxerr
 
-def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=None,
-                                survey=None, rot=None, rotcols=None):
-    
+def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
+                             all_obs_fields=True):
+
+    if all_obs_fields & dbase_style:
+        if bands is None:
+            raise(ValueError("Need names of bands in order to use database formatting!"))
+
+        fields = [('INDEX', np.int), ('RA', np.float), ('DEC', np.float),
+                    ('EPSILON1',np.float), ('EPSILON2', np.float),
+                    ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float)]
+        for b in bands:
+            fields.append(('MAG_{0}'.format(b.upper()),np.float))
+            fields.append(('MAGERR_{0}'.format(b.upper()),np.float))
+            fields.append(('FLUX_{0}'.format(b.upper()),np.float))
+            fields.append(('IVAR_{0}'.format(b.upper()),np.float))
+
+        odtype = np.dtype(fields)
+
+    if all_obs_fields & (not dbase_style):
+
+        fields = [('INDEX', np.int), ('RA', np.float), ('DEC', np.float),
+                    ('EPSILON1',np.float), ('EPSILON2', np.float),
+                    ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float),
+                    ('MAG',(np.float,nbands)), ('FLUX',(np.float,nbands)),
+                    ('MAGERR',(np.float,nbands)),('IVAR',(np.float,nbands))]
+        odtype = np.dtype(fields)
+
+    if (not all_obs_fields) & dbase_style:
+        fields = [('INDEX',np.int)]
+        for b in bands:
+            fields.append(('MAG_{0}'.format(b.upper()),np.float))
+            fields.append(('MAGERR_{0}'.format(b.upper()),np.float))
+            fields.append(('FLUX_{0}'.format(b.upper()),np.float))
+            fields.append(('IVAR_{0}'.format(b.upper()),np.float))
+
+        odtype = np.dtype(fields)
+
+    if (not all_obs_fields) & (not dbase_style):
+        fields = [('INDEX', np.int), ('MAG',(np.float,nbands),
+                    ('FLUX',(np.float,nbands)),('MAGERR',(np.float,nbands)),
+                    ('IVAR',(np.float,nbands))]
+        odtype = np.dtype(fields)
+
+
+    out = np.zeros(ngals, dtype=odtype)
+
+    return out
+
+
+def apply_nonuniform_errormodel(fname, odir, obase, depthfile,
+                                survey, magfile=None, usemags=None,
+                                nest=False, bands=None, all_obs_fields=True,
+                                dbase_style=True, use_lmag=True):
+
     g = fitsio.read(fname)
-
-    if rot is not None:
-        vec = np.dot(rot, g[['PX','PY','PZ']].view((g['PX'].dtype,3)))
-        
-        if rotcols is not None:
-            adtype = [np.dtype([(f,np.float)]) for f in rotcols]
-            theta, phi = hp.vec2ang(vec[:,0], vec[:,1], vec[:,2])
-                                                     
-            dec = 90-theta*180./np.pi
-            ra  = phi*180./np.pi
-            
-            if 'DEC' in rotcols[0]:
-                data = [dec, ra]
-            else:
-                data = [ra, dec]
-
-                g = rf.append_fields(g,rotcols, data=data,
-                                     dtypes=adtype, usemask=False)
 
     if magfile is not None:
         mags = fitsio.read(magfile)
-        if ('LMAG' in mags.dtype.names) & (mags['LMAG']!=0).any():
-            imtag = 'LMAG'
-            omag = mags['LMAG']
+        if use_lmag
+            if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
+                imtag = 'LMAG'
+                omag = mags['LMAG']
+            else:
+                raise(KeyError("No LMAG field!"))
         else:
-            imtag = 'TMAG'
-            omag = mags['TMAG']
-        fs = magfile.split('/')
-        oname = "{0}/{1}".format(obase,magfile)
+            try:
+                imtag = 'TMAG'
+                omag = mags['TMAG']
+            except:
+                imtag = 'OMAG'
+                omag = mags['OMAG']
     else:
-        if ('LMAG' in mags.dtype.names) & (mags['LMAG']!=0).any():
-            imtag = 'LMAG'
-            omag = g['LMAG']
+        if use_lmag:
+            if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
+                imtag = 'LMAG'
+                omag = g['LMAG']
+            else:
+                raise(ValueError("No LMAG field"))
         else:
-            imtag = 'TMAG'
-            omag = g['TMAG']
+            try:
+                imtag = 'TMAG'
+                omag = g['TMAG']
+            except:
+                imtag = 'OMAG'
+                omag = g['OMAG']
 
-        fs = fname.split('/')
-        fss = fname.split('.')
-        oname = "{0}/{1}_{2}.{3}.fits".format(obase, fss[:-2], survey, fss[-2])
+    if dbase_style:
+        mnames  = ['MAG_{0}'.format(b) for b in bands]
+        menames = ['MAGERR_{0}'.format(b) for b in bands]
+        fnames  = ['FLUX_{0}'.format(b) for b in bands]
+        fenames = ['FLUXERR_{0}'.format(b) for b in bands]
+
+
+    fs = fname.split('.')
+    oname = "{0}/{1}_{2}.{3}.fits".format(odir,obase,survey,fs[-2])
 
     #get mags to use
-    if usemag is None:
+    if usemags is None:
         nmag = omag.shape[1]
-        usemag = range(nmag)
+        usemags = range(nmag)
     else:
-        nmag = len(usemag)
+        nmag = len(usemags)
 
     #make output structure
-    if magfile is not None:
-        obs = mags
-    else:
-        obs = np.zeros(len(g), dtype=np.dtype([(imtag,(np.float,nmag)),('AMAG',(np.float,nmag)),
-                                               ('OMAG',(np.float,nmag)),('OMAGERR',(np.float,nmag)),
-                                               ('FLUX',(np.float,nmag)),('IVAR',(np.float,nmag))]))
-        for i,idx in enumerate(usemag):
-            obs[imtag][:,i] = g[imtag][:,idx]
-        
+    obs = make_output_structure(len(g), dbase_style=dbase_style, bands=bands,
+                                nbands=len(usemags),
+                                all_obs_fields=all_obs_fields):
+
     d, dhdr = fitsio.read(depthfile, header=True)
 
     if (survey=="Y1A1") | (survey=="DES") | (survey=="SVA"):
@@ -289,74 +337,93 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
         minra = 0.0
         maxra = 360.
 
-        maxtheta=(90.0-mindec)*np.pi/180.
-        mintheta=(90.0-maxdec)*np.pi/180.
-        minphi=minra*np.pi/180.
-        maxphi=maxra*np.pi/180.
+    elif survey=="DR8":
+        mindec = -20
+        maxdec = 90
+        minra = 0.0
+        maxra = 360.
 
-    elif survey=="SDSS_NORTH":
-        #cut on galactic latitude greater than 0
-        pass
+    maxtheta=(90.0-mindec)*np.pi/180.
+    mintheta=(90.0-maxdec)*np.pi/180.
+    minphi=minra*np.pi/180.
+    maxphi=maxra*np.pi/180.
 
     #keep pixels in footprint
     theta, phi = hp.pix2ang(dhdr['NSIDE'],d['HPIX'])
-    infp = np.where(((mintheta < theta) and (theta < maxtheta)) and ((minphi < phi) and (phi < maxphi)))
+    infp = np.where(((mintheta < theta) & (theta < maxtheta)) & ((minphi < phi) & (phi < maxphi)))
     d = d[infp]
 
     #match galaxies to correct pixels of depthmap
     pixind = d['HPIX'].argsort()
     d = d[pixind]
 
-    if rot is None:
-        theta = (90-g['DEC'])*np.pi/180.
-        phi   = (g['RA']*np.pi/180.)
-        pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi)
-    else:
-        pix   = hp.ang2pix(dhdr['NSIDE'],vec[:,0], vec[:,1], vec[:,2])
+    theta = (90-g['DEC'])*np.pi/180.
+    phi   = (g['RA']*np.pi/180.)
+    pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi, nest=nest)
 
     pixind = d['HPIX'].searchsorted(pix)
-    guse = (ipring!=0)&(ipring!=len(d))
+    guse = (pixind!=0)&(pixind!=len(d))
 
     if not any(guse):
         print("No galaxies in this pixel are in the footprint")
         return
 
-    for ind,i in enumerate(usemag):
-        
+    for ind,i in enumerate(usemags):
+
         flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind[guse],ind],
                                                d['LIMMAGS'][pixind[guse],ind],
                                                mag_in[guse,i], fluxmode=True)
-        obs['FLUX'][guse,ind] = flux
-        obs['IVAR'][guse,ind] = 1/fluxerr**2
-        obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux)
-        obs['OMAGERR'][guse,ind] = 1.086*fluxerr/flux
+        if not dbase_style:
+            obs['FLUX'][guse,ind] = flux
+            obs['IVAR'][guse,ind] = 1/fluxerr**2
+            obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux)
+            obs['OMAGERR'][guse,ind] = 1.086*fluxerr/flux
 
-        obs['FLUX'][~guse,ind] = -99
-        obs['IVAR'][~guse,ind] = -99
-        obs['OMAG'][~guse,ind] = 99
-        obs['OMAGERR'][~guse,ind] = 99
+            obs['FLUX'][~guse,ind] = -99
+            obs['IVAR'][~guse,ind] = -99
+            obs['OMAG'][~guse,ind] = 99
+            obs['OMAGERR'][~guse,ind] = 99
 
-        bad = (flux<=0)
+            bad = (flux<=0)
 
-        obs['OMAG'][guse[bad],ind] = 99.0
-        obs['OMAGERR'][guse[bad],ind] = 99.0
-
-
-        r = np.random.rand(len(pixind[guse]))
-        bad, = np.where(r>depth['FRACGOOD'][pixind[guse]])
-
-        if len(bad)>0:
             obs['OMAG'][guse[bad],ind] = 99.0
             obs['OMAGERR'][guse[bad],ind] = 99.0
 
-    
+
+            r = np.random.rand(len(pixind[guse]))
+            bad, = np.where(r>depth['FRACGOOD'][pixind[guse]])
+
+            if len(bad)>0:
+                obs['OMAG'][guse[bad],ind] = 99.0
+                obs['OMAGERR'][guse[bad],ind] = 99.0
+
+        else:
+            obs[fnames[ind]][guse]  = flux
+            obs[fenames[ind]][guse] = 1/fluxerr**2
+            obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux)
+            obs[menames[ind]][guse] = 1.086*fluxerr/flux
+
+            obs[mnames[ind]][~guse]  = 99.0
+            obs[menames[ind]][~guse] = 99.0
+
+            bad = (flux<=0)
+
+            obs[mnames[ind]][guse[bad]] = 99.0
+            obs[menames[ind][guse[bad]] = 99.0
+
+
+            r = np.random.rand(len(pixind[guse]))
+            bad, = np.where(r>depth['FRACGOOD'][pixind[guse]])
+
+            if len(bad)>0:
+                obs[mnames[ind]][guse[bad]] = 99.0
+                obs[menames[ind]][guse[bad]] = 99.0
+
+
     fitsio.write(oname, obs)
 
-    if rotcols is not None:
-        fitsio.write(fname+'.test', g)
 
-        
-    
+
 
 def apply_uniform_errormodel(fname, obase, model, detonly=False, magname=None, usemags=None):
 
@@ -373,7 +440,7 @@ def apply_uniform_errormodel(fname, obase, model, detonly=False, magname=None, u
     print('Done calculating errors')
     nmags = omag.shape[1]
 
-    emdtype = np.dtype([('OMAG', (omag.dtype, nmags)), 
+    emdtype = np.dtype([('OMAG', (omag.dtype, nmags)),
                         ('OMAGERR',(omagerr.dtype,nmags)),
                         ('OFLUX', (oflux.dtype, nmags)),
                         ('OFLUXERR', (ofluxerr.dtype, nmags))])
@@ -411,18 +478,23 @@ if __name__ == "__main__":
 
     gpath = cfg['GalPath']
     model = cfg['Model']
-    obase = cfg['OutBase']
+    odir  = cfg['OutputDir']
+    obase = cfg['OutputBase']
 
-    fnames = glob(gpath)
-    
-    if 'DepthFile' in cfg.keys()
+    fnames = np.array(glob(gpath))
+
+    if 'DepthFile' in cfg.keys():
         dfile = cfg['DepthFile']
         uniform = False
+        if 'Nest' in cfg.keys():
+            nest = bool(cfg['Nest'])
+        else:
+            nest = False
     else:
         uniform = True
 
     if ('MagPath' in cfg.keys()) and (cfg['MagPath'] is not None):
-        mnames  = glob(cfg['MagPath'])
+        mnames  = np.array(glob(cfg['MagPath']))
 
         fpix = np.array([int(f.split('.')[-2]) for f in fnames])
         mpix = np.array([int(f.split('.')[-2]) for f in mnames])
@@ -430,7 +502,7 @@ if __name__ == "__main__":
         fidx = fpix.argsort()
         midx = mpix.argsort()
 
-        assert(fpix[fidx]==mpix[midx])
+        assert((fpix[fidx]==mpix[midx]).all())
 
         fnames = fnames[fidx]
         mnames = mnames[midx]
@@ -438,19 +510,29 @@ if __name__ == "__main__":
     else:
         mnames = [None]*len(fnames)
 
-    if 'Rotation' in cfg.keys():
-        rfile = cfg['Rotation']
-        with open(rfile, 'r') as fp:
-            rot   = pickle.load(fp)
-        if 'RotCols' in cfg.keys():
-            rotcols = cfg['RotCols']
-            
-
-    else:
-        rot = None
-
     if 'UseMags' in cfg.keys():
         usemags = cfg['UseMags']
+    else:
+        usemags = None
+
+    if ('DataBaseStyle' in cfg.keys()) & (cfg['DataBaseStyle']==True):
+        if ('Bands' in cfg.keys()):
+            dbstyle = True
+            bands   = cfg['Bands']
+        else:
+            raise(KeyError("Need to specify bands for database style formatting"))
+    else:
+        dbstyle = False
+
+    if ('AllObsFields' in cfg.keys()):
+        all_obs_fields = bool(cfg['AllObsFields'])
+    else:
+        all_obs_fields = True
+
+    if ('UseLMAG' in cfg.keys()):
+        use_lmag = bool(cfg['UseLMAG'])
+    else:
+        use_lmag = False
 
     if rank==0:
         try:
@@ -462,4 +544,10 @@ if __name__ == "__main__":
         if uniform:
             apply_uniform_errormodel(fname, obase, model, magfile=mname, usemags=usemags)
         else:
-            apply_nonuniform_errormodel(fname,obase,dfile,magfile=mname,survey=model,rot=rot, rotcols=rotcals)
+            apply_nonuniform_errormodel(fname, odir, obase, depthfile,
+                                            model, magfile=mname,
+                                            usemags=usemags,
+                                            nest=nest, bands=bands,
+                                            all_obs_fields=all_obs_fields,
+                                            dbase_style=dbstyle,
+                                            use_lmag=use_lmag)
