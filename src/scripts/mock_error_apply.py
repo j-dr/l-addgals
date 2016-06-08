@@ -290,13 +290,11 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
         minra = 0.0
         maxra = 360.
 
-    elif survey=="SDSS":
+    elif survey=="DR8":
         mindec = -20
         maxdec = 90
         minra = 0.0
         maxra = 360.
-
-        pass
 
     maxtheta=(90.0-mindec)*np.pi/180.
     mintheta=(90.0-maxdec)*np.pi/180.
@@ -305,7 +303,7 @@ def apply_nonuniform_errormodel(fname, obase, depthfile, magfile=None, usemag=No
     
     #keep pixels in footprint
     theta, phi = hp.pix2ang(dhdr['NSIDE'],d['HPIX'])
-    infp = np.where(((mintheta < theta) and (theta < maxtheta)) and ((minphi < phi) and (phi < maxphi)))
+    infp = np.where(((mintheta < theta) & (theta < maxtheta)) & ((minphi < phi) & (phi < maxphi)))
     d = d[infp]
 
     #match galaxies to correct pixels of depthmap
