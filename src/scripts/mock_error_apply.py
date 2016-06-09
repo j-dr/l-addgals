@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 from glob import glob
 from mpi4py import MPI
+from rot_mock_tools import rot_mock_file
 import numpy.lib.recfunctions as rf
 import numpy as np
 import healpy as hp
