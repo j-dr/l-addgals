@@ -270,12 +270,10 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
     return out
 
 
-def apply_nonuniform_errormodel(fname, odir, obase, depthfile,
+def apply_nonuniform_errormodel(g, oname, d, dhdr,
                                 survey, magfile=None, usemags=None,
                                 nest=False, bands=None, all_obs_fields=True,
                                 dbase_style=True, use_lmag=True):
-
-    g = fitsio.read(fname)
 
     if magfile is not None:
         mags = fitsio.read(magfile)
@@ -329,8 +327,6 @@ def apply_nonuniform_errormodel(fname, odir, obase, depthfile,
                                 nbands=len(usemags),
                                 all_obs_fields=all_obs_fields):
 
-    d, dhdr = fitsio.read(depthfile, header=True)
-
     if (survey=="Y1A1") | (survey=="DES") | (survey=="SVA"):
         mindec = -90.
         maxdec = 90
@@ -354,8 +350,6 @@ def apply_nonuniform_errormodel(fname, odir, obase, depthfile,
     d = d[infp]
 
     #match galaxies to correct pixels of depthmap
-    pixind = d['HPIX'].argsort()
-    d = d[pixind]
 
     theta = (90-g['DEC'])*np.pi/180.
     phi   = (g['RA']*np.pi/180.)
@@ -423,12 +417,7 @@ def apply_nonuniform_errormodel(fname, odir, obase, depthfile,
     fitsio.write(oname, obs)
 
 
-
-
-def apply_uniform_errormodel(fname, obase, model, detonly=False, magname=None, usemags=None):
-
-    print("Working on {0}".format(fname))
-    g = fitsio.read(fname)
+def apply_uniform_errormodel(g, oname, model, detonly=False, magname=None, usemags=None):
 
     maglims = np.array(models[model]['maglims'])
     exptimes = np.array(models[model]['exptimes'])
@@ -445,13 +434,6 @@ def apply_uniform_errormodel(fname, obase, model, detonly=False, magname=None, u
                         ('OFLUX', (oflux.dtype, nmags)),
                         ('OFLUXERR', (ofluxerr.dtype, nmags))])
 
-    fs = fname.split('.')
-    fp = fs[-2]
-    pb = fs[-4]
-    pb = pb.split('/')[-1]
-
-    oname = "{0}/{1}_{2}.{3}.fits".format(obase, pb, model, fp)
-    print('Oname: {0}'.format(oname))
 
     out = np.zeros(len(omag), dtype=emdtype)
     out['OMAG']     = omag
@@ -536,15 +518,59 @@ if __name__ == "__main__":
 
     if rank==0:
         try:
-            os.makedirs(obase)
+            os.makedirs(odir)
         except Exception as e:
             print(e)
 
-    for fname, mname in zip(fnames[rank::size],mnames[rank::size]):
-        if uniform:
-            apply_uniform_errormodel(fname, obase, model, magfile=mname, usemags=usemags)
+    if ('RotOut' in cfg.keys()):
+        if ('MatPath' in cfg.keys()):
+            rodir = cfg['RotOutDir']
+            robase = cfg['RotBase']
+            rpath = cfg['MatPath']
+            with open(rpath, 'r') as fp:
+                rot    = pickle.load(fp)
+            try:
+                os.makedirs(rodir)
+            except Exception as e:
+                print(e)
         else:
-            apply_nonuniform_errormodel(fname, odir, obase, depthfile,
+            raise(KeyError("No Matrix path!"))
+
+    else:
+        rodir = None
+        rpath = None
+        rot   = None
+        robase= None
+
+    d,dhdr = fitsio.read(depthfile, header=True)
+    pidx = d['HPIX'].argsort()
+    d = d[pidx]
+
+    for fname, mname in zip(fnames[rank::size],mnames[rank::size]):
+        print("Working on {0}".format(fname))
+        if rodir is not None:
+
+            p = fname.split('.')[-2]
+            nfname = "{0}/{1}.{2}.fits".format(rodir,robase,p)
+            g = rot_mock_file(fname,rot,nfname,
+                    footprint=d,nside=dhdr['NSIDE'])
+
+            #if returns none, no galaxies in footprint
+            if g is None: continue
+        else:
+            g = fitsio.read(fname)
+
+        fs = fname.split('.')
+        fp = fs[-2]
+
+        oname = "{0}/{1}.{3}.fits".format(odir, obase, model, fp)
+        print('OutputName: {0}'.format(oname))
+
+        if uniform:
+            apply_uniform_errormodel(g, oname, model, magfile=mname,
+                                        usemags=usemags)
+        else:
+            apply_nonuniform_errormodel(g, oname, d, dhdr
                                             model, magfile=mname,
                                             usemags=usemags,
                                             nest=nest, bands=bands,

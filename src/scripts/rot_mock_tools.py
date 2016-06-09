@@ -28,12 +28,12 @@ def radec_rot(ra,dec,rmat):
     px = np.cos(ra*d2r)*np.cos(dec*d2r)
     py = np.sin(ra*d2r)*np.cos(dec*d2r)
     pz = np.sin(dec*d2r)
-    
+
     (rpx,rpy,rpz) = pos_rot(px,py,pz,rmat)
-    
+
     rra = np.arctan2(rpy,rpx)/d2r
     rdec = 90.0 - np.arccos(rpz/np.sqrt(rpx*rpx + rpy*rpy + rpz*rpz))/d2r
-    
+
     #remap ra to [0,360)
     for x in np.nditer(rra, op_flags=['readwrite']):
         if (x < 0.0):
@@ -45,7 +45,7 @@ def radec_rot(ra,dec,rmat):
 
 def ttens_rot(a00,a01,a10,a11,ra,dec,rmat):
     #assumes tensor is in theta-phi basis!
-    
+
     #assumes ra-dec in decimal degrees
     d2r = math.pi/180.0
     r2d = 180.0/math.pi
@@ -76,19 +76,19 @@ def ttens_rot(a00,a01,a10,a11,ra,dec,rmat):
     norm = np.sqrt((1.0 - rpz)*(1.0 + rpz)*(1.0 - pz)*(1.0 + pz))
     sinpsi = (rephi_px*etheta_rpx + rephi_py*etheta_rpy + rephi_pz*etheta_rpz)/norm
     cospsi = (rephi_px*ephi_rpx + rephi_py*ephi_rpy + rephi_pz*ephi_rpz)/norm
-    
-    
+
+
     #now do rots: Ar = R.A.Rt
     t00 = a00*cospsi + a01*sinpsi
     t01 = a00*(-sinpsi) + a01*cospsi
     t10 = a10*cospsi + a11*sinpsi
     t11 = a10*(-sinpsi) + a11*cospsi
-    
+
     ra00 = cospsi*t00 + sinpsi*t10
     ra01 = cospsi*t01 + sinpsi*t11
     ra10 = -sinpsi*t00 + cospsi*t10
     ra11 = -sinpsi*t01 + cospsi*t11
-    
+
     return (ra00,ra01,ra10,ra11)
 
 def epsgam_rot(g1,g2,ra,dec,rmat):
@@ -101,7 +101,7 @@ def epsgam_rot(g1,g2,ra,dec,rmat):
     a01 = -rda10.copy()
     a10 = -rda01.copy()
     a11 = rda00.copy()
-    
+
     #do rot
     (rda00,rda01,rda10,rda11) = ttens_rot(a00,a01,a10,a11,ra,dec,rmat)
 
@@ -114,23 +114,23 @@ def epsgam_rot(g1,g2,ra,dec,rmat):
     #get epslion
     re1 = (a11 - a00)/2.0
     re2 = -0.5*(a01+a10)
-    
+
     return (re1,re2)
-    
-def rot_mock_file(fname,rmat,nfname):
+
+def rot_mock_file(fname,rmat,nfname,footprint=None,nside=None):
     #get file
     print "Reading: '%s'" % fname
     sys.stdout.flush()
     hdu = pyfits.open(fname)
     d = hdu[1].data
-    
+
     #get file gaain for rotated version
     nhdu = pyfits.open(fname)
     nd = nhdu[1].data
-    
+
     didRot = False
     badRot = False
-    
+
     #do positions & vels
     te = tag_exist(d,['px','py','pz'])
     if te.sum() == 3:
@@ -143,6 +143,15 @@ def rot_mock_file(fname,rmat,nfname):
         print "Error: File '%s' has weird P[X,Y,Z] tags!" % fname,te
         sys.stdout.flush()
         badRot = True
+
+    if footprint is not None:
+        pix = hp.vec2pix(nside,nd['px'],nd['py'],nd['pz'])
+        pixind = footprint['HPIX'].searchsorted(pix)
+        guse = (pixind!=0)&(pixind!=len(footprint))
+        if not any(guse):
+            print("No galaxies in this pixel fall within the footprint")
+            return
+
 
     te = tag_exist(d,['halopx','halopy','halopz'])
     if te.sum() == 3:
@@ -179,7 +188,7 @@ def rot_mock_file(fname,rmat,nfname):
         print "Error: File '%s' has weird HALOV[X,Y,Z] tags!" % fname,te
         sys.stdout.flush()
         badRot = True
-        
+
     #do ra-dec
     te = tag_exist(d,['ra','dec'])
     if te.sum() == 2:
@@ -245,7 +254,7 @@ def rot_mock_file(fname,rmat,nfname):
             os.remove(nfname)
         except OSError:
             pass
-            
-        nhdu.writeto(nfname)
-    
 
+        nhdu.writeto(nfname)
+
+    return nd
