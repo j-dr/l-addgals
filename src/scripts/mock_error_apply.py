@@ -135,10 +135,8 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
                             nsig=10.0,fluxmode=False,lnscat=None,b=None,
                             inlup=False,detonly=False):
 
-    seed = time()
-
     f1lim = 10**((limmags-zp)/(-2.5))
-    fsky1 = (((f1lim**2)*exptimes)/(nsig**2.) - f1lim)
+    fsky1 = ((f1lim**2)*exptimes)/(nsig**2.) - f1lim
     fsky1[fsky1<0.001] = 0.001
 
     if inlup:
@@ -260,7 +258,7 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
         odtype = np.dtype(fields)
 
     if (not all_obs_fields) & (not dbase_style):
-        fields = [('INDEX', np.int), ('MAG',(np.float,nbands),
+        fields = [('INDEX', np.int), ('MAG',(np.float,nbands)),
                     ('FLUX',(np.float,nbands)),('MAGERR',(np.float,nbands)),
                     ('IVAR',(np.float,nbands))]
         odtype = np.dtype(fields)
@@ -278,7 +276,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
     if magfile is not None:
         mags = fitsio.read(magfile)
-        if use_lmag
+        if use_lmag:
             if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
                 imtag = 'LMAG'
                 omag = mags['LMAG']
@@ -293,7 +291,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                 omag = mags['OMAG']
     else:
         if use_lmag:
-            if ('LMAG' in mags.dtype.names) and (mags['LMAG']!=0).any():
+            if ('LMAG' in g.dtype.names) and (g['LMAG']!=0).any():
                 imtag = 'LMAG'
                 omag = g['LMAG']
             else:
@@ -307,10 +305,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                 omag = g['OMAG']
 
     if dbase_style:
-        mnames  = ['MAG_{0}'.format(b) for b in bands]
-        menames = ['MAGERR_{0}'.format(b) for b in bands]
-        fnames  = ['FLUX_{0}'.format(b) for b in bands]
-        fenames = ['FLUXERR_{0}'.format(b) for b in bands]
+        mnames  = ['MAG_{0}'.format(b.upper()) for b in bands]
+        menames = ['MAGERR_{0}'.format(b.upper()) for b in bands]
+        fnames  = ['FLUX_{0}'.format(b.upper()) for b in bands]
+        fenames = ['IVAR_{0}'.format(b.upper()) for b in bands]
 
 
     fs = fname.split('.')
@@ -326,9 +324,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     #make output structure
     obs = make_output_structure(len(g), dbase_style=dbase_style, bands=bands,
                                 nbands=len(usemags),
-                                all_obs_fields=all_obs_fields):
+                                all_obs_fields=all_obs_fields)
 
-    if (survey=="Y1A1") | (survey=="DES") | (survey=="SVA"):
+    print(survey)
+    if ("Y1" in survey) | (survey=="DES") | (survey=="SVA"):
         mindec = -90.
         maxdec = 90
         minra = 0.0
@@ -346,18 +345,21 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     maxphi=maxra*np.pi/180.
 
     #keep pixels in footprint
-    theta, phi = hp.pix2ang(dhdr['NSIDE'],d['HPIX'])
-    infp = np.where(((mintheta < theta) & (theta < maxtheta)) & ((minphi < phi) & (phi < maxphi)))
-    d = d[infp]
+    #theta, phi = hp.pix2ang(dhdr['NSIDE'],d['HPIX'])
+    #infp = np.where(((mintheta < theta) & (theta < maxtheta)) & ((minphi < phi) & (phi < maxphi)))
+    #d = d[infp]
 
     #match galaxies to correct pixels of depthmap
 
     theta = (90-g['DEC'])*np.pi/180.
     phi   = (g['RA']*np.pi/180.)
+    print("Nest is {0}".format(nest))
+    print("Nside is {0}".format(dhdr['NSIDE']))
     pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi, nest=nest)
 
-    pixind = d['HPIX'].searchsorted(pix)
-    guse = (pixind!=0)&(pixind!=len(d))
+    pixind = d['HPIX'].searchsorted(pix,side='right')
+    guse, = np.where(((pixind!=0)&(pixind!=len(d)))|(pix==d['HPIX'][-1]))
+    pixind -= 1
 
     if not any(guse):
         print("No galaxies in this pixel are in the footprint")
@@ -365,52 +367,55 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
     for ind,i in enumerate(usemags):
 
-        flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind[guse],ind],
-                                               d['LIMMAGS'][pixind[guse],ind],
-                                               mag_in[guse,i], fluxmode=True)
+        print("Mag ind : {0}".format(ind))
+        print("Mag i   : {0}".format(i))
+
+        flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind,ind],
+                                               d['LIMMAGS'][pixind,ind],
+                                               omag[:,i], fluxmode=True)
         if not dbase_style:
-            obs['FLUX'][guse,ind] = flux
-            obs['IVAR'][guse,ind] = 1/fluxerr**2
-            obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux)
-            obs['OMAGERR'][guse,ind] = 1.086*fluxerr/flux
 
-            obs['FLUX'][~guse,ind] = -99
-            obs['IVAR'][~guse,ind] = -99
-            obs['OMAG'][~guse,ind] = 99
-            obs['OMAGERR'][~guse,ind] = 99
+            obs['OMAG'][:,ind] = 99
+            obs['OMAGERR'][:,ind] = 99
 
-            bad = (flux<=0)
+            obs['FLUX'][guse,ind] = flux[guse]
+            obs['IVAR'][guse,ind] = 1/fluxerr[guse]**2
+            obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux[guse])
+            obs['OMAGERR'][guse,ind] = 1.086*fluxerr[guse]/flux[guse]
+
+
+            bad = (flux[guse]<=0)
 
             obs['OMAG'][guse[bad],ind] = 99.0
             obs['OMAGERR'][guse[bad],ind] = 99.0
 
 
             r = np.random.rand(len(pixind[guse]))
-            bad, = np.where(r>depth['FRACGOOD'][pixind[guse]])
+            bad, = np.where(r>d['FRACGOOD'][pixind[guse]])
 
             if len(bad)>0:
                 obs['OMAG'][guse[bad],ind] = 99.0
                 obs['OMAGERR'][guse[bad],ind] = 99.0
 
         else:
-            obs[fnames[ind]][guse]  = flux
-            obs[fenames[ind]][guse] = 1/fluxerr**2
-            obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux)
-            obs[menames[ind]][guse] = 1.086*fluxerr/flux
+            obs[mnames[ind]]  = 99.0
+            obs[menames[ind]] = 99.0
+            
+            obs[fnames[ind]][guse]  = flux[guse]
+            obs[fenames[ind]][guse] = 1/fluxerr[guse]**2
+            obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux[guse])
+            obs[menames[ind]][guse] = 1.086*fluxerr[guse]/flux[guse]
 
-            obs[mnames[ind]][~guse]  = 99.0
-            obs[menames[ind]][~guse] = 99.0
-
-            bad = (flux<=0)
+            bad = (flux[guse]<=0)
 
             obs[mnames[ind]][guse[bad]] = 99.0
-            obs[menames[ind][guse[bad]] = 99.0
+            obs[menames[ind]][guse[bad]] = 99.0
 
 
             r = np.random.rand(len(pixind[guse]))
-            bad, = np.where(r>depth['FRACGOOD'][pixind[guse]])
+            bad = r>d['FRACGOOD'][pixind[guse]]
 
-            if len(bad)>0:
+            if any(bad):
                 obs[mnames[ind]][guse[bad]] = 99.0
                 obs[menames[ind]][guse[bad]] = 99.0
 
@@ -523,7 +528,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(e)
 
-    if ('RotOut' in cfg.keys()):
+    if ('RotOutDir' in cfg.keys()):
         if ('MatPath' in cfg.keys()):
             rodir = cfg['RotOutDir']
             robase = cfg['RotBase']
@@ -543,14 +548,15 @@ if __name__ == "__main__":
         rot   = None
         robase= None
 
-    d,dhdr = fitsio.read(depthfile, header=True)
+    d,dhdr = fitsio.read(dfile, header=True)
     pidx = d['HPIX'].argsort()
     d = d[pidx]
 
     for fname, mname in zip(fnames[rank::size],mnames[rank::size]):
         print("Working on {0}".format(fname))
+        print("Magname    {0}".format(mname))
         if rodir is not None:
-
+            print("Performing rotation")
             p = fname.split('.')[-2]
             nfname = "{0}/{1}.{2}.fits".format(rodir,robase,p)
             g = rot_mock_file(fname,rot,nfname,
@@ -571,7 +577,8 @@ if __name__ == "__main__":
             apply_uniform_errormodel(g, oname, model, magfile=mname,
                                         usemags=usemags)
         else:
-            apply_nonuniform_errormodel(g, oname, d, dhdr
+            print("Applying nonuniform errormodel")
+            apply_nonuniform_errormodel(g, oname, d, dhdr,
                                             model, magfile=mname,
                                             usemags=usemags,
                                             nest=nest, bands=bands,
