@@ -357,13 +357,16 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     print("Nside is {0}".format(dhdr['NSIDE']))
     pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi, nest=nest)
 
-    pixind = d['HPIX'].searchsorted(pix,side='right')
-    guse, = np.where(((pixind!=0)&(pixind!=len(d)))|(pix==d['HPIX'][-1]))
-    pixind -= 1
+
+    guse = np.in1d(pix, d['HPIX'])
+    guse, = np.where(guse==True)
 
     if not any(guse):
         print("No galaxies in this pixel are in the footprint")
         return
+
+    pixind = d['HPIX'].searchsorted(pix[guse],side='right')
+    pixind -= 1
 
     for ind,i in enumerate(usemags):
 
@@ -372,7 +375,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
         flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind,ind],
                                                d['LIMMAGS'][pixind,ind],
-                                               omag[:,i], fluxmode=True)
+                                               omag[guse,i], fluxmode=True)
         if not dbase_style:
 
             obs['OMAG'][:,ind] = 99
@@ -384,14 +387,14 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs['OMAGERR'][guse,ind] = 1.086*fluxerr[guse]/flux[guse]
 
 
-            bad = (flux[guse]<=0)
+            bad = (flux<=0)
 
             obs['OMAG'][guse[bad],ind] = 99.0
             obs['OMAGERR'][guse[bad],ind] = 99.0
 
 
-            r = np.random.rand(len(pixind[guse]))
-            bad, = np.where(r>d['FRACGOOD'][pixind[guse]])
+            r = np.random.rand(len(pixind))
+            bad = r>d['FRACGOOD'][pixind]
 
             if len(bad)>0:
                 obs['OMAG'][guse[bad],ind] = 99.0
@@ -400,20 +403,20 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
         else:
             obs[mnames[ind]]  = 99.0
             obs[menames[ind]] = 99.0
-            
+
             obs[fnames[ind]][guse]  = flux[guse]
             obs[fenames[ind]][guse] = 1/fluxerr[guse]**2
             obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux[guse])
             obs[menames[ind]][guse] = 1.086*fluxerr[guse]/flux[guse]
 
-            bad = (flux[guse]<=0)
+            bad = (flux<=0)
 
             obs[mnames[ind]][guse[bad]] = 99.0
             obs[menames[ind]][guse[bad]] = 99.0
 
 
-            r = np.random.rand(len(pixind[guse]))
-            bad = r>d['FRACGOOD'][pixind[guse]]
+            r = np.random.rand(len(pixind))
+            bad = r>d['FRACGOOD'][pixind]
 
             if any(bad):
                 obs[mnames[ind]][guse[bad]] = 99.0
