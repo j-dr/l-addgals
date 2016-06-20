@@ -272,7 +272,8 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
 def apply_nonuniform_errormodel(g, oname, d, dhdr,
                                 survey, magfile=None, usemags=None,
                                 nest=False, bands=None, all_obs_fields=True,
-                                dbase_style=True, use_lmag=True):
+                                dbase_style=True, use_lmag=True,
+                                sigpz=0.03):
 
     if magfile is not None:
         mags = fitsio.read(magfile)
@@ -353,10 +354,8 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
     theta = (90-g['DEC'])*np.pi/180.
     phi   = (g['RA']*np.pi/180.)
-    print("Nest is {0}".format(nest))
-    print("Nside is {0}".format(dhdr['NSIDE']))
-    pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi, nest=nest)
 
+    pix   = hp.ang2pix(dhdr['NSIDE'],theta, phi, nest=nest)
 
     guse = np.in1d(pix, d['HPIX'])
     guse, = np.where(guse==True)
@@ -370,9 +369,6 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
     for ind,i in enumerate(usemags):
 
-        print("Mag ind : {0}".format(ind))
-        print("Mag i   : {0}".format(i))
-
         flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind,ind],
                                                d['LIMMAGS'][pixind,ind],
                                                omag[guse,i], fluxmode=True)
@@ -381,10 +377,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs['OMAG'][:,ind] = 99
             obs['OMAGERR'][:,ind] = 99
 
-            obs['FLUX'][guse,ind] = flux[guse]
-            obs['IVAR'][guse,ind] = 1/fluxerr[guse]**2
-            obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux[guse])
-            obs['OMAGERR'][guse,ind] = 1.086*fluxerr[guse]/flux[guse]
+            obs['FLUX'][guse,ind] = flux
+            obs['IVAR'][guse,ind] = 1/fluxerr**2
+            obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux)
+            obs['OMAGERR'][guse,ind] = 1.086*fluxerr/flux
 
 
             bad = (flux<=0)
@@ -404,10 +400,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs[mnames[ind]]  = 99.0
             obs[menames[ind]] = 99.0
 
-            obs[fnames[ind]][guse]  = flux[guse]
-            obs[fenames[ind]][guse] = 1/fluxerr[guse]**2
-            obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux[guse])
-            obs[menames[ind]][guse] = 1.086*fluxerr[guse]/flux[guse]
+            obs[fnames[ind]][guse]  = flux
+            obs[fenames[ind]][guse] = 1/fluxerr**2
+            obs[mnames[ind]][guse]  = 22.5 - 2.5*np.log10(flux)
+            obs[menames[ind]][guse] = 1.086*fluxerr/flux
 
             bad = (flux<=0)
 
@@ -419,9 +415,17 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             bad = r>d['FRACGOOD'][pixind]
 
             if any(bad):
-                obs[mnames[ind]][guse[bad]] = 99.0
+                obs[mnames[ind]][guse[bad]]  = 99.0
                 obs[menames[ind]][guse[bad]] = 99.0
 
+    obs['RA']              = g['RA']
+    obs['DEC']             = g['DEC']
+    obs['INDEX']           = g['INDEX']
+    obs['EPSILON1']        = g['EPSILON1']
+    obs['EPSILON2']        = g['EPSILON2']
+    obs['SIZE']            = g['SIZE']
+    obs['PHOTOZ_GAUSSIAN'] = g['Z'] +
+                                sigpz * (1 + g['Z']) * (np.random.randn(len(g))
 
     fitsio.write(oname, obs)
 
