@@ -424,7 +424,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     obs['EPSILON1']        = g['EPSILON'][:,0]
     obs['EPSILON2']        = g['EPSILON'][:,1]
     obs['SIZE']            = g['SIZE']
-    obs['PHOTOZ_GAUSSIAN'] = g['Z'] + sigpz * (1 + g['Z']) * (np.random.randn(len(g))
+    obs['PHOTOZ_GAUSSIAN'] = g['Z'] + sigpz * (1 + g['Z']) * (np.random.randn(len(g)))
 
     fitsio.write(oname, obs)
 
