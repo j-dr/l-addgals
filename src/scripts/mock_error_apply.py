@@ -224,7 +224,7 @@ def calc_uniform_errors(model, tmag, maglims, exptimes, lnscat):
     return omag, omagerr, oflux, ofluxerr
 
 def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
-                             all_obs_fields=True):
+                             all_obs_fields=True, blind_obs=False):
 
     if all_obs_fields & dbase_style:
         if bands is None:
@@ -233,13 +233,16 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
         fields = [('INDEX', np.int), ('RA', np.float), ('DEC', np.float),
                     ('EPSILON1',np.float), ('EPSILON2', np.float),
                     ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float)]
+
+        if not blind_obs:
+            fields.extend([('M200', np.float), ('Z', np.float),
+                            ('CENTRAL', np.int)])
+
         for b in bands:
             fields.append(('MAG_{0}'.format(b.upper()),np.float))
             fields.append(('MAGERR_{0}'.format(b.upper()),np.float))
             fields.append(('FLUX_{0}'.format(b.upper()),np.float))
             fields.append(('IVAR_{0}'.format(b.upper()),np.float))
-
-        odtype = np.dtype(fields)
 
     if all_obs_fields & (not dbase_style):
 
@@ -248,7 +251,6 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
                     ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float),
                     ('MAG',(np.float,nbands)), ('FLUX',(np.float,nbands)),
                     ('MAGERR',(np.float,nbands)),('IVAR',(np.float,nbands))]
-        odtype = np.dtype(fields)
 
     if (not all_obs_fields) & dbase_style:
         fields = [('INDEX',np.int)]
@@ -258,14 +260,16 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
             fields.append(('FLUX_{0}'.format(b.upper()),np.float))
             fields.append(('IVAR_{0}'.format(b.upper()),np.float))
 
-        odtype = np.dtype(fields)
-
     if (not all_obs_fields) & (not dbase_style):
         fields = [('INDEX', np.int), ('MAG',(np.float,nbands)),
                     ('FLUX',(np.float,nbands)),('MAGERR',(np.float,nbands)),
                     ('IVAR',(np.float,nbands))]
-        odtype = np.dtype(fields)
 
+    if not blind_obs:
+        fields.extend([('M200', np.float), ('Z', np.float),
+                        ('CENTRAL', np.int)])
+
+    odtype = np.dtype(fields)
 
     out = np.zeros(ngals, dtype=odtype)
 
@@ -276,7 +280,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                                 survey, magfile=None, usemags=None,
                                 nest=False, bands=None, all_obs_fields=True,
                                 dbase_style=True, use_lmag=True,
-                                sigpz=0.03):
+                                sigpz=0.03, blind_obs=False):
 
     if magfile is not None:
         mags = fitsio.read(magfile)
@@ -328,7 +332,8 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     #make output structure
     obs = make_output_structure(len(g), dbase_style=dbase_style, bands=bands,
                                 nbands=len(usemags),
-                                all_obs_fields=all_obs_fields)
+                                all_obs_fields=all_obs_fields,
+                                blind_obs=blind_obs)
 
     print(survey)
     if ("Y1" in survey) | (survey=="DES") | (survey=="SVA"):
@@ -427,6 +432,11 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     obs['SIZE']            = g['SIZE']
     obs['PHOTOZ_GAUSSIAN'] = g['Z'] + sigpz * (1 + g['Z']) * (np.random.randn(len(g)))
 
+    if blind_obs:
+        obs['M200']    = g['M200']
+        obs['CENTRAL'] = g['CENTRAL']
+        obs['Z']       = g['Z']
+
     fitsio.write(oname, obs)
 
 
@@ -524,6 +534,11 @@ if __name__ == "__main__":
     else:
         all_obs_fields = True
 
+    if ('BlindObs' in cfg.keys()):
+        blind_obs = bool(cfg['BlindObs'])
+    else:
+        blind_obs = False
+
     if ('UseLMAG' in cfg.keys()):
         use_lmag = bool(cfg['UseLMAG'])
     else:
@@ -591,4 +606,5 @@ if __name__ == "__main__":
                                             nest=nest, bands=bands,
                                             all_obs_fields=all_obs_fields,
                                             dbase_style=dbstyle,
-                                            use_lmag=use_lmag)
+                                            use_lmag=use_lmag,
+                                            blind_obs=blind_obs)
