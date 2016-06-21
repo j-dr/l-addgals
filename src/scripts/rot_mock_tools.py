@@ -147,7 +147,7 @@ def rot_mock_file(fname,rmat,nfname,footprint=None,nside=None):
 
     if footprint is not None:
         pix = hp.vec2pix(nside,nd['px'],nd['py'],nd['pz'])
-        pixind = np.in1d(pix, footprint['HPIX'])
+        guse = np.in1d(pix, footprint['HPIX'])
         if not any(guse):
             print("No galaxies in this pixel fall within the footprint")
             return
