@@ -585,7 +585,7 @@ if __name__ == "__main__":
             p = fname.split('.')[-2]
             nfname = "{0}/{1}.{2}.fits".format(rodir,robase,p)
             g = rot_mock_file(fname,rot,nfname,
-                    footprint=d,nside=dhdr['NSIDE'])
+                    footprint=d,nside=dhdr['NSIDE'],nest=nest)
 
             #if returns none, no galaxies in footprint
             if g is None: continue

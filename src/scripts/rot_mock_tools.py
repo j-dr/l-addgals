@@ -118,7 +118,7 @@ def epsgam_rot(g1,g2,ra,dec,rmat):
 
     return (re1,re2)
 
-def rot_mock_file(fname,rmat,nfname,footprint=None,nside=None):
+def rot_mock_file(fname,rmat,nfname,footprint=None,nside=None,nest=False):
     #get file
     print "Reading: '%s'" % fname
     sys.stdout.flush()
@@ -146,7 +146,7 @@ def rot_mock_file(fname,rmat,nfname,footprint=None,nside=None):
         badRot = True
 
     if footprint is not None:
-        pix = hp.vec2pix(nside,nd['px'],nd['py'],nd['pz'])
+        pix = hp.vec2pix(nside,nd['px'],nd['py'],nd['pz'], nest=nest)
         guse = np.in1d(pix, footprint['HPIX'])
         if not any(guse):
             print("No galaxies in this pixel fall within the footprint")
