@@ -551,7 +551,7 @@ if __name__ == "__main__":
         try:
             os.makedirs(odir)
         except Exception as e:
-            print(e)
+            pass
 
     if ('RotOutDir' in cfg.keys()):
         if ('MatPath' in cfg.keys()):
@@ -563,7 +563,7 @@ if __name__ == "__main__":
             try:
                 os.makedirs(rodir)
             except Exception as e:
-                print(e)
+                pass
         else:
             raise(KeyError("No Matrix path!"))
 
