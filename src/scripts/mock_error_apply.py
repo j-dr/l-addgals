@@ -136,7 +136,7 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
                             inlup=False,detonly=False):
 
     f1lim = 10**((limmags-zp)/(-2.5))
-    fsky1 = ((f1lim**2)*exptimes)/(nsig**2.) - f1lim
+    fsky1 = ((f1lim**2)*exptimes)/(nsig**2) - f1lim
     fsky1[fsky1<0.001] = 0.001
 
     if inlup:
@@ -147,15 +147,18 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
 
     noise = np.sqrt(fsky1*exptimes + tflux)
 
+    if lnscat is not None:
+        print("Adding log-normal scatter of {0}".format(lnscat))
+        noise = np.exp(np.log(noise) + lnscat*np.random.randn(len(mag_in)))
+
     if nonoise:
+        print("Not adding noise")
         flux = tflux
     else:
         flux = tflux + noise*np.random.randn(len(mag_in))
 
-    if lnscat is not None:
-        noise = np.exp(np.log(noise) + lnscat*np.random.randn(len(mag_in)))
-
     if fluxmode:
+        print("Fluxmode is enabled, returning flux and fluxerr")
         mag = flux/exptimes
         mag_err = noise/exptimes
     else:
@@ -382,12 +385,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs['OMAG'][guse,ind] = 22.5 - 2.5*np.log10(flux)
             obs['OMAGERR'][guse,ind] = 1.086*fluxerr/flux
 
-
             bad = (flux<=0)
 
             obs['OMAG'][guse[bad],ind] = 99.0
             obs['OMAGERR'][guse[bad],ind] = 99.0
-
 
             r = np.random.rand(len(pixind))
             bad = r>d['FRACGOOD'][pixind]
