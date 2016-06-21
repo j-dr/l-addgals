@@ -234,10 +234,6 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
                     ('EPSILON1',np.float), ('EPSILON2', np.float),
                     ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float)]
 
-        if not blind_obs:
-            fields.extend([('M200', np.float), ('Z', np.float),
-                            ('CENTRAL', np.int)])
-
         for b in bands:
             fields.append(('MAG_{0}'.format(b.upper()),np.float))
             fields.append(('MAGERR_{0}'.format(b.upper()),np.float))
