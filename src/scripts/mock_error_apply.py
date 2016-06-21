@@ -396,7 +396,11 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs['OMAGERR'][guse[bad],ind] = 99.0
 
             r = np.random.rand(len(pixind))
-            bad = r>d['FRACGOOD'][pixind]
+
+            if len(d['FRACGOOD'].shape)>1:
+                bad = r>d['FRACGOOD'][pixind,ind]
+            else:
+                bad = r>d['FRACGOOD'][pixind]
 
             if len(bad)>0:
                 obs['OMAG'][guse[bad],ind] = 99.0
@@ -418,8 +422,11 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
 
             r = np.random.rand(len(pixind))
-            bad = r>d['FRACGOOD'][pixind]
 
+            if len(d['FRACGOOD'].shape)>1:
+                bad = r>d['FRACGOOD'][pixind,ind]
+            else:
+                bad = r>d['FRACGOOD'][pixind]
             if any(bad):
                 obs[mnames[ind]][guse[bad]]  = 99.0
                 obs[menames[ind]][guse[bad]] = 99.0
