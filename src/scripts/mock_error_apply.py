@@ -148,17 +148,14 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
     noise = np.sqrt(fsky1*exptimes + tflux)
 
     if lnscat is not None:
-        print("Adding log-normal scatter of {0}".format(lnscat))
         noise = np.exp(np.log(noise) + lnscat*np.random.randn(len(mag_in)))
 
     if nonoise:
-        print("Not adding noise")
         flux = tflux
     else:
         flux = tflux + noise*np.random.randn(len(mag_in))
 
     if fluxmode:
-        print("Fluxmode is enabled, returning flux and fluxerr")
         mag = flux/exptimes
         mag_err = noise/exptimes
     else:
@@ -331,7 +328,6 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                                 all_obs_fields=all_obs_fields,
                                 blind_obs=blind_obs)
 
-    print(survey)
     if ("Y1" in survey) | (survey=="DES") | (survey=="SVA"):
         mindec = -90.
         maxdec = 90
@@ -578,10 +574,7 @@ if __name__ == "__main__":
     d = d[pidx]
 
     for fname, mname in zip(fnames[rank::size],mnames[rank::size]):
-        print("Working on {0}".format(fname))
-        print("Magname    {0}".format(mname))
         if rodir is not None:
-            print("Performing rotation")
             p = fname.split('.')[-2]
             nfname = "{0}/{1}.{2}.fits".format(rodir,robase,p)
             g = rot_mock_file(fname,rot,nfname,
@@ -596,13 +589,11 @@ if __name__ == "__main__":
         fp = fs[-2]
 
         oname = "{0}/{1}.{3}.fits".format(odir, obase, model, fp)
-        print('OutputName: {0}'.format(oname))
 
         if uniform:
             apply_uniform_errormodel(g, oname, model, magfile=mname,
                                         usemags=usemags)
         else:
-            print("Applying nonuniform errormodel")
             apply_nonuniform_errormodel(g, oname, d, dhdr,
                                             model, magfile=mname,
                                             usemags=usemags,
