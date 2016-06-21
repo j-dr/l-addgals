@@ -448,7 +448,6 @@ def apply_uniform_errormodel(g, oname, model, detonly=False, magname=None, usema
     omag, omagerr, oflux, ofluxerr = calc_uniform_errors(model, g['TMAG'],
                                                          maglims, exptimes,
                                                          lnscat)
-    print('Done calculating errors')
     nmags = omag.shape[1]
 
     emdtype = np.dtype([('OMAG', (omag.dtype, nmags)),
@@ -573,6 +572,8 @@ if __name__ == "__main__":
     pidx = d['HPIX'].argsort()
     d = d[pidx]
 
+    print("Rank {0} assigned {1} files".format(rank, len(fnames[rank::size])))
+
     for fname, mname in zip(fnames[rank::size],mnames[rank::size]):
         if rodir is not None:
             p = fname.split('.')[-2]
@@ -602,3 +603,6 @@ if __name__ == "__main__":
                                             dbase_style=dbstyle,
                                             use_lmag=use_lmag,
                                             blind_obs=blind_obs)
+
+    if rank==0:
+        print("*******Rotation and error model complete!*******")
