@@ -313,7 +313,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
 
     fs = fname.split('.')
-    oname = "{0}/{1}_{2}.{3}.fits".format(odir,obase,survey,fs[-2])
+    oname = "{0}/{1}_obs.{2}.fits".format(odir,obase,fs[-2])
 
     #get mags to use
     if usemags is None:
