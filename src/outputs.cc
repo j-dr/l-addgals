@@ -412,8 +412,8 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
 			 vector<bool> &idx, vector <Halo *> &halos,
 			 vector<int> &sed_ids, vector<float> &coeffs,
 			 vector<float> &dist8, vector<float> &nndist,
-             vector<float> &nndist_percent,
-             vector<float> &string outgfn, string outghfn)
+			 vector<float> &nndist_percent,
+			 string outgfn, string outghfn)
 {
   using namespace CCfits;
   std::auto_ptr<FITS> tFits;
@@ -430,9 +430,9 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     cerr << "Can't open " << outgfn << endl;
   }
 
-  vector<string> tcolName(36,"");
-  vector<string> tcolUnit(36,"");
-  vector<string> tcolForm(36,"");
+  vector<string> tcolName(41,"");
+  vector<string> tcolUnit(41,"");
+  vector<string> tcolForm(41,"");
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -472,9 +472,9 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolName[35] = "TSIZE";
   tcolName[36] = "LMAG";
   tcolName[37] = "W";
-  tcolName[38] = "DIST8"
-  tcolName[39] = "SIGMA5"
-  tcolName[40] = "SIGMA5P"
+  tcolName[38] = "DIST8";
+  tcolName[39] = "SIGMA5";
+  tcolName[40] = "SIGMA5P";
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -514,9 +514,9 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolUnit[35] = "arcseconds";
   tcolUnit[36] = "mag";
   tcolUnit[37] = "";
-  tcolUnit[38] = "Mpc/h"
-  tcolUnit[39] = "Mpc/h"
-  tcolUnit[40] = ""
+  tcolUnit[38] = "Mpc/h";
+  tcolUnit[39] = "Mpc/h";
+  tcolUnit[40] = "";
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -591,7 +591,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
       ecatid[count] = sed_ids[i];
       dist8k[count] = dist8[i];
       nndistk[count] = nndist[i];
-      nndist_percentk = nndist_percent[i];
+      nndist_percentk[count] = nndist_percent[i];
       for (int c=0; c<5; c++)
 	{
 	  cf[count*5+c] = coeffs[i*5+c];
