@@ -8,9 +8,14 @@ struct den_ent{
   float r[NBIN];
 };
 
-void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr, 
-			  vector<float> &z, vector<GalSED> &seds, 
+void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr,
+			  vector<float> &z, vector<GalSED> &seds,
 			  vector<int> &sed_id, vector<int> &sed_cat_id);
+void read_out_galaxy_info_w_densities(vector<Galaxy *> &gal,
+              vector<float> &mr,
+              vector<float> &z, vector<GalSED> &seds,
+              vector<int> &sed_id, vector<int> &sed_cat_id,
+              vector<float> &dist8);
 float LocalDens(den_ent pdf);
 float SelectGalaxyZ();
 std::vector <Galaxy *> GetGalaxies(double vol, float phi_rescale);

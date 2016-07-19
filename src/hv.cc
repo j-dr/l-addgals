@@ -1,8 +1,8 @@
 #include <vector>
-#include <cassert> 
+#include <cassert>
 #include <unistd.h>     //for sleep()
 #include <fstream>
-#include <math.h> 
+#include <math.h>
 #include <cstring>
 #include <stdlib.h>
 #include "hv2.h"
@@ -26,7 +26,7 @@
 
 using namespace std;
 
-extern "C" void covar(float *x1, float *y1, float *z1, 
+extern "C" void covar(float *x1, float *y1, float *z1,
 		      float *vx1, float *vy1, float *vz1, int np1,
 		      float rcube, float rmin, float rmax, int nbin);
 extern double normal_random(float mean, float stddev);
@@ -78,7 +78,7 @@ class BrightGal{
 public:
   BrightGal(float junk):_junk(junk){}
   bool operator()(Galaxy* g) const;
-  
+
 private:
   float _junk;
 };
@@ -105,7 +105,7 @@ Simulation DefineSimulation(void);
 #ifdef HEALPIX
 //Calculates the area in a halpix pixel and our ra/dec limits by
 //just laying down a bunch of random points on the sky and measuring
-//the fraction that are in the specified limits and pixel.  
+//the fraction that are in the specified limits and pixel.
 float healpix_sqdeg(void)
 {
   long npoints = 100000000;
@@ -195,7 +195,7 @@ int main(void){
   float r_zmax = cosmo.RofZ(ZREDMAX);
 #ifdef HEALPIX
   //need to calculate the area in a pixel cell
-  float area = healpix_sqdeg(); 
+  float area = healpix_sqdeg();
   cout<<"  Sq deg in this pixel: "<<area<<endl;
   float volume = 4./3*PI*(pow(r_zmax,3)-pow(r_zmin,3))*area/41253.;
 #else
@@ -225,7 +225,7 @@ int main(void){
   void UnAssignGalaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies);
   void SwapGalaxies(vector <Galaxy *> &galaxies, vector <Halo *> &halos);
 
-  //declare our big data arrays -- they're empty for now.  
+  //declare our big data arrays -- they're empty for now.
   vector <Particle*> particles;
   vector <Galaxy *> galaxies;
   vector <Halo*> halos;
@@ -300,7 +300,7 @@ int main(void){
   //float rho = particles.size()*sim.ParticleMass()/volume;
   //float rhoback = 3.*100*100/(8*!PI*4.301e-9)*sim.OmegaM();
   //float phi_rescale = rho/rhoback;
- 
+
   double fraction_of_particles = ngbar*volume/particles.size();
   //PRNT("hv",fraction_of_particles);
   cout<<"Fraction of particles that will be assigned a galaxy: "<<fraction_of_particles<<endl;
@@ -309,7 +309,7 @@ int main(void){
 
 
 
-  // Sort particles on redshift.  Only do this if we're running a LC.   
+  // Sort particles on redshift.  Only do this if we're running a LC.
   // mbusha:  Note that I don't think this is evern necessary anymore because a sort is done in assignment....
 #ifndef SNAPSHOT
   //MSG("[hv] Sorting particles.");
@@ -320,7 +320,7 @@ int main(void){
 #endif
 
   //Output some diagnostics on the rnn and redshift distribution of particles.
-  //	This is just sanity checking.  
+  //	This is just sanity checking.
   minrnn = 10000.;
   maxrnn = 0.;
   float avgrnn = 0.;
@@ -344,9 +344,9 @@ int main(void){
   cout<<" minimum z = "<<minz<<", maximum z = "<<maxz<<endl;
 
 
-  // Get a list of galaxies, whose magnitudes are determined by 
+  // Get a list of galaxies, whose magnitudes are determined by
   // integrating the luminosity function
-  // The number is determined by the constant "dim", 
+  // The number is determined by the constant "dim",
   // which specifies the volume.
   // The galaxy constructor sets the properties:  cluster_gal, d8
   MSG("[hv] Getting galaxy luminosities and local densities");
@@ -380,7 +380,7 @@ int main(void){
 
   //Sort galaxies by density for rapid assignment
   sort(galaxies.begin(),galaxies.end(),DLessGal);
-  
+
   //do the galaxy assignmant
   cout<<"[hv] Assigning "<<galaxies.size()
       <<" galaxies to "<<particles.size()<<" particles (Filling Fraction: "
@@ -426,7 +426,7 @@ int main(void){
   cout<<"Did the swap"<<endl;
 #endif
 
-  // Remove galaxies that are outside of the z/dec/ra range.  
+  // Remove galaxies that are outside of the z/dec/ra range.
   PRNTVS("hv",galaxies.size(),"...removing high z/out of range galaxies");
   for_each(galaxies.begin(),galaxies.end(),DeleteAndNullifyHighzgal);
   galaxies.erase(remove(galaxies.begin(),galaxies.end(),static_cast<Galaxy*>(0)), galaxies.end());
@@ -441,7 +441,7 @@ int main(void){
 
   //I dont' think this subroutine does anything important, but should confirm
   //HaloOcc(halos);
-   
+
   PRNT("hv",galaxies.size());
 
 #else //skip the if not JUST_COLORS statement
@@ -507,9 +507,9 @@ int main(void){
   float min_nndist = 1e10;
   float max_nndist = 0.0;
   for (int i=0;i<galaxies.size();i++){
-    if (nndist[i] > max_nndist) 
+    if (nndist[i] > max_nndist)
       max_nndist = nndist[i];
-    if (nndist[i] < min_nndist) 
+    if (nndist[i] < min_nndist)
       min_nndist = nndist[i];
   }
   cout<<"min/max nndist = "<<min_nndist<<"/"<<max_nndist<<endl;
@@ -535,9 +535,9 @@ int main(void){
 
 #ifndef COLORS_FROM_RELATIVE_DENSITY
   cout << "z_redfraction1, z_redfraction2, redfraction1, redfraction2"
-       << Z_REDFRACTION1 << " " << Z_REDFRACTION2 << " " 
+       << Z_REDFRACTION1 << " " << Z_REDFRACTION2 << " "
        << REDFRACTION1 << " " << REDFRACTION2 << endl;
-    
+
   sed_ids = GetSEDs(galaxycopy, nndist, galseds, halos);
 #else
   sed_ids = GetSEDs(galaxycopy, nndist_percent, galseds, halos);
@@ -571,18 +571,25 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
+  #ifdef OUTPUTDENSITY
+  vector<float> dist8(galaxies.size());
+  read_out_galaxy_info_w_densities(galaxies, mr, z, galseds,
+                                    sed_ids, id, dist8);
+  #else
   read_out_galaxy_info(galaxies, mr, z, galseds, sed_ids, id);
+  #endif
+
   match_coeff(id, &coeff[0]);
 
   strcpy(filterfile, (colortrdir+"/des_filters.txt").c_str());
 
   float zmin = 0.0;
   float zmax = 2.5;
-  
+
   vector<float> abcorr(5,0.0);
-  
+
   assign_colors(mr, coeff, z, zmin, zmax,
-		band_shift, nbands, filterfile, 
+		band_shift, nbands, filterfile,
 		tmag, amag, abcorr);
   t2 = clock();
 
@@ -606,13 +613,20 @@ int main(void){
        << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
 
   t1 = clock();
-  write_bcc_catalogs(galaxies, particles, amag, tmag, mr, 
+#ifdef OUTPUTDENSITY
+  write_bcc_catalogs_w_densities(galaxies, particles, amag, tmag,
+             mr, omag, omagerr, flux, ivar, e, s,
+             idx, halos, id, coeff, dist8, nndist,
+             nndist_percent, outgfn, outghfn);
+#else
+  write_bcc_catalogs(galaxies, particles, amag, tmag, mr,
 		     omag, omagerr, flux, ivar, e, s,
-		     idx, halos, id, coeff, outgfn, 
+		     idx, halos, id, coeff, outgfn,
 		     outghfn);
+#endif
   t2 = clock();
   cout << "Wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;
-  
+
 #endif
 
   MSG("Exiting normally");

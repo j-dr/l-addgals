@@ -5,7 +5,7 @@
 #include "fivetuple.h"
 #include "constants.h"
 #include "galaxy.h"
-#include "cosmo.h" 
+#include "cosmo.h"
 #include "ReadParameters.h"
 #ifdef LF_FROM_DATA
 #include <vector>
@@ -41,7 +41,7 @@ float FiveTuple::LocalDens() const{
   if(randbool(p)){ //field galaxy
     float f8=-1;
     if((fm<0.1)||(fm>8.5)) cout<<"extreme f8"<<fm<<" "<<fs<<endl;
-    while((f8<0.1)||(f8>8.5)) 
+    while((f8<0.1)||(f8>8.5))
       f8 = fm+sqrt(fs)*NR::gasdev(seed);
     d8 = f8;
   }
@@ -89,7 +89,7 @@ FiveTuple denspdf_params(float magnitude, float zred)
 
 /*
   Subroutine that returns the Probability for a galaxy with magnitude M to have local density rdel
-  by converting from our magnitude limited denspdf to one in a magnitude bin.  Requires information 
+  by converting from our magnitude limited denspdf to one in a magnitude bin.  Requires information
   on the global luminosity function
 */
 den_ent define_prob(float magnitude, float redshift, float vol)
@@ -112,9 +112,9 @@ den_ent define_prob(float magnitude, float redshift, float vol)
   //cout<<"Getting the denspdf parameters..."<<endl;
   FiveTuple fp = denspdf_params(magnitude+dmag, redshift);
   FiveTuple fpp = denspdf_params(magnitude-dmag, redshift);
-  //if (magnitude+dmag > -19.0) 
+  //if (magnitude+dmag > -19.0)
   //  fp = denspdf_params(-19.0, redshift);
-  //if (magnitude-dmag > -19.0) 
+  //if (magnitude-dmag > -19.0)
   //  fpp = denspdf_params(-19.0, redshift);
   //if (magnitude > -19.0) {
   //  fp = denspdf_params(-19.0+dmag, redshift);
@@ -195,7 +195,7 @@ float LocalDens(float magnitude, float redshift, float vol)
   float d8 = LocalDens(pdf);
 
   return d8;
-} 
+}
 
 
 float SelectGalaxyZ()
@@ -312,7 +312,7 @@ void GetMags(unsigned int n, vector <double> &mags){
       for(int i=0;i<diff;i++)
 	mags.push_back(mag);
       if (mags.size()>=n) break;
-  }  
+  }
 }
 
 void GetMags(double vol, vector <double> &mags){
@@ -328,7 +328,7 @@ void GetMags(double vol, vector <double> &mags){
       for(int i=0;i<diff;i++)
 	mags.push_back(mag);
       if (mags.size()>=n) break;
-  }  
+  }
 }
 
 void ReadLFFile(void){
@@ -375,7 +375,7 @@ double LumNumberDensityInterp(double M){
   pos=upper_bound(magnitude.begin(), magnitude.end(), M);
 
   int i = distance(magnitude.begin(),pos);
-  if (i >= magnitude.size() - 2) 
+  if (i >= magnitude.size() - 2)
     i = magnitude.size() - 3;
   if (i <= 0) i = 1;
   double delta_x = magnitude[i] - magnitude[i-1];
@@ -483,7 +483,7 @@ double NdensMagnitude(double ndens){
 
 /*
   Subroutine integrates our LF and gives us a list of galaxies
-  with magnitude, local density, and redshift that needs to 
+  with magnitude, local density, and redshift that needs to
   be assigned to our particles
 */
 vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
@@ -569,7 +569,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
     for(int i=0;i<diff;i++){
       //cout<<"Getting redshift..."<<endl;
       float zGal = SelectGalaxyZ();
-      
+
       //cout<<"Getting local density with mag = "<<mag<<", zGal = "<<zGal<<", vol = "<<vol<<endl;
       //float dist8 = LocalDens(mag, zGal, vol);
       int pdf_zbin = round((zGal-ZREDMIN)/dz_pdf);
@@ -596,7 +596,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
       ngal++;
     }
     if (galaxies.size()>=n) break;
-  }  
+  }
 
   //output file with galaxy magnitudes, redshfits, and rdel's to confirm that code is working properly
 #ifdef DEBUG_GET_GALS
@@ -628,7 +628,7 @@ double area(double alpha, double* dummy){
 
 //returns fractional area of the sky
 double fractional_area(){
-  
+
   integrator area_integrator(&area, 0,1.0e-03,0.01);
   double sky_coverage = (DECMAX-DECMIN)*area_integrator.Integrate(RAMIN,RAMAX);
   //  cout<<sky_coverage<<" "
@@ -637,8 +637,8 @@ double fractional_area(){
 }
 
 
-void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr, 
-			  vector<float> &z, vector<GalSED> &seds, 
+void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr,
+			  vector<float> &z, vector<GalSED> &seds,
 			  vector<int> &sed_id, vector<int> &sed_cat_id)
 {
   int i;
@@ -650,5 +650,22 @@ void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr,
       mr[i] = gal[i]->Mr();
       z[i] = p->Zred();
       sed_cat_id[i] = seds[sed_id[i]].CatId();
+    }
+}
+
+void read_out_galaxy_info_w_densities(vector<Galaxy *> &gal,
+              vector<float> &mr, vector<float> &z, vector<GalSED> &seds, vector<int> &sed_id, vector<int> &sed_cat_id,
+                vector<float> &dist8)
+{
+  int i;
+  vector<Galaxy *>::iterator itr;
+  Particle * p;
+  for (i=0; i<gal.size(); i++)
+    {
+      p = gal[i]->P();
+      mr[i] = gal[i]->Mr();
+      z[i] = p->Zred();
+      sed_cat_id[i] = seds[sed_id[i]].CatId();
+      dist8[i] = gal[i]->Dist8();
     }
 }
