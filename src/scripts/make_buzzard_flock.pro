@@ -7,7 +7,7 @@ pro make_buzzard_flock, dir=dir, $
 	simname=simname, boxsize=boxsize, denspdfstr=denspdfstr,$
 	npix=npix, bcg_mass_lim = bcg_mass_lim, paramfile=paramfile, $
 	catdir=catdir, hfile=hfile, ddir=ddir, execdir=execdir, $
-        srcdir=srcdir, pardir=pardir
+        srcdir=srcdir, pardir=pardir, cfgstr=cfgstr
 
 
 ;;;parameters that need to be specified
@@ -170,7 +170,7 @@ for i = 0, nproc - 1 do begin
 	pixstr+' '+num2str+' '+$
 	this_dir+' '+halofile+' '+rnn_halofile+' '+$
 	simname+' '+boxsize+' '+paramfile+' '+bcg_mass_lim+' '+ddir+' '+$
-        srcdir + ' ' + pardir
+        srcdir + ' ' + pardir + ' ' + cfgstr
 
      spawn, command
      spawn, 'cp '+tlf_file+' '+out_lf_file

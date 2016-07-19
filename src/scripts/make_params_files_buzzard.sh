@@ -19,27 +19,17 @@ BCG_MASS_LIM=${16}
 DDIR=${17}
 SRCDIR=${18}
 PARDIR=${19}
+CFGSTR=${20}
 FLABEL=${SIMNAME}_${BOXSIZE}
 
 echo ${OUTDIR}
 echo ${DDIR}
-#echo $ZMIN, $ZMAX
-#echo $OPATH
-#echo $MMAG
-#echo $DENSFILE
-#echo $LBCGFILE
-#echo $PHISTAR, $PIXELNUM, $ZNUM
-#echo $SIMNAME
-#echo $BOXSIZE
 
 STRINGFILE=StringParameters
 NUMFILE=NumericalParameters
 
-
-cp $SRCDIR/scripts/StringParameters_BCC_template $STRINGFILE
-cp $SRCDIR/scripts/NumericalParameters_BCC_template $NUMFILE
-#cp StringParameters_BCC_template $STRINGFILE
-#cp NumericalParameters_faber_4000_template.Buzzard $NUMFILE
+cp $SRCDIR/scripts/StringParameters_${CFGSTR} $STRINGFILE
+cp $SRCDIR/scripts/NumericalParameters_${CFGSTR} $NUMFILE
 
 # set the numberical parameters
 echo "ZREDMIN $ZMIN" >> $NUMFILE
