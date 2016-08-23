@@ -20,11 +20,12 @@ def compute_lensing(g, shear, halos=False):
     adtype = []
     fields = []
     data   = []
-    
+
     for f in lensfields:
         if f not in g.dtype.names:
             fields.append(f)
             print(f)
+            sys.stdout.flush()
             if f == 'RA':
                 adtype.append(np.dtype([(f,np.float)]))
                 theta, phi = hp.vec2ang(g[['PX','PY','PZ']].view((g.dtype['PX'],3)))
@@ -48,56 +49,61 @@ def compute_lensing(g, shear, halos=False):
 
     print("Number of rows in shear catalog: {0}".format(len(shear)))
     print("Number of rows in galaxy catalog: {0}".format(len(g)))
+    sys.stdout.flush()
 
-    for i in range(len(shear)):
-        tind = shear['index'][i]
-        
-        if (g[tind]['GAMMA1'] != -1):
-            nmimg += 1
-            g = np.hstack([g, g[tind]])
-            tind = len(g)-1
+    #Make array long enough for multiply imaged galaxies
+    uidx, sidx = np.unique(shear['index'], return_index=True)
 
-        g['TRA'][tind] = g[tind]['RA']
-        g['TDEC'][tind] = g[tind]['DEC']
-        
-        g['RA'][tind] = shear['ra'][i]
-        g['DEC'][tind] = shear['dec'][i]
-  
-        #extract g1,g2,kappa,w from A using formulas from Vale & White (2003)
-        # A = |1-kappa-gamma1      -gamma2-w|
-        #     |-gamma2+w      1-kappa+gamma1|
+    #unique indicies should have same length as galaxy catalog
+    assert(len(sidx)==len(g))
 
+    #Get indices of multiply imaged galaxies
+    miidx = np.array(set(np.arange(len(shear)))-set(sidx))
+    nmi = len(miidx)
 
-        g['GAMMA1'][tind] = 0.5*(shear[i]['A11'] - shear[i]['A00'])
-        g['GAMMA2'][tind] = -0.5*(shear[i]['A01'] + shear[i]['A10'])
-        g['KAPPA'][tind] = 1.0 - 0.5*(shear[i]['A00'] + shear[i]['A11'])
-        g['W'][tind] = 0.5*(shear[i]['A10'] - shear[i]['A01'])
-    
-        #compute mu = 1/detA
-        g['MU'][tind] = 1./(shear[i]['A11']*shear[i]['A00'] - shear[i]['A01']*shear[i]['A10'])
+    print('Number of multiply imaged galaxies: {0}'.format(nmi))
+    sys.stdout.flush()
 
-        if not halos:
-            #lens the size and magnitudes
-            g['SIZE'][tind] = g[tind]['TSIZE']*np.sqrt(g[tind]['MU'])
-            for im in range(g['AMAG'].shape[1]):
-                g['LMAG'][tind,im] = g['TMAG'][tind,im] - 2.5*np.log10(g[tind]['MU'])
-  
-            #get intrinsic shape
-            epss = complex(g['TE'][tind,0], g['TE'][tind,1])
-  
-            #;;get reduced complex shear g = (gamma1 + i*gamma2)/(1-kappa)
-            gquot = complex(g['GAMMA1'][tind], g['GAMMA2'][tind]) / complex(1.-g['KAPPA'][tind], 0.)
-  
-            #;;lens the shapes - see Bartelmann & Schneider (2001), Section 4.2
-            if (abs(gquot) < 1):
-                eps = (epss+gquot)/(complex(1.0,0.0)+(epss*gquot.conjugate()))
-            else:
-                eps = (complex(1.0, 0.0)+(gquot*epss.conjugate()))/(epss.conjugate()+gquot.conjugate())
+    g = np.hstack([g, g[shear['index'][miidx]])
 
-            g['EPSILON'][tind,0] = eps.real
-            g['EPSILON'][tind,1] = eps.imag
+    shear['index'][miidx] = np.arange(nmi) + len(sidx)
 
-    print("Number of multiply imaged galaxies: {0}".format(nmimg))
+    g = g[shear['index']]
+
+    g['TRA'] = g['RA']]
+    g['TDEC'] = g['DEC']]
+
+    g['RA'] = shear['ra']
+    g['DEC'] = shear['dec']
+
+    g['GAMMA1'] = 0.5*(shear['A11'] - shear['A00'])
+    g['GAMMA2'] = -0.5*(shear['A01'] + shear['A10'])
+    g['KAPPA'] = 1.0 - 0.5*(shear['A00'] + shear['A11'])
+    g['W'] = 0.5*(shear['A10'] - shear['A01'])
+
+    #compute mu = 1/detA
+    g['MU'] = 1./(shear['A11']*shear['A00'] - shear['A01']*shear['A10'])
+
+    if not halos:
+        #lens the size and magnitudes
+        g['SIZE'] = g['TSIZE'] * np.sqrt(g['MU'])
+        for im in range(g['AMAG'].shape[1]):
+            g['LMAG'][:,im] = g['TMAG'][:,im] - 2.5*np.log10(g['MU'])
+
+        #get intrinsic shape
+        epss = complex(g['TE'][:,0], g['TE'][:,1])
+
+        #;;get reduced complex shear g = (gamma1 + i*gamma2)/(1-kappa)
+        gquot = complex(g['GAMMA1'], g['GAMMA2']) / complex(1.-g['KAPPA'], 0.)
+
+        #;;lens the shapes - see Bartelmann & Schneider (2001), Section 4.2
+        if (abs(gquot) < 1):
+            eps = (epss+gquot)/(complex(1.0,0.0)+(epss*gquot.conjugate()))
+        else:
+            eps = (complex(1.0, 0.0)+(gquot*epss.conjugate()))/(epss.conjugate()+gquot.conjugate())
+
+        g['EPSILON'][:,0] = np.real(eps)
+        g['EPSILON'][:,1] = np.imag(eps)
 
     return g
 
@@ -117,9 +123,9 @@ def add_lensing(gfiles, sfiles):
     sidx = spix.argsort()
     gpix = gpix[gidx]
     spix = spix[sidx]
-    
+
     assert(all(gpix==spix))
-    
+
     gfiles = gfiles[gidx]
     sfiles = sfiles[sidx]
 
@@ -135,17 +141,17 @@ def add_lensing(gfiles, sfiles):
                 sfiles[i] = temp
 
             assert(('halo' in f) and ('halo' in sfiles[i]))
-                
+
 
     for gf,sf in zip(gfiles[rank::size],sfiles[rank::size]):
 
         print("[{1}] Lensing {0}".format(gf, rank))
         print("[{1}] Using  {0}".format(sf, rank))
-        
+
         gfs = gf.split('/')
         gbase = "/".join(gfs[:-1])
 
-        
+
         g     = fitsio.read(gf)
         shear = fitsio.read(sf)
 
@@ -158,7 +164,7 @@ def add_lensing(gfiles, sfiles):
         oname = "{0}/{1}_lensed.{2}.fits".format(gbase, gfss[0], gfss[1])
 
         print("[{1}] Writing lensed catalog to {0}".format(oname, rank))
-        
+
         fits = fitsio.FITS(oname, 'rw')
         fits.write(g)
 
@@ -172,5 +178,5 @@ if __name__=='__main__':
 
     snames = np.loadtxt(cfg['LensGalsList'], dtype=str)
     gnames = np.loadtxt(cfg['TruthGalsList'], dtype=str)
-  
+
     add_lensing(gnames, snames)
