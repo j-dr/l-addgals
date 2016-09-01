@@ -58,20 +58,25 @@ def compute_lensing(g, shear, halos=False):
     assert(len(sidx)==len(g))
 
     #Get indices of multiply imaged galaxies
-    miidx = np.array(set(np.arange(len(shear)))-set(sidx))
+    miidx = np.arange(len(shear))
+    miidx = miidx[np.in1d(miidx,set(sidx))]
     nmi = len(miidx)
+
+    #number of multiply imaged galaxies should be difference in lengths
+    #of shear catalog and galaxy catalog
+    assert(nmi == (len(shear)-len(g)))
 
     print('Number of multiply imaged galaxies: {0}'.format(nmi))
     sys.stdout.flush()
 
-    g = np.hstack([g, g[shear['index'][miidx]])
+    g = np.hstack([g, g[shear['index'][miidx]]])
 
     shear['index'][miidx] = np.arange(nmi) + len(sidx)
 
     g = g[shear['index']]
 
-    g['TRA'] = g['RA']]
-    g['TDEC'] = g['DEC']]
+    g['TRA'] = g['RA']
+    g['TDEC'] = g['DEC']
 
     g['RA'] = shear['ra']
     g['DEC'] = shear['dec']
@@ -91,16 +96,15 @@ def compute_lensing(g, shear, halos=False):
             g['LMAG'][:,im] = g['TMAG'][:,im] - 2.5*np.log10(g['MU'])
 
         #get intrinsic shape
-        epss = complex(g['TE'][:,0], g['TE'][:,1])
+        epss = g['TE'][:,0] + 1j * g['TE'][:,1]
 
         #;;get reduced complex shear g = (gamma1 + i*gamma2)/(1-kappa)
-        gquot = complex(g['GAMMA1'], g['GAMMA2']) / complex(1.-g['KAPPA'], 0.)
+        gquot = (g['GAMMA1'] + 1j * g['GAMMA2']) / (1.-g['KAPPA'])
 
         #;;lens the shapes - see Bartelmann & Schneider (2001), Section 4.2
-        if (abs(gquot) < 1):
-            eps = (epss+gquot)/(complex(1.0,0.0)+(epss*gquot.conjugate()))
-        else:
-            eps = (complex(1.0, 0.0)+(gquot*epss.conjugate()))/(epss.conjugate()+gquot.conjugate())
+        lidx = np.abs(gquot) < 1
+        eps = (1.0 + ( gquot * epss.conjugate())) / (epss.conjugate() + gquot.conjugate())
+        eps[lidx] = (epss[lidx] + gquot[lidx]) / (1.0 + ( epss[lidx] * gquot[lidx].conjugate() ) )
 
         g['EPSILON'][:,0] = np.real(eps)
         g['EPSILON'][:,1] = np.imag(eps)

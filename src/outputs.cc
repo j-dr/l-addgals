@@ -430,9 +430,9 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     cerr << "Can't open " << outgfn << endl;
   }
 
-  vector<string> tcolName(41,"");
-  vector<string> tcolUnit(41,"");
-  vector<string> tcolForm(41,"");
+  vector<string> tcolName(42,"");
+  vector<string> tcolUnit(42,"");
+  vector<string> tcolForm(42,"");
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -475,6 +475,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolName[38] = "DIST8";
   tcolName[39] = "SIGMA5";
   tcolName[40] = "SIGMA5P";
+  tcolName[41] = "PDIST8";
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -517,6 +518,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolUnit[38] = "Mpc/h";
   tcolUnit[39] = "Mpc/h";
   tcolUnit[40] = "";
+  tcolUnit[41] = "Mpc/h";
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -559,6 +561,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolForm[38] = "E";
   tcolForm[39] = "E";
   tcolForm[40] = "E";
+  tcolForm[41] = "E";  
 
 
   cout << "Extracting relevant galaxy information" << endl;
@@ -566,7 +569,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
     central(keep), haloid(keep), empty(keep,-1), cf(keep*5),
     am(keep*5), ecatid(keep), dist8k(keep), nndistk(keep),
-    nndist_percentk(keep);
+    nndist_percentk(keep), pdist8(keep);
 
   //Go through the galaxies and get the info we want
   int count=0;
@@ -586,6 +589,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
       vy[count] = p->Vy();
       vz[count] = p->Vz();
       z[count] = p->Zred();
+      pdist8[count] = p->Dist8()
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
       ecatid[count] = sed_ids[i];
@@ -684,6 +688,8 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     newTable->column(tcolName[39]).write(nndistk,1);
     cout << "writing 40" << endl;
     newTable->column(tcolName[40]).write(nndist_percentk,1);
+    cout << "writing 41" << endl;
+    newTable->column(tcolName[40]).write(pdist8,1);    
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");

@@ -87,8 +87,8 @@ vector <Halo*> ReadRockstarHalosHlist(void){
     line_data>>scale>>hid>>dscale>>did>>nprog>>pid>>upid>>desc_pid>>phantom>>sam_mvir>>mvir>>rvir>>rs>>vrms>>mmp>>last_mm>>vmax>>xMpc>>yMpc>>zMpc>>vx>>vy>>vz>>macc>>mpeak>>vacc>>vpeak;
     if (file.eof()) break;
     rfile>>hid>>rdel;
-    //if(pid >= 0) continue;
-    //if(mvir < BCG_Mass_lim) continue;
+    if(pid >= 0) continue;
+    if(mvir < BCG_Mass_lim) continue;
     zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
 
     Point vel(vx,vy,vz);
