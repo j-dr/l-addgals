@@ -158,9 +158,9 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cerr << "Can't open " << outgfn << endl;
   }
 
-  vector<string> tcolName(36,"");
-  vector<string> tcolUnit(36,"");
-  vector<string> tcolForm(36,"");
+  vector<string> tcolName(38,"");
+  vector<string> tcolUnit(38,"");
+  vector<string> tcolForm(38,"");
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
