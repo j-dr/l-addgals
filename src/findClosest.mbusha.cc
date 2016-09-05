@@ -27,7 +27,7 @@ public:
 	keyValue()
 	{
 
-	}
+	}	
 };
 
 class intkeyValue
@@ -93,7 +93,7 @@ void Mix(keyValue *tab1,keyValue *tab2,int count1,int count2)
   int i,i1,i2;
   i = i1 = i2 = 0;
   keyValue* temp = (keyValue *)malloc(sizeof(keyValue)*(count1+count2));
-
+ 
   while((i1<count1) && (i2<count2))
   {
     while((i1<count1) && ( (*(tab1+i1)).value <= (*(tab2+i2)).value ))
@@ -110,20 +110,20 @@ void Mix(keyValue *tab1,keyValue *tab2,int count1,int count2)
       }
     }
   }
-
+ 
   memcpy(temp+i,tab1+i1,(count1-i1)*sizeof(keyValue));
   memcpy(tab1,temp,count1*sizeof(keyValue));
-
+ 
   memcpy(temp+i,tab2+i2,(count2-i2)*sizeof(keyValue));
   memcpy(tab2,temp+count1,count2*sizeof(keyValue));
-
+  
   free(temp);
 }
-
+ 
 void MergeSort(keyValue *tab,int count)
 {
   if (count==1) return;
-
+ 
   MergeSort(tab,count/2);
   MergeSort(tab+count/2,(count+1)/2);
   Mix(tab,tab+count/2,count/2,(count+1)/2);
@@ -175,18 +175,18 @@ void print(keyValue *tab, int count)
 	for(int i=0;i<count;i++)
 	{
 		cout<<tab[i].key<<" "<<tab[i].value<<endl;
-	}
+	}	
 }
 
 
 int binarySearch(keyValue* sortedArray, int first, int last, float key)
-{
-	while (first <= last)
+{	
+	while (first <= last) 
 	{
        		int mid = (first + last) / 2;  // compute mid point.
-	       	if (key > sortedArray[mid].value)
+	       	if (key > sortedArray[mid].value) 
            		first = mid + 1;  // repeat search in top half.
-       		else if (key < sortedArray[mid].value)
+       		else if (key < sortedArray[mid].value) 
            		last = mid - 1; // repeat search in bottom half.
        		else
            		return mid;     // found it. return position /////
@@ -195,19 +195,19 @@ int binarySearch(keyValue* sortedArray, int first, int last, float key)
 }
 
 int binarySearch(keyValue* sortedArray, int last, float key)
-{
+{	
 	return binarySearch(sortedArray, 0,  last,  key);
 }
 
 
 int binarySearch(float* sortedArray, int first, int last, float key)
-{
-	while (first <= last)
+{	
+	while (first <= last) 
 	{
        		int mid = (first + last) / 2;  // compute mid point.
-	       	if (key > sortedArray[mid])
+	       	if (key > sortedArray[mid]) 
            		first = mid + 1;  // repeat search in top half.
-       		else if (key < sortedArray[mid])
+       		else if (key < sortedArray[mid]) 
            		last = mid - 1; // repeat search in bottom half.
        		else
            		return mid;     // found it. return position /////
@@ -261,7 +261,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	    red_fraction = slope*ThisZ + intercept;
 	    if (red_fraction < REDFRACTION2)
 	      red_fraction = REDFRACTION2;
-	  }
+	  } 
 #endif
 
 	if( sorted != 1)
@@ -277,14 +277,14 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			densities[i].key = i;
 			magnitudes[i].key = i;
 			densities[i].value = log10((*inputIterator).Dens());
-			magnitudes[i].value = (*inputIterator).MR();
+			magnitudes[i].value = (*inputIterator).MR(); 
 		}
 		//cout<<"Starting magnitude sort"<<endl;
 		MergeSort(magnitudes,size);
 		//cout<<"Starting density sort"<<endl;
 		MergeSort(densities,size);
 		//cout<<"Done with both sorts"<<endl;
-	}
+	}	
 	int magIndex = binarySearch(magnitudes,size,mag);
 	int densIndex = binarySearch(densities,size,log10(dens));
 
@@ -307,7 +307,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			if(count1>=ARRAYSIZE || count2>=ARRAYSIZE)
 			{
 				cout<<"count1= "<<count1<<"count2= "<<count2<<endl;
-				answer = -1;
+				answer = -1; 
 				return answer;
 			}
 			stepIndex = m*STEP + n;
@@ -336,7 +336,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			MergeSort(temp1, count1);
 			MergeSort(temp2, count2);
 		#endif
-
+		
                 int i=0,j=0,k=0;
 #ifdef RED_FRACTION
 		//cout<<"Counting the number of matching red and blue galaxies..."<<endl;
@@ -364,7 +364,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		//float target_local_red_fraction = local_red_fraction*red_fraction/REDFRACTION1;
 		float target_local_red_fraction = local_red_fraction*red_fraction;
 
-#ifdef RF_TEST
+#ifdef RF_TEST	   
 		string filename = "rftest.dat";
 		ofstream rffile(filename.c_str(), std::ofstream::out | std::ofstream::app);
 
@@ -446,7 +446,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 #ifdef SNAPSHOT
 	dZ = 2.0;  //We dont' care about redshift if we're dealing with a box
 #endif
-
+	
 	//Thus value is for the maximum number of galaxies that will be considered. Generally, 100 is a good number. Higher value takes more processing time.
 	//int MAXSEARCHD = galaxies.size()/100;  //for v2.11
 	int MAXSEARCHD = galaxies.size()/1000;  //trying to improve v4.20
@@ -457,7 +457,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 	cout<<"MAXSEARCHD: "<<MAXSEARCHD<<endl;
 
 	//How many buckets/bins do we need based on Z
-	int BUCKETSZ = 10;
+	int BUCKETSZ = 10; 
 
 	//cout<<"Press 0 to stop assigning galaxies."<<endl;
 	//cin>>n;
@@ -469,7 +469,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 	//cin>>MAXSEARCHD;
 	//cout<<"NEARESTZ?"<<endl;
 	//cin>>NEARESTZ;
-
+	
 	float* bucketVals = new float[BUCKETSZ];
 	float* minBucketVals = new float[BUCKETSZ];
 	float* maxBucketVals = new float[BUCKETSZ];
@@ -493,7 +493,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 		galaxyMr[i].value = galaxies[galaxyD[i].key]->Mr();
 	}
 	MergeSort(galaxyMr,galaxyCount);
-
+	
 	keyValue* particleZ = new keyValue[particles.size()];
 	keyValue* particleD = new keyValue[particles.size()];
 	keyValue* particleZSorted = new keyValue[particles.size()];
@@ -509,10 +509,10 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 	}
 	MergeSort(particleZSorted,particleCount);
 	MergeSort(particleD,particleCount);
-
+	
 	cout<<"ParticleCount= "<<particleCount<<" GalaxyCount= "<<galaxyCount<<endl;
 	cout<<"First few sorted particle densities: "<<particleD[0].value<<" "<<particleD[1].value<<" "<<particleD[2].value<<endl;
-
+	
 	int bucketLength = (int)particleCount/BUCKETSZ;
 	if(NEARESTZ < bucketLength)
 	{
@@ -530,7 +530,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 		else
 			maxBucketVals[i] = particleZSorted[particleCount-1].value;
 	}
-
+	
 	bool* assigned = new bool[2*particleCount];
 	//vector<bool> assigned;
 	int NPreviouslyAssigned = 0;
@@ -590,7 +590,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 
 
 		///mbusha question:  Why are we looping ghrough based on density?  Why high-dens first?
-			//a:  makes for a faster Binary Search (line ~590).  Changed to loop over mag,
+			//a:  makes for a faster Binary Search (line ~590).  Changed to loop over mag, 
 			//    but preserver density sorting
 		//gID = galaxyD[gi].key;
 		//gD = galaxyD[gi].value;
@@ -601,7 +601,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 
 #ifdef SHAM_TEST
                 //do we keep the initial galaxy or reassign it?
-                if (read_hod == 1 && gD < rnn_cut &&
+                if (read_hod == 1 && gD < rnn_cut && 
 		    galaxies[gID]->Mhost() > mhost_cut){
                         //cout<<"Skipping galaxy..."<<endl;
                         //save the galaxy location and velocity to the particle
@@ -623,8 +623,8 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 			//vv.Print();
                         Particle * particle = new Particle(xx,vv,gD);
 			//cout<<"Created particle..."<<endl;
-			//if (halos[gID]->Host() < 0)
-			if (thalo->Host() == thalo->Id())
+			//if (halos[gID]->Host() < 0) 
+			if (thalo->Host() == thalo->Id()) 
 			  galaxies[gID]->DefineCentral();
 
                         //add the particle and assign the galaxy to it
@@ -696,7 +696,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 				pID = particleD[position-pi].key;
 				if (pID <= 0 || pID >= particleCount) continue;
                                 if (read_hod)
-                                  if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut)
+                                  if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut) 
                                     continue;
 				diff1 = fabs(gD-particleD[position-pi].value);
 				//if(fabs(particleD[position].value - particleD[position-pi].value) > MAXDELTA8) break;
@@ -713,7 +713,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 				pID = particleD[position+pi].key;
 				if (pID <= 0 || pID >= particleCount) continue;
                                 if (read_hod)
-                                  if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut)
+                                  if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut) 
                                     continue;
 				diff2 = fabs(gD-particleD[position-pi].value);
 				//if(fabs(particleD[position].value - particleD[position-pi].value) > MAXDELTA8) break;
@@ -725,7 +725,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 				}
 			}
 		}
-
+		
 		//cout<<"GalaxyZ="<<galaxies[gID]->zGal()<<" GalaxyD="<<galaxies[gID]->Dist8()<<" ParticleZ="<<particles[particleID]->Zred()<<" ParticleD="<<particles[particleID]->Dist8()<<endl;
 		//if(found)
 			//cout<<"Found at "<<pi<<endl;
@@ -743,8 +743,8 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 			{
 			  pID = particleD[position-pi].key;
 			  if (pID <= 0 || pID >= particleCount) continue;
-			  if (read_hod)
-			    if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut)
+			  if (read_hod) 	
+			    if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut) 
 			      continue;
 			  if(!assigned[pID] && particles[pID]->Save())
 			    {
@@ -753,13 +753,13 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 			      break;
 			    }
 			}
-
+		      
 		      if( position+pi < particleCount)
 			{
 			  pID = particleD[position+pi].key;
 			  if (pID <= 0 || pID >= particleCount) continue;
                           if (read_hod)
-                            if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut)
+                            if (particles[pID]->Mhost() > mhost_cut && particles[pID]->Dist8() < rnn_cut) 
                               continue;
 			  if(!assigned[pID] && particles[pID]->Save())
 			    {
@@ -931,7 +931,7 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
 	}
     }
   cout<<"Checking for extra halos to add..."<<endl;
-  //Did we not cover some of the halos?  If so, add new particles.
+  //Did we not cover some of the halos?  If so, add new particles.  
   if(this_ih < H.size()){
     cout<<"Making up particles for halos "<<this_ih<<" to "<<H.size()-1<<endl;
     int start = this_ih;
@@ -951,7 +951,7 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
   cout<<"Finished Linking Halo Particles."<<endl;
 
 }
-
+	  
 
 void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vector <Halo *> &halos)
 {
@@ -975,8 +975,8 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 #endif
 
 	//How many buckets/bins do we need based on Z
-	int BUCKETSMR = 1000;
-	//int BUCKETSMR = galaxies.size()/NEARESTMR;
+	int BUCKETSMR = 1000; 
+	//int BUCKETSMR = galaxies.size()/NEARESTMR; 
 
 	cout<<"Assigning BCGs with NEARESTMR = "<<NEARESTMR<<", MAXSEARCHD = "<<MAXSEARCHD<<", BUCKETSMR = "<<BUCKETSMR<<endl;
 
@@ -995,16 +995,24 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	//cin>>MEARESTMR;
 
 	LinkHalosParticles(particles, halos);
-
+	
 	//parameters for setting BCG magnitudes
 	float Mc = 3.7e9;
 	float a = 29.78;
 	float b = 29.5;
 	float k = 0.0255;
-    float M0 = 0;
+	float L0 = 2.8e9;
+        float M0 = 0;
+	//L0 *= (2.0/3.0); //correction fudge to get sat fraction right
+	//L0 *= (5./8.);  // correction fudge factor to get Sarah's plot correct
+	//float L0 = 3.36e9; //recalculated to match sham
+	L0 *= 7.80e-11;  //Convert from solar to L*
+	L0 *= 0.9; //An additional fudge factor
+	L0 *= 1.74; //Re-added when LF changed from Montero-Dorta to my fit.  
 
-    //read in our BCG parameters from a file
-    Read_L_BCG(M0, Mc, a, b, k);
+
+        //read in our BCG parameters from a file
+        Read_L_BCG(M0, Mc, a, b, k); 
 	//M0 += 0.31; //fudge factor to match Sarah's Lbcg plots
 	cout<<"Using BCG parameters:  "<<M0<<" "<<Mc<<" "<<a<<" "<<b<<" "<<k<<endl;
 
@@ -1045,7 +1053,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	    */
 
 	    //use parameters read from table for Vale & Ostriker formula fit to SHAM
-        //Parameters read from table do not include any passive evolution
+            //Parameters read from table do not include any passive evolution
 	    double m200 = halos[i]->M();
 	    double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
 	    //float scatter = 0.17;
@@ -1084,7 +1092,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		haloD[i].value = halos[i]->Dist8();
 	}
 	MergeSort(haloD,haloCount);
-
+	
 	cout<<"Generating Galaxy Keys..."<<endl;
 	keyValue* galaxyMr = new keyValue[galaxies.size()];
 	keyValue* galaxyD = new keyValue[galaxies.size()];
@@ -1126,10 +1134,10 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	cout<<"Min/Max galaxy density and indicies: "<<minD<<" ("<<minD_ind<<"), "<<maxD<<" ("<<maxD_ind<<")"<<endl;
 */
 	MergeSort(galaxyD,galaxyCount);
-
+	
 	cout<<"galaxyCount= "<<galaxyCount<<" HaloCount= "<<haloCount<<endl;
         cout<<" some sorted galaxy densities: "<<galaxyD[0].value<<" "<<galaxyD[1].value<<" "<<galaxyD[2].value<<"... "<<galaxyD[galaxyCount-1].value<<endl;
-
+	
 	/*
 	int bucketLength = (int)galaxyCount/BUCKETSMR;
 	if(NEARESTMR < bucketLength)
@@ -1176,7 +1184,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	int ibad = 2082048000;
 	for(int hi=0;hi<haloCount;hi++)
 	{
-	        if (hi >= ibad)
+	        if (hi >= ibad) 
 		{
 			cout<<"Halo of "<<hi<<" of "<<haloCount<<endl;
 			cout<<"x/y/z = "<<halos[hi]->X()<<" "<<halos[hi]->Y()<<" "<<halos[hi]->Z()<<endl;
@@ -1288,7 +1296,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		particles[pid]->MakeGal(galaxyID);
 		galaxies[galaxyID]->DefineCentral();
 		galaxies[galaxyID]->Mr(halos[hID]->Mr());
-
+		
 		//write out to our log file to see how well we did
 		if (hi >= ibad) cout<<"Saving to log file..."<<endl;
 		bcg_dens_file<<halos[hID]->Dist8()<<" "<<halos[hID]->Mr()<<" "<<halos[hID]->Zred()<<" "<<galaxies[galaxyID]->Dist8()<<" "<<galaxies[galaxyID]->Mr()<<" "<<galaxies[galaxyID]->zGal()<<" "<<found<<" "<<galaxyID<<endl;

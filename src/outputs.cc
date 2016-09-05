@@ -589,7 +589,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
       vy[count] = p->Vy();
       vz[count] = p->Vz();
       z[count] = p->Zred();
-      pdist8[count] = p->Dist8()
+      pdist8[count] = p->Dist8();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
       ecatid[count] = sed_ids[i];
