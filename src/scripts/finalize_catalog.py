@@ -572,15 +572,20 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
     r = np.sqrt(hlist['PX']**2 + hlist['PY']**2 + hlist['PZ']**2)
     redshift = z_of_r(r, table)
 
+    theta, phi = hp.vec2ang(hlist[['PX','PY','PZ']].view((hlist.dtype['PX'],3)))
+    dec, ra =  -np.degrees(theta-np.pi/2.), np.degrees(np.pi*2.-phi)
+
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
               np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
-              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('LBOX',np.int)])]
-    data = [np.zeros(len(hlist)) for i in range(len(adtype)-2)]
+              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA',np.int)]),
+              np.dtype([('DEC',np.int)])]
+    data = [np.zeros(len(hlist)) for i in range(len(adtype)-3)]
     data.append(redshift)
-    data.append(np.ones(len(hlist), dtype=np.int)*bsizeenum[lbox])
+    data.append(ra)
+    data.append(dec)
     hlist = rf.append_fields(hlist,['LUMTOT', 'LUM20', 'LBCG', 'NGALS', 'N18',
-                                    'N19', 'N20', 'N21', 'N22', 'Z', 'LBOX'], data=data,
+                                    'N19', 'N20', 'N21', 'N22', 'Z', 'RA', 'DEC'], data=data,
                              dtypes=adtype, usemask=False)
 
     hlist['ID'] = hlist['ID'] + idoff[bsizeenum[lbox]]
