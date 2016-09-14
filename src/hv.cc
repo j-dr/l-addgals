@@ -568,13 +568,15 @@ int main(void){
   vector<float> mr(galaxies.size());
   vector<float> z(galaxies.size());
   vector<int> id(galaxies.size());
+
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
   #ifdef OUTPUTDENSITY
   vector<float> dist8(galaxies.size());
-  read_out_galaxy_info_w_densities(galaxies, mr, z, galseds,
-                                    sed_ids, id, dist8);
+  read_out_galaxy_info_w_densities(galaxies, mr, z,
+                                    galseds,sed_ids, id,
+                                    dist8);
   #else
   read_out_galaxy_info(galaxies, mr, z, galseds, sed_ids, id);
   #endif

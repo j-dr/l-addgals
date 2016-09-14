@@ -10,14 +10,14 @@
 #include <cmath>      //for floor()
 #include <cassert>    //for assert()
 
-//general include files 
+//general include files
 #include "nr.h"  //for numerical recipes
 #include "integrator.h"  //in utils
 #include "pi.h"
 #include "simplefunc.h" //for sqr
 
-//addgals include files 
-#include "constants.h" 
+//addgals include files
+#include "constants.h"
 #include "color.h"
 #include "myrand.h"
 #include "particle.h"
@@ -27,7 +27,7 @@
 
 extern Cosmology cosmo;
 class Galaxy{
- public: 
+ public:
   Galaxy(float mag, int id, float ldens):magnitude(mag),gid(id),d8(ldens){particle = 0; central = false; mhost = 0.; halo = 0;};
   Galaxy(float mag, int id):magnitude(mag),gid(id){particle = 0; central = false; mhost = 0.; halo = 0;};
   //redshift=0;};
@@ -83,8 +83,8 @@ class Galaxy{
     return rr;
   };
   void Centralize(Halo *h){
-    particle->position.Reset(h->X()/sim.LengthUnit(), 
-		       h->Y()/sim.LengthUnit(), 
+    particle->position.Reset(h->X()/sim.LengthUnit(),
+		       h->Y()/sim.LengthUnit(),
 		       h->Z()/sim.LengthUnit());
     particle->velocity = h->Velocity();
     particle->SetHaloId(h->Id());
@@ -117,8 +117,8 @@ inline float evolve_faber(float mag, float z){
 }
 
 inline float evolve_a(float mag, float z){
-  //  return mag+Q/(1+z); 
-  return mag+Q*(1./(1+z) - 1./1.1); 
+  //  return mag+Q/(1+z);
+  return mag+Q*(1./(1+z) - 1./1.1);
 }
 
 inline float evolve_mag(float mag, float z){
@@ -154,7 +154,7 @@ inline float deevolve_faber(float mag, float z){
 }
 
 inline float deevolve_a(float mag, float z){
-  return mag-Q*(1./(1+z) - 1./1.1); 
+  return mag-Q*(1./(1+z) - 1./1.1);
 }
 
 inline float deevolve_mag(float mag, float z){

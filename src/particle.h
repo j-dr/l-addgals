@@ -15,13 +15,21 @@
 using namespace std;
 extern Cosmology cosmo;
 
+struct hrow{
+  long hid;
+  double rhalo;
+  double mvir;
+  double rvir;
+};
+
+
 class Particle{
   friend class Galaxy;
  public:
-  Particle(){gid=-1; hid=-1; pid=-1; mhost=0.;};
+  Particle(){gid=-1; hid=-1; pid=-1; mhost=0.; rvir=-1; rhalo=-1.;};
   Particle(Point pos, Point vel, float dens):
   position(pos),velocity(vel),density(dens){ gid=-1; hid=-1; pid=-1;mhost=0.;};
-  
+
   void Hid(int id){hid=id;};
   int Hid()const{return hid;};
   void Mhost(float mass){mhost=mass;};
@@ -37,6 +45,12 @@ class Particle{
   void PosAssign(Point tpos){position=tpos;};
   void VelAssign(Point tvel){velocity=tvel;};
   void DensAssign(float tdens){density=tdens;};
+  void HaloAssign(hrow hdata){
+      hid = hdata.hid;
+      rhalo = hdata.rhalo;
+      rvir = hdata.rvir;
+      mhost = hdata.mvir;
+  }
   void VelPrint()const{cout<<Vx()<<" "<<Vy()<<" "<<Vz()<<endl;};
   void Print() const;
   void Write(ofstream &file)const{
@@ -68,22 +82,20 @@ class Particle{
   float Vy()const{return 1.0*velocity.y;};
   float Vz()const{return 1.0*velocity.z;};
   float Den()const{return density;};
-  double Rbox()const{return sqrt(sqr(position.x-0.5)+sqr(position.y-0.5)+sqr(position.z-0.5));};  
+  double Rbox()const{return sqrt(sqr(position.x-0.5)+sqr(position.y-0.5)+sqr(position.z-0.5));};
   double R()const{return sqrt(sqr(X())+sqr(Y())+sqr(Z()));};
-  //double Rred()const{return RofZ(Zred());};
-
-  //in degrees
-  //double Ra()const{return 45.0/atan(1.0)*asin(Z()/R());};
-  //double Dec()const{return 45.0/atan(1.0)*atan2(Ybox(),Xbox());};
 
   double Ra()const{double ra = angle_const*atan2(Ybox(),Xbox()); if(ra<0) return ra+360.; else return ra;}
   double Dec()const{return angle_const*asin(Z()/R());};
   double VR()const{return  (Vx()*X()+Vy()*Y()+Vz()*Z())/R();};
+  float RHalo()const{return rhalo};
+  float RVir()const{return rvir};
+  float MVir()const{return mhost};
   double ZredReal()const{
 #ifdef SNAPSHOT
   return sim_redshift;
 #else
-  float zz = cosmo.ZofR(R()); 
+  float zz = cosmo.ZofR(R());
   //if(SHIFT) zz = ZofR(roffset+R())-ZofR(roffset);
   return zz;
 #endif
@@ -93,24 +105,13 @@ class Particle{
 #ifdef SNAPSHOT
   return sim_redshift;
 #else
-  double zz = cosmo.ZofR(R()); 
-  //if(SHIFT) zz = ZofR(roffset+R())-ZofR(roffset);
-  //if((zz==0.58)&&(box==HVLIGHT)) 
-  //  cout<<"[Particle::Zred()]"<<R()<<" "<<Rbox()<<" "
-  ///      <<X()<<" "<<Y()<<" "<<Z()<<" "<<position.x<<" "
-  //      <<position.y<<" "
-  //      <<position.z<<endl;
-    ///    cout<<zz<<" "<<VR()<<" "<<X()<<" "<<Y()<<" "<<Z()<<" "<<R()<<" "
-    //<<Xbox()<<" "<<Ybox()<<" "<<Zbox()<<" "<<Rbox()<<" "
-    ///<<Vx()<<" "<<Vy()<<" "<<Vz()<<" "
-    //<<zz+(1+zz)*VR()/cspeed<<endl;
-  //  if(zz>1) cout<<zz<<" "<<R()<<endl;
-      return zz+(1+zz)*VR()/cspeed;
+  double zz = cosmo.ZofR(R());
+  return zz+(1+zz)*VR()/cspeed;
 #endif
   };
   //this is the angle from the line of sight
   //this is from the idl program (my)gcirc
-  
+
   void MakeGal(int id){
     gid=id;
   }
@@ -144,7 +145,7 @@ class Particle{
     if( (p->Xbox()>=XMIN)&&(p->Xbox()<=XMAX)&&
 	(p->Ybox()>=YMIN)&&(p->Ybox()<=YMAX)&&
 	(p->Zbox()>=ZMIN)&&(p->Zbox()<=ZMAX)){
-      
+
       if((p->Ra()>=RAMIN)&&(p->Ra()<=RAMAX)&&
 	 (p->Dec()>=DECMIN)&&(p->Dec()<=DECMAX)&&
 	 (p->Zred()>=ZREDMIN)&&(p->Zred()<=ZREDMAX)){
@@ -165,6 +166,8 @@ class Particle{
   int gid;
   int hid;
   float mhost;
+  float rvir;
+  float rhalo;
 #ifdef LONG64_IDS
   long int pid;
 #else

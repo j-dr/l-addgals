@@ -405,15 +405,16 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
 }
 
-void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle *> &particles,
-			 vector<float> &amag, vector<float> &tmag, vector<float> &mr,
-			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux,
-			 vector<float> &ivar, vector<double> &e, vector<double> &s,
-			 vector<bool> &idx, vector <Halo *> &halos,
-			 vector<int> &sed_ids, vector<float> &coeffs,
-			 vector<float> &dist8, vector<float> &nndist,
-			 vector<float> &nndist_percent,
-			 string outgfn, string outghfn)
+void  write_bcc_catalogs_w_densities(
+    vector<Galaxy *> &galaxies, vector<Particle *> &particles,
+    vector<float> &amag, vector<float> &tmag,
+    vector<float> &mr, vector<float> &omag, vector<float>
+    &omagerr, vector<float> &flux, vector<float> &ivar,
+    vector<double> &e, vector<double> &s, vector<bool> &idx,
+    vector <Halo *> &halos, vector<int> &sed_ids,
+    vector<float> &coeffs, vector<float> &dist8,
+    vector<float> &nndist, vector<float> &nndist_percent,
+    string outgfn, string outghfn)
 {
   using namespace CCfits;
   std::auto_ptr<FITS> tFits;
@@ -561,15 +562,18 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
   tcolForm[38] = "E";
   tcolForm[39] = "E";
   tcolForm[40] = "E";
-  tcolForm[41] = "E";  
+  tcolForm[41] = "E";
 
 
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5),
+    central(keep), empty(keep,-1), cf(keep*5),
     am(keep*5), ecatid(keep), dist8k(keep), nndistk(keep),
-    nndist_percentk(keep), pdist8(keep);
+    nndist_percentk(keep), pdist8(keep), rhalo(keep),
+    rvir(keep), mvir(keep);
+
+  vector<int> hid(keep);
 
   //Go through the galaxies and get the info we want
   int count=0;
@@ -578,7 +582,10 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     {
       if (!idx[i]) continue;
       p = galaxies[i]->P();
-      int hid = p->Hid();
+      hid[count] = p->Hid();
+      rhalo[count] = p->RHalo();
+      rvir[count] = p->RVir();
+      mvir[count] = p->MVir();
       ra[count] = galaxies[i]->Ra();
       dec[count] = galaxies[i]->Dec();
       id[count] = p->Gid();
@@ -601,13 +608,9 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
 	  cf[count*5+c] = coeffs[i*5+c];
 	  am[count*5+c] = amag[i*5+c];
 	}
-      if ((central[count]==1) & (hid>=0))
+      if ((central[count]==1) & (hid[i]>=0))
 	{
-	  haloid[count] = halos[hid]->Id();
-	}
-      else
-	{
-	  haloid[count] = -1;
+	  hid[count] = halos[hid[i]]->Id();
 	}
       count++;
     }
@@ -656,8 +659,14 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     newTable->column(tcolName[11]).write(dec,1);
     cout << "writing z" << endl;
     newTable->column(tcolName[12]).write(z,1);
-    cout << "writing haloid" << endl;
-    newTable->column(tcolName[13]).write(haloid,1);
+    cout << "writing hid" << endl;
+    newTable->column(tcolName[13]).write(hid,1);
+    cout << "writing rhalo" << endl;
+    newTable->column(tcolName[14]).write(rhalo,1);
+    cout << "writing mvir" << endl;
+    newTable->column(tcolName[15]).write(mvir,1);
+    cout << "writing rvir" << endl;
+    newTable->column(tcolName[17]).write(rvir,1);
     cout << "writing 18" << endl;
     newTable->column(tcolName[18]).write(central,1);
     cout << "writing 21" << endl;
@@ -689,7 +698,7 @@ void  write_bcc_catalogs_w_densities(vector<Galaxy *> &galaxies, vector<Particle
     cout << "writing 40" << endl;
     newTable->column(tcolName[40]).write(nndist_percentk,1);
     cout << "writing 41" << endl;
-    newTable->column(tcolName[40]).write(pdist8,1);    
+    newTable->column(tcolName[40]).write(pdist8,1);
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");

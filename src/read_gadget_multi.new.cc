@@ -180,7 +180,7 @@ vector <Halo*> ReadRockstarHalos(void){
     Halo * halo = new Halo(pos, vel, m200c, zred, ip, hid, vrms, r200c);
     halo->Dist8(rdel);
     //halo->Particle(0);
-    
+
 #ifdef SNAPSHOT
     if(xx > 0 && yy > 0 && zz > 0 &&
        xx < sim.Boxsize()*BOXFR && yy < sim.Boxsize()*BOXFR &&
@@ -209,7 +209,7 @@ vector <Halo*> ReadGadgetHalos(void){
   filename = halofile;
   ifstream file(filename.c_str());
   if (file.fail()) {
-    cerr<<"[ReadGadgetHalos error]: cannot open "<<filename<<endl;    
+    cerr<<"[ReadGadgetHalos error]: cannot open "<<filename<<endl;
     exit(1);
   }
   cout<<"Opened file for reading halos: "<<filename<<endl;
@@ -220,10 +220,10 @@ vector <Halo*> ReadGadgetHalos(void){
     while(file){
       double mvir;
       float zred,sigma,xMpc,yMpc,zMpc,vx,vy,vz,siglos,rdelta, rdel;
-      int ip, id, pid; 
+      int ip, id, pid;
       file>>id>>mvir>>sigma>>ip>>xMpc>>yMpc>>zMpc>>vx>>vy>>vz>>siglos>>rdelta>>rdel>>pid;
       zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
-      
+
 #ifdef DEBUG
       if (hid < 10){
 	cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", particle at center = "<<pid<<endl;
@@ -231,13 +231,13 @@ vector <Halo*> ReadGadgetHalos(void){
 #endif
 
       if(mvir < BCG_Mass_lim) continue;
-      Point vel(vx,vy,vz);   
+      Point vel(vx,vy,vz);
       float xx, yy, zz;
-    
+
       xx = xMpc;
       yy = yMpc;
       zz = zMpc;
-    
+
       Point pos(xx, yy, zz);
       Halo * halo = new Halo(pos, vel, mvir, zred, ip, hid, siglos, rdelta);
       halo->Dist8(rdel);
@@ -254,8 +254,8 @@ vector <Halo*> ReadGadgetHalos(void){
 #else
       halos.push_back(halo);
       hid++;
-#endif     
- 
+#endif
+
     }
     file.close();
 
@@ -383,11 +383,11 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
 #endif
 
     pfile.read((char *)(&header), sizeof(struct gadget_header));
-    pfile.read((char*) &buf, 4); 
-    rfile.read((char*) &buf, 4); 
-    rfile.read((char*) &buf, 4); 
-    rfile.read((char*) &buf, 4); 
-    rfile.read((char*) &buf, 4); 
+    pfile.read((char*) &buf, 4);
+    rfile.read((char*) &buf, 4);
+    rfile.read((char*) &buf, 4);
+    rfile.read((char*) &buf, 4);
+    rfile.read((char*) &buf, 4);
     string tmps;
     if (read_hod) {
       //hfile>>tmps;
@@ -411,8 +411,8 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
 #ifdef DEBUG
     cout<<"Going to read "<<header.npart[1]<<" particles."<<endl;
 #endif
-    pfile.read((char*) &buf, 4); 
-    rfile.read((char*) &buf, 4); 
+    pfile.read((char*) &buf, 4);
+    rfile.read((char*) &buf, 4);
 #ifdef DEBUG
     cout<<"creating structures"<<endl;
 #endif
@@ -451,7 +451,7 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
     float *tmp_pmvir;
     float *tmp_prhalo;
     tmp_phid = new long int[header.npart[1]];
-    tmp_pmvir = new float[header.npart[1]]; 
+    tmp_pmvir = new float[header.npart[1]];
     tmp_prhalo = new float[header.npart[1]];
 #ifdef DEBUG
     cout<<"read in the particle positions and rdel values"<<endl;
@@ -472,9 +472,9 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
 	int thid;
 	float tmvir, trhalo;
 	hfile>>thid>>tmvir>>trhalo;
-	tmp_phid[ip] = thid;      
-	tmp_pmvir[ip] = tmvir;      
-	tmp_prhalo[ip] = trhalo;      
+	tmp_phid[ip] = thid;
+	tmp_pmvir[ip] = tmvir;
+	tmp_prhalo[ip] = trhalo;
 	//if (ip < 10) cout<<thid<<" "<<tmvir<<" "<<trhalo<<endl;
       }
     }
@@ -507,7 +507,7 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
 
     t2 = clock();
 
-/*    
+/*
     //initialize a dummy particle
     tmp_x = tmp_pos[0].x;
     tmp_y = tmp_pos[0].y;
@@ -521,7 +521,7 @@ int ReadGadget(int nfiles, vector <Particle *> &particles){
     Particle * particle = new Particle(xx,vv,dist8);
 */
     //now loop through all read particles and save them into the correct classes
-    for(int ip=0;ip<header.npart[1];ip++){ 
+    for(int ip=0;ip<header.npart[1];ip++){
       tmp_x = tmp_pos[ip].x;
       tmp_y = tmp_pos[ip].y;
       tmp_z = tmp_pos[ip].z;
@@ -717,12 +717,12 @@ unsigned int getIndexNSide()
     convert << datadir << simlabel << "_" << r << "_0";
     std::string fname = convert.str();
     std::ifstream pfile(fname.c_str());
-    
+
     if (pfile.fail()) {
       r++;
       continue;
     }
-    
+
     pfile.read((char *)(&header), sizeof(struct io_header));
     return header.nside;
   }
@@ -738,12 +738,12 @@ unsigned int getFileNSide()
     convert << datadir << simlabel << "_" << r << "_0";
     std::string fname = convert.str();
     std::ifstream pfile(fname.c_str());
-    
+
     if (pfile.fail()) {
       r++;
       continue;
     }
-    
+
   pfile.read((char *)(&header), sizeof(struct io_header));
   return header.filenside;
   }
@@ -757,7 +757,7 @@ void getRadialBins(int &minrb, int &maxrb)
   maxrb = r_zmax/25;
 }
 
-std::vector<long> getFilePixels(string datadir, string simlabel, long pix, 
+std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
 				int r, long order1_)
 {
   /*
@@ -766,7 +766,7 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
     order1_ -- The healpix order that addgals is using
     order2_ -- The healpix order that the LC radial bin uses
   */
-  
+
   string fname;
   struct io_header header;
   int temp;
@@ -796,7 +796,7 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
     {
       //Only one file contains our pixel
       fpix.push_back(lower_nest(pix, order1_, order2_));
-    } 
+    }
   else if (order2_ > order1_)
     {
       fpix.resize(1 << ( 2 * ( order2_ - order1_ ) ) );
@@ -806,7 +806,7 @@ std::vector<long> getFilePixels(string datadir, string simlabel, long pix,
     {
       fpix.push_back(pix);
     }
-  
+
   return fpix;
 }
 
@@ -823,14 +823,14 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
   std::string fname;
   std::vector<long> fpix;
   struct io_header header;
-  
+
   // Only using first two octants
   for (r=minrb; r<=maxrb; r++)
     {
-      //Determine which file pixels contain particles in the 
+      //Determine which file pixels contain particles in the
       //healpix cell we are using now
       fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
-      
+
       //Add up parts from each lightcone pixel associated with PixelNum
       for (vector<long>::iterator itr=fpix.begin(); itr!=fpix.end(); itr++)
 	{
@@ -839,21 +839,21 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
 	  convert << datadir << simlabel << "_" << r << "_" << pc;
 	  fname = convert.str();
 	  std::ifstream pfile(fname.c_str());
-	  
+
 	  //Sometimes a pixel will be empty, if so raise a warning but continue
 	  if (pfile.fail()) {
 	    cerr<<"warning: cannot open file '" <<fname<<"'"<<endl;
 	    continue;
 	  }
-	  
+
 	  pfile.read((char *)(&header), sizeof(struct io_header));
 	  if (header.npart == 0) continue;
-	  
+
 	  //Read in the index, make sure it agrees with npart from header
 	  pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
 	  partial_sum(idx.begin(), idx.end(), idx.begin());
 	  assert(header.npart == idx[idx.size()-1]);
-	  
+
 	  long fpos = 0;
 	  //Add up the particles that are in the right peano indices
 	  for (vector<long>::iterator itr=pidx.begin(); itr!=pidx.end(); itr++)
@@ -899,12 +899,14 @@ vector <Particle *> ReadGadgetLCCell()
   std::string fname;
   std::string rnnfname;
   struct io_header header;
-  
+
   struct triple{
     float x;
     float y;
     float z;
   } cart;
+
+  hrow hdata;
 
   cout << "Determining radial bins" << endl;
   getRadialBins(minrb, maxrb);
@@ -932,14 +934,14 @@ vector <Particle *> ReadGadgetLCCell()
   vector<Particle *> parts(nparts);
   tstart = clock();
   // Only using first two octants
- 
+
   //vfac = sqrt(header.time); does this do anything with LCs?
   xfac = 1./(sim.LengthUnit());
   accum = 0;
   for (r=minrb; r<=maxrb; r++)
     {
 
-      
+
       fpix = getFilePixels(datadir, simlabel, PixelNum, r, order1_);
 
 
@@ -951,7 +953,7 @@ vector <Particle *> ReadGadgetLCCell()
 	       << "_" << pix << endl;
 #endif
 	  std::ostringstream convert;
-	  convert << datadir << simlabel << "_" << r 
+	  convert << datadir << simlabel << "_" << r
 		  << "_" << pix;
 	  fname = convert.str();
 	  std::ifstream pfile(fname.c_str());
@@ -959,12 +961,12 @@ vector <Particle *> ReadGadgetLCCell()
 	    cerr<<"error: cannot open file '" <<fname<<"'"<<endl;
 	    exit(3031);
 	  }
-	  
+
 	  pfile.read((char *)(&header), sizeof(struct io_header));
 	  if (header.npart == 0) continue;
-	  
+
 	  std::ostringstream rconvert;
-	  rconvert << datadir << "rnn_" << simlabel << "_" << r 
+	  rconvert << datadir << "rnn_" << simlabel << "_" << r
 		   << "_" << pix;
 	  rnnfname = rconvert.str();
 	  std::ifstream rfile(rnnfname.c_str());
@@ -972,19 +974,30 @@ vector <Particle *> ReadGadgetLCCell()
 	    cerr<<"error: cannot open file '" <<rnnfname<<"'"<<endl;
 	    exit (2031);
 	  }
-	  
+
+      std::ostringstream hconvert;
+	  rconvert << datadir << "hinfo_" << simlabel << "_" << r
+		   << "_" << pix;
+	  hinfofname = hconvert.str();
+	  std::ifstream hfile(hinfofname.c_str());
+	  if (hfile.fail()) {
+	    cerr<<"error: cannot open file '" <<hinfofname<<"'"<<endl;
+	    exit (2031);
+	  }
+
+
 	  pfile.read((char *)(&idx[0]), sizeof(long)*12*(1<<(2*order2_)));
 	  partial_sum(idx.begin(), idx.end(), idx.begin());
 	  assert(header.npart == idx[idx.size()-1]);
 	  cout << "number of particles in this file is " << header.npart << endl;
-	  
-	  
-	  rfile.read((char*) &buf, 4); 
-	  rfile.read((char*) &buf, 4); 
-	  rfile.read((char*) &buf, 4); 
-	  rfile.read((char*) &buf, 4); 
-	  rfile.read((char*) &buf, 4); 
-	  
+
+
+	  rfile.read((char*) &buf, 4);
+	  rfile.read((char*) &buf, 4);
+	  rfile.read((char*) &buf, 4);
+	  rfile.read((char*) &buf, 4);
+	  rfile.read((char*) &buf, 4);
+
 	  // read in positions and densities
 	  long fpos = 0;
 	  fnp = 0;
@@ -1005,19 +1018,22 @@ vector <Particle *> ReadGadgetLCCell()
 		  step = idx[(*itr)-1] - idx[*(itr-1)];
 		  pnp = idx[*itr] - idx[(*itr)-1];
 		}
-	      
+
 	      fpos += step + pnp;
 	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
 	      rfile.seekg( step*sizeof(float), rfile.cur );
+          hfile.seekg( step*(sizeof(hrow)), hfile.cur)
 	      for (j=0; j<pnp; j++)
 		{
 		  //cout << j << endl;
 		  pfile.read((char *)&cart, sizeof(struct triple));
 		  rfile.read((char *)&td, sizeof(float));
+          hfile.read((char *)&hdata, sizeof(struct hrow))
 		  Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
 		  parts[accum+fnp] = new Particle();
 		  parts[accum+fnp]->PosAssign(xx);
 		  parts[accum+fnp]->DensAssign(td);
+          parts[accum+fnp]->HaloAssign(hdata);
 		  fnp+=1;
 		}
 	    }
@@ -1096,22 +1112,22 @@ vector <Particle *> ReadGadgetLCCell()
   vector<Particle*>::iterator maxzpp = std::max_element(parts.begin(), parts.end(), comparez);
   vector<Particle*>::iterator maxrap = std::max_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator maxdecp = std::max_element(parts.begin(), parts.end(), comparedec);
-  cout << "Maximum particle redshift, ra, dec before cut is : " << parts[maxzpp-parts.begin()]->Zred() 
+  cout << "Maximum particle redshift, ra, dec before cut is : " << parts[maxzpp-parts.begin()]->Zred()
        << " " << parts[maxrap-parts.begin()]->Ra() << " " << parts[maxdecp-parts.begin()]->Dec() << endl;
   vector<Particle*>::iterator minzpp = std::min_element(parts.begin(), parts.end(), comparez);
   vector<Particle*>::iterator minrap = std::min_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator mindecp = std::min_element(parts.begin(), parts.end(), comparedec);
-  cout << "Minimum particle redshift, ra, dec before cut is : " << parts[minzpp-parts.begin()]->Zred() 
+  cout << "Minimum particle redshift, ra, dec before cut is : " << parts[minzpp-parts.begin()]->Zred()
        << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
   cout << "Cut quantities are RAMIN, RAMAX, DECMIN, DECMAX: " << RAMIN << " " << RAMAX << " " << DECMIN
        << " " << DECMAX << endl;
 #endif
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
-  
+
   //Get maximum redshift
   vector<Particle*>::iterator maxzp = std::max_element(parts.begin(), parts.end(), comparez);
-  
+
   cout << "Maximum particle redshift is : " << parts[maxzp-parts.begin()]->Zred() << endl;
   zmax->SetVal(parts[maxzp-parts.begin()]->Zred());
 
