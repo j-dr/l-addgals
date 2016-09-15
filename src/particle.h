@@ -28,7 +28,7 @@ class Particle{
  public:
   Particle(){gid=-1; hid=-1; pid=-1; mhost=0.; rvir=-1; rhalo=-1.;};
   Particle(Point pos, Point vel, float dens):
-  position(pos),velocity(vel),density(dens){ gid=-1; hid=-1; pid=-1;mhost=0.;};
+  position(pos),velocity(vel),density(dens){ gid=-1; hid=-1; pid=-1; mhost=0.; rvir=-1.; rhalo=-1.;};
 
   void Hid(int id){hid=id;};
   int Hid()const{return hid;};
@@ -51,6 +51,9 @@ class Particle{
       rvir = hdata.rvir;
       mhost = hdata.mvir;
   }
+  void RVir(float rv){rvir=rv;};
+  void RHalo(float rh){rhalo=rh;};
+  void MVir(float mv){mhost=mv;};
   void VelPrint()const{cout<<Vx()<<" "<<Vy()<<" "<<Vz()<<endl;};
   void Print() const;
   void Write(ofstream &file)const{
@@ -88,9 +91,9 @@ class Particle{
   double Ra()const{double ra = angle_const*atan2(Ybox(),Xbox()); if(ra<0) return ra+360.; else return ra;}
   double Dec()const{return angle_const*asin(Z()/R());};
   double VR()const{return  (Vx()*X()+Vy()*Y()+Vz()*Z())/R();};
-  float RHalo()const{return rhalo};
-  float RVir()const{return rvir};
-  float MVir()const{return mhost};
+  float RHalo()const{return rhalo;};
+  float RVir()const{return rvir;};
+  float MVir()const{return mhost;};
   double ZredReal()const{
 #ifdef SNAPSHOT
   return sim_redshift;

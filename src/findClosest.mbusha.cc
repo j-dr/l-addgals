@@ -918,6 +918,9 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
 	  Particle * particle = new Particle(xx,vv,dist8);
 	  particle->MakeGal(99999999);
 	  particle->Hid(ih);
+	  particle->MVir(H[ih]->M());
+	  particle->RVir(H[ih]->R200());
+	  particle->RHalo(0);
 	  P.push_back(particle);
 	  H[ih]->Particle(P.size()-1);
 	  this_ih++;
@@ -943,6 +946,9 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
       float dist8 = H[ih]->Dist8();
       Particle * particle = new Particle(xx,vv,dist8);
       particle->Hid(ih);
+      particle->MVir(H[ih]->M());
+      particle->RVir(H[ih]->R200());
+      particle->RHalo(0);
       particle->MakeGal(99999999);
       P.push_back(particle);
       H[ih]->Particle(P.size()-1);

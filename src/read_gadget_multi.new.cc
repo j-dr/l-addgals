@@ -897,7 +897,7 @@ vector <Particle *> ReadGadgetLCCell()
   long fnp=0;
   std::vector<long> fpix;
   std::string fname;
-  std::string rnnfname;
+  std::string rnnfname, hinfofname;
   struct io_header header;
 
   struct triple{
@@ -976,7 +976,7 @@ vector <Particle *> ReadGadgetLCCell()
 	  }
 
       std::ostringstream hconvert;
-	  rconvert << datadir << "hinfo_" << simlabel << "_" << r
+	  hconvert << datadir << "hinfo_" << simlabel << "_" << r
 		   << "_" << pix;
 	  hinfofname = hconvert.str();
 	  std::ifstream hfile(hinfofname.c_str());
@@ -1022,18 +1022,18 @@ vector <Particle *> ReadGadgetLCCell()
 	      fpos += step + pnp;
 	      pfile.seekg( 3*step*sizeof(float), pfile.cur );
 	      rfile.seekg( step*sizeof(float), rfile.cur );
-          hfile.seekg( step*(sizeof(hrow)), hfile.cur)
+	      hfile.seekg( step*(sizeof(hrow)), hfile.cur);
 	      for (j=0; j<pnp; j++)
 		{
 		  //cout << j << endl;
 		  pfile.read((char *)&cart, sizeof(struct triple));
 		  rfile.read((char *)&td, sizeof(float));
-          hfile.read((char *)&hdata, sizeof(struct hrow))
+		  hfile.read((char *)&hdata, sizeof(struct hrow));
 		  Point xx(cart.x*xfac,cart.y*xfac,cart.z*xfac);
 		  parts[accum+fnp] = new Particle();
 		  parts[accum+fnp]->PosAssign(xx);
 		  parts[accum+fnp]->DensAssign(td);
-          parts[accum+fnp]->HaloAssign(hdata);
+		  parts[accum+fnp]->HaloAssign(hdata);
 		  fnp+=1;
 		}
 	    }
@@ -1134,6 +1134,12 @@ vector <Particle *> ReadGadgetLCCell()
   tend = clock();
 
   cout << "[ReadGadgetLCCell] Reading particles took " << (tend-tstart)/CLOCKS_PER_SEC << " seconds." <<endl;
+  
+  cout << "Halo information from first few particles: " << endl;
+  for (i=0; i<5; i++)
+    {
+      cout << "Hid, RHalo, RVir, MVir : " << parts[i]->Hid() << " " << parts[i]->RHalo() << " " << parts[i]->RVir() << " " << parts[i]->MVir() << endl;
+    }
 
 #ifdef DEBUGLC
   string pfname = "lcdata.dat";

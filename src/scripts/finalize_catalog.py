@@ -251,8 +251,8 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     comm.send(lum, 0, tag=tags['lum'+lastbsize])
                     tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
 
-                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['ID', 'MVIR', 'RVIR', 'PX', 
-                                                                      'PY', 'PZ', 'PID', 'Z'])
+                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['HALOID', 'MVIR', 'RVIR', 'HALOPX', 
+                                                                      'HALOPY', 'HALOPZ', 'Z'])
 
                 if bsizeenum[bsize]==0:
                     hlz = 0.0

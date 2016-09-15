@@ -1,30 +1,46 @@
 #compiler
-CXX=g++
+CXX=/usr/bin/g++ 
 CC=${CXX}
-OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
-WARN =
-#END_FLAG = -DBIGENDIAN
-END_FLAG = -DLITTLEENDIAN
+OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
+WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
+END_FLAG = -DBIGENDIAN
+#END_FLAG = -DLITTLEENDIAN
 
+ANN_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/lib  #replace with your ANN library
+ANN_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/include #replace with your ANN include
+NR_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
+NR_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes #replace with your NumRec
+KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
+KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
+GSL_LIB = -L/afs/slac.stanford.edu/g/ki/software/gsl/1.15/lib
+GSL_INC = -I/afs/slac.stanford.edu/g/ki/software/gsl/1.15/include/gsl
+CFITSIO_LIB = -L/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CFITSIO_INC = -I/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CCFITS_LIB = -L/afs/slac/g/ki/software/ccfits/2.4/lib 
+CCFITS_INC = -I/afs/slac/g/ki/software/ccfits/2.4/include 
 
-NR_LIB = -L/home/jderose/src/recipes
-NR_INC = -I/home/jderose/src/recipes
-KCORRECT_LIB = -L${KCORRECT_DIR}/lib
-KCORRECT_INC = -I${KCORRECT_DIR}/include
-CCFITS_LIB   = -L/home/jderose/.local/lib
-CCFITS_INC   = -I/home/jderose/.local/include
+ifeq "$(HOSTNAME)" "orange"
+	#CXX=icpc
+	CXX=g++
+	OPT= -O3 -Wno-deprecated #-ffast-math
+	#OPT= -g
+	WARN=
+	END_FLAG = -DLITTLEENDIAN
+	#END_FLAG = -DBIGENDIAN
+	OMPFLAG = 
+endif
 
 RM = rm -f
 LD = /usr/bin/ld
 
 #directories to look for include files
-INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
+INCL = -I. ${ANN_INC} ${NR_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC} 
 
 #directories to look for libraries
-LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
+LDFLAGS = ${ANN_LIB} ${NR_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
 
 #libraries to link
-LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
+LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lCCfits 
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
@@ -130,14 +146,12 @@ endif
 #CPPFLAGS += -DDEBUG
 #CPPFLAGS += -DOLDPDF
 #CPPFLAGS += -DDEBUG_PDF
+CPPFLAGS += -DOUTPUTDENSITY
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
 #CPPFLAGS += -DUNITTESTS
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
-#CPPFLAGS += -DDEBUG_PIXLC
-CPPFLAGS += -DMAKEMAGS
-#CPPFLAGS += -DOUTPUTDENSITY
-#CPPFLAGS += -DDEBUG_SHAPES
+#CPPFLAGS += -DDEBUGLC
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++
 
