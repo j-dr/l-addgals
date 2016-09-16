@@ -75,6 +75,21 @@ def r_of_z(z, table):
 
     return rofz
 
+def update_halo_id(ids, boxl):
+    idoff = np.array([0, 1e8, 1e9], dtype=np.int)
+
+    return ids + idoff[bsizeenum[lbox]]
+
+def read_halo_file(fname):
+
+    try:
+        h = fitsio.read(fname,columns=['ID', 'MVIR', 'RVIR', 'Z']))
+    except:
+        h = fitsio.read(fname,columns=['HALOID', 'MVIR', 'RVIR', 'Z']))
+        h.dtype.names = ['ID', 'MVIR', 'RVIR', 'Z']
+
+    return h
+
 TZERO = None
 def tprint(info, stime=None):
     global TZERO
@@ -83,13 +98,13 @@ def tprint(info, stime=None):
 
     tnow = time.time()
     print('[%8ds] %s' % (tnow-TZERO,info))
-    
+
     return tnow
 
 bsizeenum = {'1050':0, '2600':1, '4000':2}
 
-def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans, 
-                      bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05, 
+def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
+                      bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05,
                       nside=8, justhalos=True, pixels=None, rmp_output=False,
                       lensing_output=False, skyfactory=True):
 
@@ -97,8 +112,9 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
     size = comm.Get_size()
     rank = comm.Get_rank()
 
-    tags = {'write':0, 'fwrite':1, 'occ1050':2, 'occ2600':3, 'occ4000':4,
-            'lum1050':5, 'lum2600':6, 'lum4000':7, 'exit':8, 'recv':9}
+    tags = {'write':0, 'fwrite':1, 'occ1050':2, 'occ2600':3,
+            'occ4000':4, 'lum1050':5, 'lum2600':6, 'lum4000':7,
+            'exit':8, 'recv':9}
 
     message = None
 
@@ -152,11 +168,11 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                 finfo = pixpaths.popleft()
                 tprint('    Assigning rank {0} to bsize, pix, zbin: {1}, {2}, {3}'.format(proc, *finfo))
                 comm.send(finfo, tag=tags['recv'], dest=proc)
-            
+
             for r in remove:
                 wwaiting.remove(r)
 
-            #Need to process finished writing notifications more quickly 
+            #Need to process finished writing notifications more quickly
             #so that requests don't build up
             while len(writing)>10:
                 status = MPI.Status()
@@ -210,16 +226,17 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     lum[2] += message
             elif tag==tags['exit']:
                 done.append(status.Get_source())
-        
+
         for i, bsize in enumerate(['1050', '2600', '4000']):
             if i==0:
                 zl = 0.0
             else:
                 zl = bzcut[i-1]
 
-            update_halo_file(halopaths[i], prefix, outpath, bsize, occ[i], 
-                             lum[i], mmin[i], zl, bzcut[i], zbuff=zbuff)
-            
+            update_halo_file(halopaths[i], prefix, outpath, bsize,
+                             occ[i], lum[i], mmin[i], zl, bzcut[i],
+                             zbuff=zbuff)
+
     if rank != 0:
         bsize = None
         lastbsize = None
@@ -242,7 +259,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             zbin = message[2]
 
             tstart = tprint('    {0}: Processing box, pix, zbin: {1}, {2}, {3}'.format(rank, bsize, pix, zbin))
-            
+
             #If starting on a new box, read in the correct halo file
             if bsize!=lastbsize:
                 if lastbsize is not None:
@@ -251,8 +268,9 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     comm.send(lum, 0, tag=tags['lum'+lastbsize])
                     tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
 
-                h = fitsio.read(halopaths[bsizeenum[bsize]], columns=['HALOID', 'MVIR', 'RVIR', 'HALOPX', 
-                                                                      'HALOPY', 'HALOPZ', 'Z'])
+                h = read_halo_file(halopaths[bsizeenum[bsize]])
+                hidx = h['HALOID'].argsort()
+                h = h[hidx]
 
                 if bsizeenum[bsize]==0:
                     hlz = 0.0
@@ -265,22 +283,10 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
 
                 occ = np.zeros((len(h),6))
                 lum = np.zeros((len(h),3))
-            
-                pixh = hp.vec2pix(2, h['PX'], h['PY'], h['PZ'])
 
-                #index the halos by healpix cell
-                pidx = pixh.argsort()
-                pixh = pixh[pidx]
-                h = h[pidx]
-                pidx = pixh[1:]-pixh[:-1]
-                pidx, = np.where(pidx!=0)
-                pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
-                upix = pixh[pidx]
-                print('upix: {0}'.format(upix))
-                pixmap = hp.ud_grade(np.arange(12*2**2),4)
                 tread = tprint('    {0}: Done reading and sorting halos'.format(rank))
                 print('{0}: Reading took {1}s'.format(rank, tread-tstart))
-            
+
             if skyfactory:
                 f = '{0}/Lb{1}/output/addgals/{2}/{3}/{4}_{1}.{2}.{3}.fits'.format(basepath, bsize, pix, zbin, prefix)
             else:
@@ -289,112 +295,67 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
             #get redshift cutoffs for this bin
             ztidx, = np.where((ztrans['zbin']==zbin) & (ztrans['bsize']==bsize))
             assert(len(ztidx)==1)
-            print('pixmap matches: {0}'.format(pixmap[int(pix)]))
 
-            hidx, = np.where(upix==pixmap[int(pix)])
-            hstart = pidx[hidx]
-            print('hstart: {0}'.format(hstart))
-            if hidx==(len(pidx)-1):
-                hend = len(h)
-            else:
-                hend = pidx[hidx+1]
+            try:
+                pc, hdr = fitsio.read(f, header=True)
+            except:
+                raise IOError('Could not read file {0}!'.format(f))
 
-            #build tree to associate galaxies and halos 
-            with f3t.fast3tree(h[hstart:hend][['PX','PY','PZ']].view((h.dtype['PX'],3))) as ht:
-                try:
-                    pc, hdr = fitsio.read(f, header=True)
-                except:
-                    warnings.warn('Could not read file {0}, continuing...'.format(f))
-                    continue
+            #get galaxies in correct redshift bin
+            pc = pc[((pc['PX']!=0) | (pc['PY']!=0) | (pc['PZ']!=0)) &
+                    (ztrans['zmin'][ztidx]<=pc['Z']) & (pc['Z']<ztrans['zmax'][ztidx])]
 
-                #get galaxies in correct redshift bin
-                pc = pc[((pc['PX']!=0) | (pc['PY']!=0) | (pc['PZ']!=0)) &
-                        (ztrans['zmin'][ztidx]<=pc['Z']) & (pc['Z']<ztrans['zmax'][ztidx])]
+            #update haloids
+            pc['HALOID'] = update_halo_id(pc['HALOID'], bsize)
+            if np.max(pc['RVIR'])>100:
+                pc['RVIR'] /= 1000
 
-                tsh = tprint('    {0}: Finding halos for pixel, redshift bin: {1}, {2}'.format(rank, pix, zbin))
-                o, l = associate_halos(pc, h[hstart:hend], ht)
-                tfh = tprint('    {0}: Finished finding halos for redshift bin. Took {1}s'.format(rank, time.time()-tsh))
+            tsh = tprint('    {0}: Finding halos for pixel, redshift bin: {1}, {2}'.format(rank, pix, zbin))
+            o, l = associate_halos(pc, h)
+            tfh = tprint('    {0}: Finished associating halos for z bin. Took {1}s'.format(rank, time.time()-tsh))
 
-                #update halo occupations
-                occ[hstart:hend] += o
-                lum[hstart:hend] += l
-                
-                #create unique ID
-                pc['ID'] += int(bsize)*1000000000000 + int(pix)*10000000000 + int(zbin)*100000000
+            #update halo occupations
+            occ += o
+            lum += l
 
-                #if writing catalogs, request permission to write
-                if not justhalos:
-                    hpix = hp.vec2pix(nside, pc['PX'],pc['PY'],pc['PZ'], nest=True)
-                    up = np.unique(hpix)
-                    status = MPI.Status()
-                    treq = tprint('    {0}: Requesting permission to write to pix {1}'.format(rank, pix))
-                    comm.send(up, 0, tag=tags['write'])
-                    message = comm.recv(tag=tags['write'], status=status)
-                    
-                    tprint('    {0}: Waited {1}s for permission'.format(rank, time.time()-treq))
-                    twr = tprint('    {0}: Writing galaxies for pix, z bin: {1}, {2}'.format(rank, pix, zbin))
-                    write_fits(outpath, prefix, pix, pc, hpix, up, hdr, 
-                               rmp_output=rmp_output, lensing_output=lensing_output)
-                    tdw = tprint('    {0}: Done writing galaxies for {1}, {2}. Took {3}s'.format(rank, pix, zbin, time.time()-twr))
+            #create unique ID
+            pc['ID'] += int(bsize)*1000000000000 + int(pix)*10000000000 + int(zbin)*100000000
 
-                    comm.send(up, 0, tag=tags['fwrite'])
-                    tprint('    {0}: Message sent. Took {1}s'.format(rank, time.time()-tdw))
+            #if writing catalogs, request permission to write
+            if not justhalos:
+                hpix = hp.vec2pix(nside, pc['PX'],pc['PY'],pc['PZ'], nest=True)
+                up = np.unique(hpix)
+                status = MPI.Status()
+                treq = tprint('    {0}: Requesting permission to write to pix {1}'.format(rank, pix))
+                comm.send(up, 0, tag=tags['write'])
+                message = comm.recv(tag=tags['write'], status=status)
+
+                tprint('    {0}: Waited {1}s for permission'.format(rank, time.time()-treq))
+                twr = tprint('    {0}: Writing galaxies for pix, z bin: {1}, {2}'.format(rank, pix, zbin))
+                write_fits(outpath, prefix, pix, pc, hpix, up, hdr,
+                           rmp_output=rmp_output, lensing_output=lensing_output)
+                tdw = tprint('    {0}: Done writing galaxies for {1}, {2}. Took {3}s'.format(rank, pix, zbin, time.time()-twr))
+
+                comm.send(up, 0, tag=tags['fwrite'])
+                tprint('    {0}: Message sent. Took {1}s'.format(rank, time.time()-tdw))
 
         comm.send(message, 0, tag=tags['exit'])
 
-def associate_halos(galaxies, halos, tree, rassoc=10):
+def associate_halos(galaxies, halos):
 
     occ = np.zeros((len(halos),6))
     lum = np.zeros((len(halos),3))
-    gpos = galaxies[['PX', 'PY', 'PZ']].view((galaxies.dtype['PX'],3))
-    hpos = halos[['PX','PY','PZ']].view((halos.dtype['PX'],3))
-    d = np.zeros(len(galaxies))
-    hid = np.zeros(len(galaxies), dtype=np.int)
-    
-    #assign nearest halo to galaxy
-    for i, gi in enumerate(gpos):
-        try:
-            gi = tree.query_radius(gpos[i,:],rassoc)
-            di = np.sqrt((hpos[gi,0]-gpos[i,0])**2 + (hpos[gi,1]-gpos[i,1])**2 + (hpos[gi,2]-gpos[i,2])**2)
-            d[i] = np.min(di)
-            hid[i] = gi[di==d[i]]
-        except:
-            hid[i] = -1
-            d[i] = -1
-            
-    #tprint('    Minimum distance to nearest halo: {0}'.format(np.min(d)))
 
-    cen = galaxies['CENTRAL']==1
-    nn = hid!=-1
-    galaxies['HALOID'] = halos['ID'][hid]
-    galaxies['M200']   = halos['MVIR'][hid]
-    galaxies['RHALO']  = d
-
-    galaxies['RHALO'][cen] = 0.0
-    galaxies['RHALO'][~nn] = 999999
-    galaxies['M200'][~nn]  = -1
-
-    #galaxies['HALOID'][~cen & nn] = halos['ID'][hid[~cen & nn]]
-    #galaxies['M200'][~cen & nn] = halos['MVIR'][hid[~cen & nn]]
-    #galaxies['M200'][cen & nn] = halos['MVIR'][hid[cen & nn]]
-
-    if any(cen&(~nn)):
-        nbad = np.sum(cen&(~nn))
-        print("{0} galaxies assigned as centrals have no associated halo in the halo catalog. Calling them satellites".format(nbad))
-
-    galaxies['CENTRAL'][~nn] = 0
-    galaxies['RHALO'][~nn] = 999999
-    galaxies['HALOID'][~nn] = -1
+    hid = halos['ID'].searchsorted(galaxies['HALOID'])
 
     cen = galaxies['CENTRAL']==1
     bound = galaxies['RHALO']<=halos['RVIR'][hid]
-    
     lum[hid[cen],2] = galaxies[cen]['AMAG'][:,1]
 
     for i, mr in enumerate([-10,-18,-19,-20,-21,-22]):
         #get galaxies passing magnitude cut
         midx = galaxies['AMAG'][bound,1]<mr
-        
+
         #sort halo indices of these galaxies
         hidx = hid[bound][midx].argsort()
         mhid = hid[bound][midx][hidx]
@@ -410,19 +371,19 @@ def associate_halos(galaxies, halos, tree, rassoc=10):
         hidx = np.hstack([np.zeros(1,dtype=np.int),hidx+1])
         uhid = mhid[hidx]
         hidx = np.hstack([hidx, np.array([len(mhid)])])
-        
+
         if (mr==-10):
             for j, uid in enumerate(uhid):
                 lum[uid,0]+=np.sum(mgr[hidx[j]:hidx[j+1]])
         elif (mr==-20):
             for j, uid in enumerate(uhid):
                 lum[uid,1]+=np.sum(mgr[hidx[j]:hidx[j+1]])
-        
+
         occ[uhid,i] += hidx[1:]-hidx[:-1]
 
     return occ, lum
 
-def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8, 
+def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
                rmp_output=False, lensing_output=False):
 
     for p in upix:
@@ -434,7 +395,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
         try:
             h = fits[-1].read_header()
             assert((h['NAXIS2'] + len(c)) < 1e9 )
-            
+
             c['ID'] = p*1e9 + h['NAXIS2'] + np.arange(len(c), dtype=np.int)
             fits[-1].write_key('NAXIS2', h['NAXIS2']+len(c))
             fits[-1].append(c)
@@ -453,7 +414,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
                 fits[-1].append(c[columns])
             except:
                 fits.write(c[columns], header=header)
-                
+
             fits.close()
 
         if lensing_output:
@@ -465,7 +426,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
                 fits[-1].append(c[columns])
             except:
                 fits.write(c[columns], header=header)
-                
+
             fits.close()
 
 
@@ -493,7 +454,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
     pidx, = np.where(pidx!=0)
     pidx = np.hstack([np.zeros(1,dtype=np.int),pidx+1])
     upix = pixh[pidx]
-    
+
     for i, p in enumerate(upix):
         start = pidx[i]
         if i==len(upix)-1:
@@ -522,7 +483,7 @@ def update_halo_file(halopath, prefix, outpath, bsize, occ, lum, mmin, zmin, zma
                 fits[-1].append(hpo)
             except:
                 fits.write(hpo)
-                
+
             fits.close()
 
 
@@ -531,15 +492,15 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    
+
     pnames = ['ID','MVIR','PID']
-    
+
     lusecols = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
     pusecols = [0,2,14]
-    idoff = np.array([0, 1e8, 1e9], dtype=np.int)
+
 
     if rank!=0: return '{0}/out_0.fits'.format(basepath)
-    
+
     print('Reading parents')
 
     parents = readHlist("{0}/cut_reform_out_0.parents".format(basepath), fields=pnames)
@@ -597,7 +558,7 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
 
 
 if __name__ == '__main__':
-    
+
     cfgfile = sys.argv[1]
     with open(cfgfile, 'r') as fp:
         cfg = yaml.load(fp)
@@ -628,7 +589,7 @@ if __name__ == '__main__':
         lensing_output = True
     else:
         lensing_output = False
-        
+
     if 'skyfactory' in cfg.keys():
         skyfactory = cfg['skyfactory']
     else:
@@ -650,7 +611,7 @@ if __name__ == '__main__':
         pass
 
     jhalopaths = []
-    
+
     for i, hpth in enumerate(halopaths):
         hs = hpth.split('.')
         omega_m = cfg['omega_m']
@@ -663,7 +624,7 @@ if __name__ == '__main__':
 
     comm = MPI.COMM_WORLD
     comm.Barrier()
-            
-    finalize_catalogs(basepath, prefix, suffix, outpath, jhalopaths, zbins, 
+
+    finalize_catalogs(basepath, prefix, suffix, outpath, jhalopaths, zbins,
                       justhalos=justhalos, pixels=pixels, lensing_output=lensing_output,
                       rmp_output=rmp_output, skyfactory=skyfactory)
