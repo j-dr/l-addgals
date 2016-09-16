@@ -279,7 +279,6 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[36] = "5E";
   tcolForm[37] = "E";
 
-
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
@@ -608,9 +607,9 @@ void  write_bcc_catalogs_w_densities(
 	  cf[count*5+c] = coeffs[i*5+c];
 	  am[count*5+c] = amag[i*5+c];
 	}
-      if ((central[count]==1) & (hid[i]>=0))
+      if ((central[count]==1) & (hid[count]>=0))
 	{
-	  hid[count] = halos[hid[i]]->Id();
+	  hid[count] = halos[hid[count]]->Id();
 	}
       count++;
     }

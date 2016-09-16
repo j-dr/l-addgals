@@ -15,6 +15,8 @@ import time
 import sys
 import os
 
+bsizeenum = {'1050':0, '2600':1, '4000':2}
+
 def generate_z_of_r_table(omegam, omegal, zmax=2.0, npts=1000):
 
     c = 2.9979e5
@@ -75,18 +77,14 @@ def r_of_z(z, table):
 
     return rofz
 
-def update_halo_id(ids, boxl):
-    idoff = np.array([0, 1e8, 1e9], dtype=np.int)
-
-    return ids + idoff[bsizeenum[lbox]]
 
 def read_halo_file(fname):
 
     try:
-        h = fitsio.read(fname,columns=['ID', 'MVIR', 'RVIR', 'Z']))
+        h = fitsio.read(fname,columns=['ID', 'MVIR', 'RVIR', 'Z', 'PX', 'PY', 'PZ'])
     except:
-        h = fitsio.read(fname,columns=['HALOID', 'MVIR', 'RVIR', 'Z']))
-        h.dtype.names = ['ID', 'MVIR', 'RVIR', 'Z']
+        h = fitsio.read(fname,columns=['HALOID', 'MVIR', 'RVIR', 'Z', 'HALOPX', 'HALOPY', 'HALOPZ'])
+        h.dtype.names = ['ID', 'MVIR', 'RVIR', 'Z', 'PX', 'PY', 'PZ']
 
     return h
 
@@ -101,7 +99,12 @@ def tprint(info, stime=None):
 
     return tnow
 
-bsizeenum = {'1050':0, '2600':1, '4000':2}
+
+def update_halo_id(ids, boxl):
+    idoff = np.array([0, 1e8, 1e9], dtype=np.int)
+
+    return ids + idoff[bsizeenum[boxl]]
+
 
 def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                       bzcut = [0.34, 0.9, 2.0], mmin=[3e12,3e12,2.4e13], zbuff=0.05,
@@ -269,7 +272,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     tprint('    {0}: Communication took {1}s'.format(rank, time.time()-tocc))
 
                 h = read_halo_file(halopaths[bsizeenum[bsize]])
-                hidx = h['HALOID'].argsort()
+                hidx = h['ID'].argsort()
                 h = h[hidx]
 
                 if bsizeenum[bsize]==0:
@@ -306,13 +309,17 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
                     (ztrans['zmin'][ztidx]<=pc['Z']) & (pc['Z']<ztrans['zmax'][ztidx])]
 
             #update haloids
+            print('before update: {0}'.format(pc['HALOID']))
             pc['HALOID'] = update_halo_id(pc['HALOID'], bsize)
-            if np.max(pc['RVIR'])>100:
-                pc['RVIR'] /= 1000
+            if np.max(pc['R200'])>100:
+                pc['R200'] /= 1000
+
+            print('after update: {0}'.format(pc['HALOID']))
 
             tsh = tprint('    {0}: Finding halos for pixel, redshift bin: {1}, {2}'.format(rank, pix, zbin))
             o, l = associate_halos(pc, h)
             tfh = tprint('    {0}: Finished associating halos for z bin. Took {1}s'.format(rank, time.time()-tsh))
+            print('after association: {0}'.format(pc['HALOID']))            
 
             #update halo occupations
             occ += o
@@ -332,6 +339,7 @@ def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,
 
                 tprint('    {0}: Waited {1}s for permission'.format(rank, time.time()-treq))
                 twr = tprint('    {0}: Writing galaxies for pix, z bin: {1}, {2}'.format(rank, pix, zbin))
+                print('before write: {0}'.format(pc['HALOID']))
                 write_fits(outpath, prefix, pix, pc, hpix, up, hdr,
                            rmp_output=rmp_output, lensing_output=lensing_output)
                 tdw = tprint('    {0}: Done writing galaxies for {1}, {2}. Took {3}s'.format(rank, pix, zbin, time.time()-twr))
@@ -347,9 +355,11 @@ def associate_halos(galaxies, halos):
     lum = np.zeros((len(halos),3))
 
     hid = halos['ID'].searchsorted(galaxies['HALOID'])
+    nn  = ((hid==0) & (galaxies['HALOID']!=halos['ID'][0])) | (hid == len(halos))
 
     cen = galaxies['CENTRAL']==1
-    bound = galaxies['RHALO']<=halos['RVIR'][hid]
+    bound = ~nn
+    bound[~nn] = (galaxies['RHALO'][~nn]<=halos['RVIR'][hid[~nn]])
     lum[hid[cen],2] = galaxies[cen]['AMAG'][:,1]
 
     for i, mr in enumerate([-10,-18,-19,-20,-21,-22]):
@@ -392,6 +402,7 @@ def write_fits(outpath, prefix, pix, catalog, hpix, upix, header, nside=8,
         pidx = hpix==p
         c = catalog[pidx]
 
+        print('after in write: {0}'.format(c['HALOID']))
         try:
             h = fits[-1].read_header()
             assert((h['NAXIS2'] + len(c)) < 1e9 )
