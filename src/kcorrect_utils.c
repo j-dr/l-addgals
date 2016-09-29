@@ -19,15 +19,32 @@
 
 using namespace std;
 
+//from kcorrect's reconstruct_maggies.c
 static int nz=1500;
 static int nk,nv,nl,maxn;
 static float *lambda=NULL;
 static float *vmatrix=NULL;
 static float *rmatrix=NULL;
 static float *zvals=NULL;
+static float *fdelta=NULL;
 static float *filter_lambda=NULL;
 static float *filter_pass=NULL;
 static int *filter_n=NULL;
+
+//from kcorrect's k_projection_table.c
+#define ABFNU 3.631e-20        /* ergs/s/cm^2/Hz */
+#define LIGHTSPEED 2.99792e+18 /* Angstrom/s */
+
+static float *cr_vmatrix=NULL;
+static float *cr_gmatrix=NULL;
+static float *cr_project_matrix=NULL;
+static float *cr_lambda=NULL;
+static int cr_nv;
+static int cr_nl;
+static float cr_z;
+static int cr_filter_n;
+static float *cr_filter_lambda=NULL;
+static float *cr_filter_pass=NULL;
 
 istream & operator>>(istream & is, magtuple & in)
 {
@@ -44,20 +61,172 @@ string colortrdir;
 string colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals";
 #endif
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
-			 float zmax, float band_shift, char filterfile[], float *maggies)
+void match_coeff(vector<int> &sed_ids, float* coeffs)
+{
+  static int ntemps=5;
+  int n;
+  //Need to replace with variable passed in stringparameters
+  string filename = colortrdir + "/combined_dr6_cooper.dat";
+  ifstream coeff_file(filename.c_str());
+  if (coeff_file.fail()) {
+    cerr<<"error: cannot open "<<filename<<endl;
+    exit(1);
+  }
+
+  vector<magtuple> sdsscoeffs;
+  vector<int>::iterator it;
+  copy(istream_iterator<magtuple>(coeff_file),
+       istream_iterator<magtuple>(),
+       back_inserter(sdsscoeffs));
+
+  for (n=0;n<ntemps;n++){
+    cout<<setprecision(numeric_limits<float>::digits10+1)
+	<<sdsscoeffs[0].bands[n]<<", ";
+  }
+  cout<<endl;
+
+  for (it = sed_ids.begin(); it!=sed_ids.end(); it++)
+    {
+      for (n=0; n<ntemps; ++n) {
+	coeffs[(it-sed_ids.begin())*ntemps+n] = sdsscoeffs[*it-1].bands[n];
+      }
+    }
+}
+
+float cr_integrate()
+{
+	float total, filt, sl, mlambda, dl;
+	unsigned long ip, il, ilp1;
+
+	/* each range of cr_project_matrix */
+	total=0.;
+	for(ip=0;ip<cr_nl-1;ip++) {
+		/* find the observed wavelength for this bin */
+		mlambda= (cr_lambda[ip+1]+cr_lambda[ip])*0.5*(1.+cr_z);
+
+		/* find the filter value at that observed wavelength */
+		k_locate(cr_filter_lambda, cr_filter_n, mlambda, &il);
+		if(il<cr_filter_n-1 && il>=0) {
+			ilp1=il+1;
+			sl=(mlambda-cr_filter_lambda[il])/
+				(cr_filter_lambda[ilp1]-cr_filter_lambda[il]);
+			filt=cr_filter_pass[il]+sl*(cr_filter_pass[ilp1]-cr_filter_pass[il]);
+
+			/* now add component to integral */
+			dl= fabs(cr_lambda[ip+1]-cr_lambda[ip]);
+			total+= mlambda*filt*dl*cr_project_matrix[ip];
+		}
+	}
+
+	return(total);
+} /* end filter */
+
+
+float cr_dmu_integrate(float dmu)
+{
+        float total, filt, sl, mlambda, dl;
+        unsigned long ip, il, ilp1;
+
+        /* each range of cr_project_matrix */
+        total=0.;
+        for(ip=0;ip<cr_nl-1;ip++) {
+                /* find the observed wavelength for this bin */
+                mlambda= (cr_lambda[ip+1]+cr_lambda[ip])*0.5*(1.+cr_z);
+
+                /* find the filter value at that observed wavelength */
+                k_locate(cr_filter_lambda, cr_filter_n, mlambda, &il);
+                if(il<cr_filter_n-1 && il>=0) {
+                        ilp1=il+1;
+                        sl=(mlambda-cr_filter_lambda[il])/
+                                (cr_filter_lambda[ilp1]-cr_filter_lambda[il]);
+                        filt=cr_filter_pass[il]+sl*(cr_filter_pass[ilp1]-cr_filter_pass[il]);
+
+                        /* now add component to integral */
+                        dl= fabs(cr_lambda[ip+1]-cr_lambda[ip]);
+                        total+= mlambda*filt*dl*dmu;
+                }
+	}
+
+        return(total);
+} /* end filter */
+
+
+int k_dmu_projection_table(float *rmatrix, int nk, int nv,
+                              float *vmatrix, float *lambda, int nl,
+                              int *filter_n,
+                              float *filter_lambda, float *filter_pass,
+                              float band_shift, int maxn)
+{
+        float scale,currlam;
+        int i,l,k,v;
+
+        /* make local copies of vmatrix */
+        cr_gmatrix=(float *) malloc(nl*sizeof(float));
+        cr_lambda=(float *) malloc((nl+1)*sizeof(float));
+        cr_nv=nv;
+        cr_nl=nl;
+        for(i=0;i<=nl;i++)
+                cr_lambda[i]=lambda[i];
+        for(i=0;i<nl;i++) {
+                currlam=0.5*(cr_lambda[i]+cr_lambda[i+1]);
+                cr_gmatrix[i]=ABFNU*LIGHTSPEED/(currlam*currlam);
+        }
+
+        /* make r matrix */
+        for(k=0;k<nk;k++) {
+                /* create filter */
+                cr_filter_n=filter_n[k];
+                cr_filter_lambda=(float *) malloc(cr_filter_n*sizeof(float));
+                cr_filter_pass=(float *) malloc(cr_filter_n*sizeof(float));
+                for(l=0;l<cr_filter_n;l++) {
+                        cr_filter_lambda[l]=filter_lambda[maxn*k+l]/(1.+band_shift);
+                        cr_filter_pass[l]=filter_pass[maxn*k+l];
+                } /* end for l */
+
+                /* create scale factor for filter by projection onto the AB source */
+                cr_z=0.;
+                cr_project_matrix=cr_gmatrix;
+                scale=1./cr_integrate();
+
+                /* loop over galaxies */
+                for(v=0;v<nv;v++) {
+                        rmatrix[k * nv + v] = scale * cr_dmu_integrate(vmatrix[v]);
+                } /* end for */
+
+                /* deallocate memory */
+                FREEVEC(cr_filter_lambda);
+                FREEVEC(cr_filter_pass);
+        } /* end for k */
+
+        /* deallocate local vmatrix */
+        FREEVEC(cr_gmatrix);
+        FREEVEC(cr_lambda);
+
+    return(1);
+}
+
+void norm_maggies(float *coeff, float *redshift,
+                    float *normmaggies int ngal,
+                    float zmin, float zmax, float band_shift,
+                    char filterfile[], float *deltam,
 {
   cout<<"Reconstructing maggies"<<endl;
 
-  int i,ndim,*sizes=NULL;
+  int i,j,ndim,*sizes=NULL;
   char vfile[FILESIZE],lfile[FILESIZE],path[FILESIZE];
   char vmatrixfile[FILESIZE],lambdafile[FILESIZE];
+
+  float dmu;
+  float *unity;
+  float *norm;
+  float *bpfact;
+  float *maggies;
 
   //Read in templates
   strcpy(vfile,"vmatrix.default.dat");
   strcpy(lfile,"lambda.default.dat");
   sprintf(path,"%s/data/templates",getenv("KCORRECT_DIR"));
-  
+
   sprintf(vmatrixfile, "%s/%s", path, vfile);
   sprintf(lambdafile, "%s/%s", path, lfile);
 
@@ -88,8 +257,117 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   k_projection_table(rmatrix,nk,nv,vmatrix,lambda,nl,zvals,nz,filter_n,
 		     filter_lambda,filter_pass,band_shift,maxn);
 
+  //Calculate deconvolution factor
+  unity   = (float *) malloc(nl * nv * sizeof(float));
+  norm    = (float *) malloc(nv * nz * sizeof(float));
+  maggies = (float *) malloc(ngal * sizeof(float));
+  bpfact = (float *) malloc(ngal * sizeof(float))
+
+  for (i=0; i<nl; i++)
+  {
+      for (j=0; j<nv; j++)
+      {
+          unity[i * nl + j] = 1.0;
+      }
+  }
+
+  k_projection_table(unity,nk,1,norm,lambda,nl,zvals,nz,filter_n,
+                      filter_lambda,filter_pass,band_shift,maxn);
+
+  //determining normalizations
   cout<<"Calling k_reconstruct_maggies"<<endl;
   k_reconstruct_maggies(zvals,nz,rmatrix,nk,nv,coeff,redshift,maggies,ngal);
+  k_reconstruct_maggies(zvals,nz,norm,1,nv,coeff,redshift,bpfact,ngal);
+
+  for (i=0; i<ngal; i++)
+  {
+      deltam[i] = (maggies[i] - normmaggies[i]) * bpfact[i];
+  }
+
+  cout<<"Done calculating norms"<<endl;
+  cout<<"First few: "<<endl;
+  for (i=0;i<5;i++){
+    cout<<deltam[i]<<", ";
+  }
+  cout<<endl;
+
+  FREEVEC(unity);
+  FREEVEC(norm);
+  FREEVEC(maggies);
+  FREEVEC(bpfact);
+}
+
+void reconstruct_maggies(float *coeff, float *redshift, int ngal,
+                            float zmin, float zmax,
+                            float band_shift, char filterfile[],
+                            float *maggies, float *deltam)
+{
+  cout<<"Reconstructing maggies"<<endl;
+
+  int i,ndim,*sizes=NULL;
+  char vfile[FILESIZE],lfile[FILESIZE],path[FILESIZE];
+  char vmatrixfile[FILESIZE],lambdafile[FILESIZE];
+
+  //Read in templates
+  strcpy(vfile,"vmatrix.default.dat");
+  strcpy(lfile,"lambda.default.dat");
+  sprintf(path,"%s/data/templates",getenv("KCORRECT_DIR"));
+
+  sprintf(vmatrixfile, "%s/%s", path, vfile);
+  sprintf(lambdafile, "%s/%s", path, lfile);
+
+  k_read_ascii_table(&vmatrix,&ndim,&sizes,vmatrixfile);
+  nl=sizes[1];
+  nv=sizes[0];
+  FREEVEC(sizes);
+
+  k_read_ascii_table(&lambda,&ndim,&sizes,lambdafile);
+  if(sizes[0]!=nl+1) {
+    fprintf(stderr,"vmatrix and lambda files incompatible (nl==%d vs sizes[0]=%d).\n",nl,sizes[0]);
+    exit(1);
+  }
+  FREEVEC(sizes);
+
+  //Load filters
+  cout<<"Loading filters from "<<filterfile<<endl;
+  k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
+  cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
+
+  //Create matrix of projections of templates onto filters (rmatrix)
+  rmatrix=(float *) malloc(nz*nv*nk*sizeof(float));
+  fdelta=(float *) malloc(ngal*nk*sizeof(float));
+  zvals=(float *) malloc(nz*sizeof(float));
+
+  cout<<"Creating projection table"<<endl;
+  for(i=0;i<nz;i++)
+    zvals[i]=zmin+(zmax-zmin)*((float)i+0.5)/(float)nz;
+
+  k_projection_table(rmatrix,nk,nv,vmatrix,lambda,nl,zvals,nz,
+                      filter_n,filter_lambda,filter_pass,band_shift,
+                      maxn);
+
+  //For each galaxy, calculate one flux shift per band
+  //from one number, namely the normalization to apply to the SED
+  //gotten from SDSS.
+
+  k_dmu_projection_table(fdelta,nk,ngal,deltam,lambda,nl,filter_n,
+           		           filter_lambda,filter_pass,band_shift,maxn);
+
+  cout<<"Calling k_reconstruct_maggies"<<endl;
+  k_reconstruct_maggies(zvals,nz,rmatrix,nk,nv,coeff,redshift,maggies,ngal);
+
+  //Add maggie offsets in dmmatrix here
+  for (i=0;i<ngal;i++)
+  {
+      for (k=0;k<nk;k++)
+      {
+          for (v=0;v<nv;v++)
+          {
+              maggies[i*nk+k] += coeff[i*nv+v] * fdelta[k*ngal+i];
+          }
+      }
+  }
+
   cout<<"Done reconstructing maggies"<<endl;
   cout<<"First few maggies: "<<endl;
   for (i=0;i<5;i++){
@@ -99,62 +377,28 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 
 }
 
-void match_coeff(vector<int> &sed_ids, float* coeffs)
-{
-  static int ntemps=5;
-  int n;
-  //Need to replace with variable passed in stringparameters
-  string filename = colortrdir + "/combined_dr6_cooper.dat";
-  ifstream coeff_file(filename.c_str());
-  if (coeff_file.fail()) {
-    cerr<<"error: cannot open "<<filename<<endl;
-    exit(1);
-  }
-
-  vector<magtuple> sdsscoeffs;
-  vector<int>::iterator it;
-  copy(istream_iterator<magtuple>(coeff_file),
-       istream_iterator<magtuple>(),
-       back_inserter(sdsscoeffs));
-
-  for (n=0;n<ntemps;n++){
-    cout<<setprecision(numeric_limits<float>::digits10+1)
-	<<sdsscoeffs[0].bands[n]<<", ";
-  }
-  cout<<endl;
-  
-  for (it = sed_ids.begin(); it!=sed_ids.end(); it++)
-    {
-      for (n=0; n<ntemps; ++n) {
-	coeffs[(it-sed_ids.begin())*ntemps+n] = sdsscoeffs[*it-1].bands[n];
-      }
-    }
-}
-
 void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
-			    float zmin, float zmax, float band_shift,
-			    int nband, char filterfile[], vector<float> &omag,
-			    vector<float> &amag)
+			                 vector<float> &deltam, float zmin, float zmax,
+			                 float band_shift, int nband, char filterfile[],
+                             vector<float> &omag, vector<float> &amag)
 {
   cout<<"Calculating magnitudes"<<endl;
   int i;
   int ngal = redshift.size();
   float zeropoint = 22.5;
   vector<float> kcorrection(omag.size());
-  vector<float> rf_z(ngal);
-  fill(rf_z.begin(), rf_z.end(), band_shift);
 
   //observer frame maggies
   reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &omag[0]);
+                      zmax, 0.0, filterfile, &omag[0], &deltam[0]);
 
   //rest frame maggies
   reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &amag[0]);
+                      zmax, 0.0, filterfile, &amag[0], &deltam[0]);
 
   cout<<"Calculating kcorrections"<<endl;
   //calculate k-correction in mags
-  transform(amag.begin(), amag.end(), omag.begin(), 
+  transform(amag.begin(), amag.end(), omag.begin(),
 	    kcorrection.begin(), magop<float>());
 
   cout<<"First few kcorrections: "<<endl;
@@ -176,7 +420,7 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 
   cout<<"Calculating absolute magnitudes"<<endl;
   //calculate absolute magnitudes without kcorrection
-  
+
   vector<float>::iterator it;
   absmagnitude<float> absmagn;
   for (it=redshift.begin(); it!=redshift.end(); it++){
@@ -196,12 +440,19 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   }
   cout<<endl;
 
+  FREEVEC(fdelta);
+  FREEVEC(rmatrix);
+  FREEVEC(lambda);
+  FREEVEC(filter_lambda);
+  FREEVEC(filter_pass);
+  FREEVEC(filter_n);
+
   cout<<"Done calculating magnitudes"<<endl;
 }
 
-void assign_colors(vector<float> &reference_mag, vector<float> &coeff, 
+void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 		   vector<float> &redshift, float zmin, float zmax,
-		   float band_shift, int nbands, char filterfile[], 
+		   float band_shift, int nbands, char filterfile[],
 		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
 		   bool refflag){
 
@@ -210,12 +461,14 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   int ntemp = 5;
   float sdss_bandshift = 0.1;
   float sdssab_corr = 0.012;
+  float zeropoint = 22.5;
   char sdss_filterfile[FILESIZE];
   vector<float> deltam(ngal);
+  vector<float> reference_maggies(ngal);
   strcpy(sdss_filterfile, (colortrdir+"/sdss_filter.txt").c_str());
-  
+
   cout << "First few reference magnitudes: " << endl;
-  for (i=0;i<5;i++) 
+  for (i=0;i<5;i++)
     {
       cout << reference_mag[i] << ", ";
     }
@@ -228,48 +481,59 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   }
   cout<<endl;
 
+  transform(reference_mag.begin(), reference_mag.end(), reference_mag.begin(),
+              bind2nd(plus<float>(), sdssab_corr));
+
+
   //calculate SDSS r-band abs mags to determine magnitude shifts to apply
   //to kcorrect outputs for other bands
-  k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
-			 1, sdss_filterfile, omag, amag);
+  //k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
+  //	 1, sdss_filterfile, omag, amag);
 
   //determine shift needed to get reference_mag from sdss_amag
+  //if refflag is set, then use absolute magnitudes to normalize
+  //otherwise use apparent magnitudes
   if (refflag)
     {
-      transform(amag.begin(), amag.end(), amag.begin(),
-  	    bind2nd(minus<float>(), sdssab_corr));
-      transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
-		deltam.begin(), minus<float>());
-    } 
-  else 
-    {
-      transform(omag.begin(), omag.end(), omag.begin(),
-  	    bind2nd(minus<float>(), sdssab_corr));
+        vector<float> rf_z(ngal);
+        fill(rf_z.begin(), rf_z.end(), band_shift);
+        //need to convert z=0.1 frame absolute magnitudes to z=0.1 frame
+        //apparent fluxes, i.e. need to add distance mod and convert to flux
+        //assumes zeropoint of 22.5 (from SDSS)
+        transform(reference_mag.begin(), reference_mag.end(), redshift.begin(),
+                    reference_maggies.begin(), amfluxop<float>());
 
-      transform(reference_mag.begin(), reference_mag.end(), omag.begin(),
-		deltam.begin(), minus<float>());
+        //calculate the SED normalization constant for each galaxy
+        norm_maggies(&coeff[0], &rf_z[0], &reference_maggies[0], ngal,
+                      zmin, zmax, band_shift,
+                      sdss_filterfile, &deltam[0]);
+    }
+  else
+    {
+        //convert observer frame apparent mags to fluxes
+        transform(reference_mag.begin(), reference_mag.end(),
+                    reference_maggies.begin(), omfluxop<float>());
+
+        //calculate the SED normalization constant for each galaxy
+        norm_maggies(&coeff[0], &redshift[0], &reference_maggies[0], ngal,
+                      zmin, zmax, band_shift,
+                      sdss_filterfile, &deltam[0]);
     }
 
-  cout<<"10-100 deltam"<<endl;
-  for (i=10;i<100;i++){
-    cout<<deltam[i]<<", ";
-    if ((i-10+1)%5==0) cout<<endl;
-  }
-  cout<<endl;
-  
-  //calculate observed and abs mags in desired output bands without shift
-  //calculated from SDSS bands
-  k_calculate_magnitudes(coeff, redshift, zmin, zmax, band_shift,
-			 nbands, filterfile, omag, amag);
-  
+  //calculate observed and abs mags in desired output bands using
+  //shift determined from SDSS
+  k_calculate_magnitudes(coeff, redshift, deltam, zmin, zmax, band_shift,
+  			 nbands, filterfile, omag, amag);
+
   //apply SDSS shift to app and abs mags (same for all bands)
-  vector<float>::iterator it;
+  /*vector<float>::iterator it;
   for (it=deltam.begin();it!=deltam.end();it++){
     for (i=0;i<nbands;i++){
       omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
       amag[(it-deltam.begin())*nbands+i] = amag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
     }
   }
+  */
 
 #ifdef COLORTEST
   ofstream amag_file("./des_amagtest.txt");
@@ -285,6 +549,9 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
     }
 #endif
 
+FREEVEC(vmatrix);
+
+
 }
 
 long readNRowsFits(std::string filename)
@@ -294,7 +561,7 @@ long readNRowsFits(std::string filename)
   std::vector<std::string> hdukeys(2,"");
   hdukeys[0] = "MAG_R";
   hdukeys[1] = "COEFFS";
-  
+
   //Create fits object
   std::auto_ptr<FITS> pInfile(new FITS(filename, Read, 1, false, hdukeys));
 
@@ -334,7 +601,7 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
     }
 }
 
-void write_colors(std::vector<float> amag, std::vector<float> omag, const int nbands, 
+void write_colors(std::vector<float> amag, std::vector<float> omag, const int nbands,
 		  std::string outname, std::string surveyname)
 {
 
@@ -342,7 +609,7 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, const int nb
   std::auto_ptr<FITS> tFits;
   int size = amag.size()/nbands;
   unsigned long rows(nbands);
-  
+
   //Write truth file
   cout << "Opening fits file" << endl;
   try{
@@ -375,7 +642,7 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, const int nb
   std::stringstream strstream;
   strstream << nk << "E";
   strstream >> cf;
-  
+
   tcolForm[0] = cf;
   tcolForm[1] = cf;
   tcolForm[2] = cf;
@@ -405,15 +672,15 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, const int nb
   catch(...){
     printf("Caught Save Error: Column Write\n");
     exit(1);
-  }    
+  }
 
 
 }
-  
+
 
 #ifdef MAKEMAGS
 
-enum string_code 
+enum string_code
   {
   TWOMASS,
   CFHTLS,
@@ -432,7 +699,7 @@ enum string_code
   WISE
 };
 
-string_code hashit (std::string const& inString) 
+string_code hashit (std::string const& inString)
 {
   if (inString == "TWOMASS") return TWOMASS;
   if (inString == "CFHTLS") return CFHTLS;
@@ -488,7 +755,7 @@ int main(int argc, char *argv[])
   char filterfile[FILESIZE];
 
   std::vector<std::string> psplt = split(filename, '.');
-  
+
   //Read in galaxy SED information
   nrows = readNRowsFits(filename);
 
@@ -506,7 +773,7 @@ int main(int argc, char *argv[])
       //Load filter information
       float aabcorr[5] = {-0.036, 0.012, 0.010, 0.028, 0.040};
       vector<float> abcorr;
-  
+
       switch(hashit(survey))
 	{
 	case TWOMASS:
@@ -558,7 +825,7 @@ int main(int argc, char *argv[])
 	  strcpy(filterfile, (colortrdir+"/wise_filters.txt").c_str());
 	  break;
 	}
-  
+
       cout<<"Loading filters from "<<filterfile<<endl;
       k_load_filters(&filter_n,&filter_lambda,&filter_pass,&maxn,&nk,filterfile);
       cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
@@ -587,7 +854,7 @@ int main(int argc, char *argv[])
       	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
 			nk, filterfile, omag, amag, abcorr);
 	}
-      
+
       outname = outdir + "/" + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
       cout << "Writing to " << outname << endl;
       write_colors(amag, omag, nk, outname, survey);
