@@ -206,9 +206,9 @@ int k_dmu_projection_table(float *rmatrix, int nk, int nv,
 }
 
 void norm_maggies(float *coeff, float *redshift,
-                    float *normmaggies int ngal,
+                    float *normmaggies, int ngal,
                     float zmin, float zmax, float band_shift,
-                    char filterfile[], float *deltam,
+                    char filterfile[], float *deltam)
 {
   cout<<"Reconstructing maggies"<<endl;
 
@@ -261,7 +261,7 @@ void norm_maggies(float *coeff, float *redshift,
   unity   = (float *) malloc(nl * nv * sizeof(float));
   norm    = (float *) malloc(nv * nz * sizeof(float));
   maggies = (float *) malloc(ngal * sizeof(float));
-  bpfact = (float *) malloc(ngal * sizeof(float))
+  bpfact = (float *) malloc(ngal * sizeof(float));
 
   for (i=0; i<nl; i++)
   {
@@ -304,7 +304,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
 {
   cout<<"Reconstructing maggies"<<endl;
 
-  int i,ndim,*sizes=NULL;
+  int i,k,v,ndim,*sizes=NULL;
   char vfile[FILESIZE],lfile[FILESIZE],path[FILESIZE];
   char vmatrixfile[FILESIZE],lambdafile[FILESIZE];
 
@@ -380,13 +380,15 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
 void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 			                 vector<float> &deltam, float zmin, float zmax,
 			                 float band_shift, int nband, char filterfile[],
-                             vector<float> &omag, vector<float> &amag)
+			                 vector<float> &omag, vector<float> &amag)
 {
   cout<<"Calculating magnitudes"<<endl;
   int i;
   int ngal = redshift.size();
   float zeropoint = 22.5;
   vector<float> kcorrection(omag.size());
+  vector<float> rf_z(redshift.size());
+  fill(rf_z.begin(), rf_z.end(), band_shift);  
 
   //observer frame maggies
   reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
