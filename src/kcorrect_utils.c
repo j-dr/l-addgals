@@ -267,14 +267,14 @@ void norm_maggies(float *coeff, float *redshift,
   {
       for (j=0; j<nv; j++)
       {
-          unity[i * nl + j] = 1.0;
+          unity[i * nv + j] = 1.0;
       }
   }
 
-  k_projection_table(unity,nk,1,norm,lambda,nl,zvals,nz,filter_n,
+  k_projection_table(norm,nk,1,unity,lambda,nl,zvals,nz,filter_n,
                       filter_lambda,filter_pass,band_shift,maxn);
 
-  //determining normalizations
+  //determine normalizations
   cout<<"Calling k_reconstruct_maggies"<<endl;
   k_reconstruct_maggies(zvals,nz,rmatrix,nk,nv,coeff,redshift,maggies,ngal);
   k_reconstruct_maggies(zvals,nz,norm,1,nv,coeff,redshift,bpfact,ngal);
@@ -308,6 +308,10 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
   char vfile[FILESIZE],lfile[FILESIZE],path[FILESIZE];
   char vmatrixfile[FILESIZE],lambdafile[FILESIZE];
 
+  float *unity;
+  float *norm;
+  float nzvals = 0.0;
+
   //Read in templates
   strcpy(vfile,"vmatrix.default.dat");
   strcpy(lfile,"lambda.default.dat");
@@ -337,6 +341,8 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
   rmatrix=(float *) malloc(nz*nv*nk*sizeof(float));
   fdelta=(float *) malloc(ngal*nk*sizeof(float));
   zvals=(float *) malloc(nz*sizeof(float));
+  unity   = (float *) malloc(nl * sizeof(float));
+  norm    = (float *) malloc(nk * sizeof(float));
 
   cout<<"Creating projection table"<<endl;
   for(i=0;i<nz;i++)
@@ -349,9 +355,14 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
   //For each galaxy, calculate one flux shift per band
   //from one number, namely the normalization to apply to the SED
   //gotten from SDSS.
+  for (i=0; i<nl; i++)
+  {
+          unity[i * nv + j] = 1.0;
+  }
 
-  k_dmu_projection_table(fdelta,nk,ngal,deltam,lambda,nl,filter_n,
-           		           filter_lambda,filter_pass,band_shift,maxn);
+  k_projection_table(norm,nk,1,unity,lambda,nl,&nzvals,1,
+                      filter_n,filter_lambda,filter_pass,band_shift,
+                      maxn);
 
   cout<<"Calling k_reconstruct_maggies"<<endl;
   k_reconstruct_maggies(zvals,nz,rmatrix,nk,nv,coeff,redshift,maggies,ngal);
@@ -363,7 +374,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal,
       {
           for (v=0;v<nv;v++)
           {
-              maggies[i*nk+k] += coeff[i*nv+v] * fdelta[k*ngal+i];
+              maggies[i*nk+k] += coeff[i*nv+v] * deltam[i] * norm[k];
           }
       }
   }
@@ -388,7 +399,7 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   float zeropoint = 22.5;
   vector<float> kcorrection(omag.size());
   vector<float> rf_z(redshift.size());
-  fill(rf_z.begin(), rf_z.end(), band_shift);  
+  fill(rf_z.begin(), rf_z.end(), band_shift);
 
   //observer frame maggies
   reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
