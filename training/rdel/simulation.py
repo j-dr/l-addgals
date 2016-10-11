@@ -20,6 +20,9 @@ class Simulation(object):
             self.zs = zs
         elif (zmin is not None) & (zmax is not None) & (zstep is not None):
             self.zs = np.arange(zmin, zmax+zstep, zstep)
+        elif (zmin is not None) & (zmax is not None) & (nz is not None):
+            self.zs = np.linspace(zmin, zmax, nz)
+
 
     def getSHAMFileName(hfname, alpha, scatter, lfname):
 
