@@ -31,4 +31,5 @@ def parseConfig(cfg):
 
     lf = DSGLuminosityFunction()
     m  = Model(sims)
-    
+
+    return sims, lf, m
