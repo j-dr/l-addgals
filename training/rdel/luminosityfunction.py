@@ -3,7 +3,7 @@ from copy import copy
 import numpy as np
 
 
-class LuminosityFunction:
+class LuminosityFunction(object):
 
     def __init__(self, params):
 
@@ -17,6 +17,10 @@ class LuminosityFunction:
         for i, z in enumerate(zs):
             zp = self.evolveParams(z)
             self.lf[:,i] = self.calcNumberDensity(zp, lums)
+
+    def genLuminosityFunctionZ(self, lums, z):
+        zp = self.evolveParams(z)
+        return self.calcNumberDensity(zp, lums)
 
     def calcNumberDensity(self, p, lums):
         pass
