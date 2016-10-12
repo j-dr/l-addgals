@@ -1,7 +1,11 @@
 from __future__ import print_function, division
 from helpers import SimulationAnalysis
+import scipy.constants as const
 import numpy as np
 import fitsio
+
+if __name__ == '__main__':
+    import mpi4py as MPI
 
 from .abundancematch import abundanceMatchSnapshot
 
@@ -24,7 +28,18 @@ class Simulation(object):
             self.zs = np.linspace(zmin, zmax, nz)
 
 
-    def getSHAMFileName(hfname, alpha, scatter, lfname):
+    def associateFiles(self):
+
+        hfn = np.array([h.split('_')[-1].split('.list')[0] for h in self.hfiles])
+        crn = np.array([c.split('_')[-1] for c in self.rnnfiles])
+
+        hidx = hfn.argsort()
+        cidx = crn.argsort()
+
+        self.hfiles = self.hfiles[hidx]
+        self.rnnfiles = self.rnnfiles[cidx]
+
+    def getSHAMFileName(self, hfname, alpha, scatter, lfname):
 
         fs = hfname.split('/')
         fs[-1] = 'sham_{0}_{1}_{2}_{3}'.format(lfname,
@@ -35,29 +50,44 @@ class Simulation(object):
 
         return fn
 
-    def abundanceMatch(lf, alpha=0.5, scatter=0.17):
+    def abundanceMatch(self, lf, alpha=0.5, scatter=0.17, debug=False,
+                       parallel=False):
         """
         Abundance match all of the hlists
         """
 
-        lfz      = np.zeros(len(self.lums), 2)
+        lfz      = np.zeros((len(self.lums), 2))
         lfz[:,0] = self.lums
 
         odtype = np.dtype([('PX', np.float),
                             ('PY', np.float),
-                            ('PY', np.float),
+                            ('PZ', np.float),
                             ('AMPROXY', np.float),
                             ('LUMINOSITY', np.float)])
 
-        for i, hf in enumerate(self.hfiles):
+        if parallel:
+            comm = comm.COMM_WORLD
+            rank = comm.Get_rank()
+            size = comm.Get_size()
+            
+            hfiles = self.hfiles[rank::size]
+            zs     = self.zs[rank::size]
+        else:
+            hfiles = self.hfiles
+            
+
+        for i, hf in enumerate(hfiles):
 
             halos = SimulationAnalysis.readHlist(hf,
                                                     ['vmax',
-                                                     'vvir',
+                                                     'mvir',
+                                                     'rvir',
                                                      'x',
                                                      'y',
                                                      'z'])
-            proxy = halos['vvir'] * (halos['vmax'] / halos['vvir']) ** alpha
+
+            vvir  = (const.G * halos['mvir'] / halos['rvir']) ** 0.5
+            proxy = vvir * (halos['vmax'] / vvir) ** alpha
 
             out = np.zeros(len(proxy), dtype=odtype)
 
@@ -66,20 +96,21 @@ class Simulation(object):
             out['PZ'] = halos['z']
             out['AMPROXY'] = proxy
 
-            z = self.zs[i]
+            z = zs[i]
             lfz[:,1] = lf.genLuminosityFunctionZ(self.lums, z)
 
             out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
                                                         scatter,
                                                         lfz,
-                                                        self.boxsize)
+                                                        self.boxsize,
+                                                        debug=debug)
 
             sfname = self.getSHAMFileName(hf, alpha, scatter,
                                             lf.name)
             fitsio.write(sfname, out)
 
 
-    def rdelMagDist():
+    def rdelMagDist(self):
         """
         Compute rdel-magnitude distribution in SHAMs
         """

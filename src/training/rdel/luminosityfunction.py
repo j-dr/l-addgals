@@ -5,8 +5,9 @@ import numpy as np
 
 class LuminosityFunction(object):
 
-    def __init__(self, params):
+    def __init__(self, params, name=None):
 
+        self.name = name
         self.params = params
         self.lf = None
 
@@ -31,7 +32,7 @@ class LuminosityFunction(object):
 
 class DSGLuminosityFunction(LuminosityFunction):
 
-    def __init__(self, params=None):
+    def __init__(self, params=None, name=None):
 
         if params is None:
             params = np.zeros(8)
@@ -51,7 +52,7 @@ class DSGLuminosityFunction(LuminosityFunction):
             params[4] += mr_shift
             params[6] += mr_shift
 
-        LuminosityFunction.__init__(self,params)
+        LuminosityFunction.__init__(self,params,name=name)
 
     def evolveParams(self, z):
         zp = copy(self.params)
@@ -65,7 +66,7 @@ class DSGLuminosityFunction(LuminosityFunction):
 
         return zp
 
-    def calcNumberDensity(p, lums):
+    def calcNumberDensity(self, p, lums):
         """
         Sum of a double schechter function and a gaussian.
         m -- magnitudes at which to calculate the number density

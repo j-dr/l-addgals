@@ -1,7 +1,7 @@
 
 class Model(object):
 
-    def __init__(simulations):
+    def __init__(self, simulations):
 
         self.simulations = simulations
 

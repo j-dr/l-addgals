@@ -1,0 +1,11 @@
+from __future__ import print_function, division
+from rdel import config
+import sys
+
+cfgfile = sys.argv[1]
+
+cfg = config.readCfg(cfgfile)
+sim, lf, m = config.parseConfig(cfg)
+
+for s in sim:
+    s.abundanceMatch(lf, parallel=cfg['AbundanceMatch']['parallel'])
