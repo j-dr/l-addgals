@@ -4,21 +4,19 @@ import scipy.constants as const
 import numpy as np
 import fitsio
 
-if __name__ == '__main__':
-    import mpi4py as MPI
-
 from .abundancematch import abundanceMatchSnapshot
 
 class Simulation(object):
 
-    def __init__(self, boxsize, hfiles, rnnfiles, zs=None,
+    def __init__(self, boxsize, hfiles, rnnfiles, h, zs=None,
                     zmin=None, zmax=None, zstep=None, nz=None):
 
         self.boxsize = boxsize
-        self.hfiles = hfiles
-        self.rnnfiles = rnnfiles
+        self.h = h
+        self.hfiles = np.array(hfiles)
+        self.rnnfiles = np.array(rnnfiles)
 
-        self.lums = np.linspace(-27, -10, 100)
+        self.lums = np.linspace(-30, -10, 100)
 
         if zs is not None:
             self.zs = zs
@@ -27,17 +25,24 @@ class Simulation(object):
         elif (zmin is not None) & (zmax is not None) & (nz is not None):
             self.zs = np.linspace(zmin, zmax, nz)
 
+        self.associateFiles()
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
+
 
     def associateFiles(self):
 
-        hfn = np.array([h.split('_')[-1].split('.list')[0] for h in self.hfiles])
-        crn = np.array([c.split('_')[-1] for c in self.rnnfiles])
+        hfn = np.array([float(h.split('_')[-1].split('.list')[0]) for h in self.hfiles])
+        crn = np.array([float(c.split('_')[-1]) for c in self.rnnfiles])
 
         hidx = hfn.argsort()
         cidx = crn.argsort()
 
-        self.hfiles = self.hfiles[hidx]
-        self.rnnfiles = self.rnnfiles[cidx]
+        self.hfiles = self.hfiles[hidx[::-1]]
+        self.rnnfiles = self.rnnfiles[cidx[::-1]]
+
+        print(self.hfiles)
+        print(self.rnnfiles)
+        print(self.zs)
 
     def getSHAMFileName(self, hfname, alpha, scatter, lfname):
 
@@ -51,13 +56,10 @@ class Simulation(object):
         return fn
 
     def abundanceMatch(self, lf, alpha=0.5, scatter=0.17, debug=False,
-                       parallel=False):
+                       parallel=False, startat=None):
         """
         Abundance match all of the hlists
         """
-
-        lfz      = np.zeros((len(self.lums), 2))
-        lfz[:,0] = self.lums
 
         odtype = np.dtype([('PX', np.float),
                             ('PY', np.float),
@@ -66,7 +68,9 @@ class Simulation(object):
                             ('LUMINOSITY', np.float)])
 
         if parallel:
-            comm = comm.COMM_WORLD
+            from mpi4py import MPI
+
+            comm = MPI.COMM_WORLD
             rank = comm.Get_rank()
             size = comm.Get_size()
             
@@ -74,7 +78,10 @@ class Simulation(object):
             zs     = self.zs[rank::size]
         else:
             hfiles = self.hfiles
-            
+            zs = self.zs
+
+        if startat is not None:
+            hfiles = hfiles[startat:]
 
         for i, hf in enumerate(hfiles):
 
@@ -97,11 +104,18 @@ class Simulation(object):
             out['AMPROXY'] = proxy
 
             z = zs[i]
-            lfz[:,1] = lf.genLuminosityFunctionZ(self.lums, z)
+            lz = lf.genLuminosityFunctionZ(self.lums, z)
+            
+            for k in lf.unitmap:
+                if lf.unitmap[k] == self.unitmap[k]:
+                    continue
+                else:
+                    conv = self.getattr(self, '{0}2{1}'.format(lf.unitmap[k], self.unitmap[k]))
+                    lz[k] = conv(lz[k])
 
             out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
                                                         scatter,
-                                                        lfz,
+                                                        lz,
                                                         self.boxsize,
                                                         debug=debug)
 
@@ -114,3 +128,11 @@ class Simulation(object):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
+
+    def mag2magh(mag):
+        
+        return mag - 5 * np.log10(self.h)
+
+    def mpc3dex2hmpc3dex(phi):
+
+        return phi / self.h ** 3

@@ -5,7 +5,7 @@ import yaml
 
 from .simulation import Simulation
 from .model      import Model
-from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction
+from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction
 
 
 def readCfg(filename):
@@ -14,6 +14,20 @@ def readCfg(filename):
         cfg = yaml.load(fp)
 
     return cfg
+
+def setLF(cfg):
+    
+    if cfg['LuminosityFunction']['type'] == 'DSG':
+
+        lf = DSGLuminosityFunction()
+    
+    elif cfg['LuminosityFunction']['type'] == 'Bernardi':
+        
+        lf = BernardiLuminosityFunction(cfg['LuminosityFunction']['Q'])
+
+    return lf
+                       
+        
 
 def parseConfig(cfg):
 
@@ -29,17 +43,19 @@ def parseConfig(cfg):
             sims.append(Simulation(simcfg['boxsize'][i],
                                    hlists,
                                    rnn,
+                                   simcfg['h'][i],
                                    zs=zs))
 
         else:
             sims.append(Simulation(simcfg['boxsize'][i],
                                    hlists,
                                    rnn,
+                                   simcfg['h'][i],
                                    zmin=simcfg['zmin'][i],
                                    zmax=simcfg['zmax'][i],
                                    nz=simcfg['nz'][i]))
 
-    lf = DSGLuminosityFunction()
+    lf = setLF(cfg)
     m  = Model(sims)
 
     return sims, lf, m

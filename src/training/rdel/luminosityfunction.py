@@ -9,7 +9,6 @@ class LuminosityFunction(object):
 
         self.name = name
         self.params = params
-        self.lf = None
 
     def genLuminosityFunction(self, lums, zs):
 
@@ -21,9 +20,17 @@ class LuminosityFunction(object):
 
     def genLuminosityFunctionZ(self, lums, z):
         zp = self.evolveParams(z)
-        return self.calcNumberDensity(zp, lums)
+        lf = self.calcNumberDensity(zp, lums)
+        out = np.zeros(len(lf[0]), dtype=np.dtype([('mag',np.float), ('phi',np.float)]))
+        out['mag'] = lf[0]
+        out['phi'] = lf[1]
+
+        return out
 
     def calcNumberDensity(self, p, lums):
+        """
+        Return number density in units of Mpc^{-3} h^{3}
+        """
         pass
 
     def evolveParams(self, z):
@@ -52,7 +59,8 @@ class DSGLuminosityFunction(LuminosityFunction):
             params[4] += mr_shift
             params[6] += mr_shift
 
-        LuminosityFunction.__init__(self,params,name=name)
+        LuminosityFunction.__init__(self,params,name='DSG')
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
 
     def evolveParams(self, z):
         zp = copy(self.params)
@@ -81,4 +89,41 @@ class DSGLuminosityFunction(LuminosityFunction):
             p[5] / np.sqrt(2 * np.pi * p[7] ** 2) * \
             np.exp(-(lums - p[6]) ** 2 / (2 * p[7] ** 2))
 
-        return phi
+        return lums, phi
+
+def read_tabulated_lf(filename):
+
+    data = np.loadtxt(filename)
+    lf = data[:,:2]
+    lf[:,1] = 10**lf[:,1]
+
+    return lf
+
+
+class BernardiLuminosityFunction(LuminosityFunction):
+
+    def __init__(self, Q):
+
+        self.lf = read_tabulated_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/bernardi-test/anc/LF_SerExp.dat')
+        print(self.lf[:,1])
+        self.Q = Q
+        self.unitmap = {'mag':'mag', 'phi':'mpc3dex'}
+
+        LuminosityFunction.__init__(self,Q,name='Bernardi')
+
+    def evolveParams(self, z):
+        return self.Q, z
+
+    def calcNumberDensity(self, p, lums):
+        """
+        Shift the tabulated Bernardi 2013 luminosity function
+        p -- Q, h  and z
+        lums -- Null
+        """
+        Q = p[0]
+        z = p[1]
+
+        self.lf[:,0] += Q*(1/(1+z)-1/1.1)
+
+        return self.lf[:,0], self.lf[:,1]
+

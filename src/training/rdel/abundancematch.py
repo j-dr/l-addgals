@@ -5,26 +5,26 @@ import numpy as np
 
 
 def abundanceMatchSnapshot(proxy, scatter, lf, box_size,
-                            minmag=-27., maxmag=-5., debug=False,
+                            minmag=-25., maxmag=10., debug=False,
                             figname=None):
 
-    af = AbundanceFunction(lf[:,0], lf[:,1], (minmag, maxmag))
+    af = AbundanceFunction(lf['mag'], lf['phi'], ext_range=(minmag, maxmag), nbin=2000, faint_end_fit_points=6)
 
     #check the abundance function
-    if debug==True:
+    if debug:
         plt.clf()
-        plt.semilogy(lf[:,0], lf[:,1])
-        x = np.linspace(-27, -5, 101)
+        plt.semilogy(lf['mag'], lf['phi'])
+        x = np.linspace(minmag, maxmag, 101)
         plt.semilogy(x, af(x))
         plt.savefig('abundance_fcn.png')
 
     #deconvolution and check results (it's a good idea to always check this)
-    remainder = af.deconvolute(scatter*LF_SCATTER_MULT, 20)
+    remainder = af.deconvolute(scatter*LF_SCATTER_MULT, 40)
     x, nd = af.get_number_density_table()
 
-    if debug==True:
+    if debug:
         plt.clf()
-        plt.plot(x, remainder/nd);
+        plt.semilogy(x, np.abs(remainder/nd));
         plt.savefig('nd_remainder.png')
 
     #get number densities of the halo catalog
@@ -32,5 +32,14 @@ def abundanceMatchSnapshot(proxy, scatter, lf, box_size,
 
     #do abundance matching with some scatter
     catalog_sc = af.match(nd_halos, scatter*LF_SCATTER_MULT)
+
+    if debug:
+        plt.clf()
+        c, e = np.histogram(catalog_sc[~np.isnan(catalog_sc)], bins=np.linspace(minmag, maxmag, 101))
+        c = c / box_size ** 3 / (e[1:] - e[:-1])
+        me = (e[:-1] + e[1:])/2
+        plt.semilogy(me, c)
+        plt.semilogy(me, af(me))
+        plt.savefig('lf_in_v_out.png')
 
     return catalog_sc
