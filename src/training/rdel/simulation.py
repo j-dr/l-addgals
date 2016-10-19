@@ -65,6 +65,9 @@ class Simulation(object):
                             ('PY', np.float),
                             ('PZ', np.float),
                             ('AMPROXY', np.float),
+                            ('VMAX', np.float),
+                            ('MVIR', np.float),
+                            ('RVIR', np.float),
                             ('LUMINOSITY', np.float)])
 
         if parallel:
@@ -101,6 +104,9 @@ class Simulation(object):
             out['PX'] = halos['x']
             out['PY'] = halos['y']
             out['PZ'] = halos['z']
+            out['VMAX'] = halos['vmax']
+            out['MVIR'] = halos['mvir']
+            out['RVIR'] = halos['rvir']
             out['AMPROXY'] = proxy
 
             z = zs[i]
