@@ -45,7 +45,7 @@ def gold_cuts(gal_data, ra_col='RA', dec_col='DEC',
     if gold_br_map is None:
         gold_br_map=hu.readMap(gold_badreg_fn)
     use=((gold_fp_map.get_mapval(gal_data[ra_col],gal_data[dec_col])>=1) *
-             (gold_br_map.get_mapval(gal_data[ra_col],gal_data[dec_col])==0))
+             (gold_br_map.get_mapval(gal_data[ra_col],gal_data[dec_col])==0)) #LSS uses < 3?
     return use.astype(bool)
 
 
@@ -68,6 +68,26 @@ def WL_cuts(obs, truth, sys_map_vals,
 
     return good
 
+def LSS_cuts(obs, truth, sys_map_vals, zcol):
+
+    if 'BPZ' in zcol:
+        z = obs[zcol]
+    else:
+        z = truth[zcol]
+
+    mask = (obs['MAG_I'] > 17.5) &
+            (obs['MAG_I'] < 22)  &
+            (obs['MAG_I'] < (19.0 + 3.0 * z)) &
+            ((obs['MAG_I'] - obs['MAG_Z'] + 2.0 * obs['MAG_R'] - obs['MAG_I']) > 1.7) &
+            (-1 < (obs['MAG_G'] - obs['MAG_R'])) &
+            (obs['MAG_G'] - obs['MAG_R']) < 3)   &
+            (-1 < (obs['MAG_R'] - obs['MAG_I'])) &
+            (obs['MAG_R'] - obs['MAG_I']) < 2.5)   &
+            (-1 < (obs['MAG_I'] - obs['MAG_Z'])) &
+            (obs['MAG_I'] - obs['MAG_Z']) < 2.)   &
+            ((obs['RA'] < 15.) | (obs['RA']>290) | (obs['DEC']<-35))
+
+    return mask
 
 def make_single_selection(obs, truth, mask,
                             sys_map_data, cut_func):

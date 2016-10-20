@@ -76,7 +76,7 @@ class Simulation(object):
             comm = MPI.COMM_WORLD
             rank = comm.Get_rank()
             size = comm.Get_size()
-            
+
             hfiles = self.hfiles[rank::size]
             zs     = self.zs[rank::size]
         else:
@@ -85,6 +85,7 @@ class Simulation(object):
 
         if startat is not None:
             hfiles = hfiles[startat:]
+            zs = zs[startat:]
 
         for i, hf in enumerate(hfiles):
 
@@ -111,7 +112,7 @@ class Simulation(object):
 
             z = zs[i]
             lz = lf.genLuminosityFunctionZ(self.lums, z)
-            
+
             for k in lf.unitmap:
                 if lf.unitmap[k] == self.unitmap[k]:
                     continue
@@ -136,7 +137,7 @@ class Simulation(object):
         """
 
     def mag2magh(mag):
-        
+
         return mag - 5 * np.log10(self.h)
 
     def mpc3dex2hmpc3dex(phi):
