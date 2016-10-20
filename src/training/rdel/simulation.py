@@ -68,7 +68,8 @@ class Simulation(object):
                             ('VMAX', np.float),
                             ('MVIR', np.float),
                             ('RVIR', np.float),
-                            ('LUMINOSITY', np.float)])
+                            ('LUMINOSITY', np.float),
+                            ('CENTRAL', np.int)])
 
         if parallel:
             from mpi4py import MPI
@@ -92,6 +93,7 @@ class Simulation(object):
                                                     ['vmax',
                                                      'mvir',
                                                      'rvir',
+                                                     'upid',
                                                      'x',
                                                      'y',
                                                      'z'])
@@ -107,6 +109,8 @@ class Simulation(object):
             out['VMAX'] = halos['vmax']
             out['MVIR'] = halos['mvir']
             out['RVIR'] = halos['rvir']
+            out['CENTRAL'][halos['upid']==-1] = 1
+            out['CENTRAL'][halos['upid']!=-1] = 0
             out['AMPROXY'] = proxy
 
             z = zs[i]
