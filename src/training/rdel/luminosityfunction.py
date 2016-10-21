@@ -2,6 +2,8 @@ from __future__ import print_function, division
 from copy import copy
 import numpy as np
 
+from .util import load_abundance_function
+
 
 class LuminosityFunction(object):
 
@@ -127,3 +129,29 @@ class BernardiLuminosityFunction(LuminosityFunction):
 
         return self.lf[:,0], self.lf[:,1]
 
+
+class ReddickLuminosityFunction(LuminosityFunction):
+
+    def __init__(self, Q):
+
+        self.lf = load_abundance_function(log_phi=False)
+        self.Q = Q
+        self.unitmap = {'mag':'mag', 'phi':'mpc3dex'}
+
+        LuminosityFunction.__init__(self,Q,name='Bernardi')
+
+    def evolveParams(self, z):
+        return self.Q, z
+
+    def calcNumberDensity(self, p, lums):
+        """
+        Shift the tabulated Bernardi 2013 luminosity function
+        p -- Q, h  and z
+        lums -- Null
+        """
+        Q = p[0]
+        z = p[1]
+
+        self.lf[:,0] += Q*(1/(1+z)-1/1.1)
+
+        return self.lf[:,0], self.lf[:,1]
