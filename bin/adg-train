@@ -10,4 +10,5 @@ sim, lf, m = config.parseConfig(cfg)
 
 for s in sim:
 
-    s.abundanceMatch(lf, parallel=cfg['AbundanceMatch']['parallel'])
+    s.abundanceMatch(lf, cfg['AbundanceMatch']['outdir'],
+                       parallel=cfg['AbundanceMatch']['parallel'])

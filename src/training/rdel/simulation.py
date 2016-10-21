@@ -36,9 +36,11 @@ class Simulation(object):
 
         hidx = hfn.argsort()
         cidx = crn.argsort()
+        zidx = self.zs.argsort()
 
         self.hfiles = self.hfiles[hidx[::-1]]
         self.rnnfiles = self.rnnfiles[cidx[::-1]]
+        self.zs = self.zs[zidx]
 
         print(self.hfiles)
         print(self.rnnfiles)
@@ -51,11 +53,9 @@ class Simulation(object):
                                                 alpha,
                                                 scatter,
                                                 fs[-1])
-        fn  = '/'.join(fs)
+        return fs[-1]
 
-        return fn
-
-    def abundanceMatch(self, lf, alpha=0.5, scatter=0.17, debug=False,
+    def abundanceMatch(self, lf, outdir, alpha=0.5, scatter=0.17, debug=False,
                        parallel=False, startat=None):
         """
         Abundance match all of the hlists
@@ -132,7 +132,8 @@ class Simulation(object):
 
             sfname = self.getSHAMFileName(hf, alpha, scatter,
                                             lf.name)
-            fitsio.write(sfname, out)
+            
+            fitsio.write('{0}/{1}'.format(outdir, sfname), out)
 
 
     def rdelMagDist(self):

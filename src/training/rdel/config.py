@@ -37,6 +37,9 @@ def parseConfig(cfg):
     for i, s in enumerate(simcfg['hlistbase']):
         hlists = glob('{0}/hlist*list'.format(s))
         rnn    = glob('{0}/snapdir_*/rnn*[0-9]'.format(simcfg['rnnbase']))
+        
+        #snaptimes should always be provided in order that snapshots
+        #were output in (in order of increasing time)
         if 'snaptimes' in simcfg:
             a = np.loadtxt(simcfg['snaptimes'][i])
             zs = 1/a[:,1] - 1.
