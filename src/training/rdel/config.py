@@ -5,7 +5,7 @@ import yaml
 
 from .simulation import Simulation
 from .model      import Model
-from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction
+from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction, ReddickLuminosityFunction
 
 
 def readCfg(filename):
@@ -24,6 +24,10 @@ def setLF(cfg):
     elif cfg['LuminosityFunction']['type'] == 'Bernardi':
         
         lf = BernardiLuminosityFunction(cfg['LuminosityFunction']['Q'])
+
+    elif cfg['LuminosityFunction']['type'] == 'Reddick':
+        
+        lf = ReddickLuminosityFunction(cfg['LuminosityFunction']['Q'])
 
     return lf
                        

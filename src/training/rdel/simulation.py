@@ -121,7 +121,7 @@ class Simulation(object):
                 if lf.unitmap[k] == self.unitmap[k]:
                     continue
                 else:
-                    conv = self.getattr(self, '{0}2{1}'.format(lf.unitmap[k], self.unitmap[k]))
+                    conv = getattr(self, '{0}2{1}'.format(lf.unitmap[k], self.unitmap[k]))
                     lz[k] = conv(lz[k])
 
             out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
@@ -141,10 +141,10 @@ class Simulation(object):
         Compute rdel-magnitude distribution in SHAMs
         """
 
-    def mag2magh(mag):
+    def mag2magh(self, mag):
 
         return mag - 5 * np.log10(self.h)
 
-    def mpc3dex2hmpc3dex(phi):
+    def mpc3dex2hmpc3dex(self, phi):
 
         return phi / self.h ** 3

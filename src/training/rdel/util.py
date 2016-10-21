@@ -119,8 +119,8 @@ def load_projected_correlation(cut, cut_in='l', source='zehavi'):
     return rp, wp, wp_cov.reshape(len(wp), len(wp))
 
 
-def load_abundance_function(proxy='l', sample_cut=19, \
-        log_phi=True, flip_mag_sign=True, unpack=False):
+def load_abundance_function(proxy='l', sample_cut=18, \
+        log_phi=True, flip_mag_sign=False, unpack=False):
     """
     Load the abundance (luminosity or stellar mass) function in Reddick et al. (2013).
 

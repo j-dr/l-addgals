@@ -136,9 +136,9 @@ class ReddickLuminosityFunction(LuminosityFunction):
 
         self.lf = load_abundance_function(log_phi=False)
         self.Q = Q
-        self.unitmap = {'mag':'mag', 'phi':'mpc3dex'}
+        self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
 
-        LuminosityFunction.__init__(self,Q,name='Bernardi')
+        LuminosityFunction.__init__(self,Q,name='Reddick')
 
     def evolveParams(self, z):
         return self.Q, z
