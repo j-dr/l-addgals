@@ -5,6 +5,7 @@ import numpy as np
 import fitsio
 
 from .abundancematch import abundanceMatchSnapshot
+from .rdelmag        import fitSnapshot
 
 class Simulation(object):
 
@@ -132,14 +133,38 @@ class Simulation(object):
 
             sfname = self.getSHAMFileName(hf, alpha, scatter,
                                             lf.name)
-            
+
             fitsio.write('{0}/{1}'.format(outdir, sfname), out)
 
 
-    def rdelMagDist(self):
+    def rdelMagDist(self, outdir, debug=False):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
+
+        if parallel:
+            from mpi4py import MPI
+
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            size = comm.Get_size()
+
+            shamfiles = self.shamfiles[rank::size]
+            rnnfiles  = self.rnnfiles[rank::size]
+        else:
+            shamfiles = self.shamfiles
+            rnnfiles  = self.rnnfiles
+
+        if startat is not None:
+            shamfiles = shamfiles[startat:]
+            rnnfiles = rnnfiles[startat:]
+
+        for i, sf, rf in izip(shamfiles, rnnfiles):
+
+            fitSnapshot(sf, rf, outdir, debug=debug)
+
+        #read in all models, fit global model
+
 
     def mag2magh(self, mag):
 
