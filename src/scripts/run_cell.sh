@@ -1,3 +1,4 @@
+#!/bin/bash
 CATPATH=
 
 cd ${CATPATH}/${1}/${2}
