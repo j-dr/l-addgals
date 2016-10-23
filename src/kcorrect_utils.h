@@ -44,7 +44,18 @@ template <class T> struct absmagnitude : std::binary_function <T,T,T> {
   T operator() (const T& appmag, const T& redshift) const {return appmag-z2dm(redshift,0.3,0.7);}
 };
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
+//Gives restframe apparent magnitude
+template <class T> struct amfluxop : std::binary_function <T,T,T> {
+  T operator() (const T& absmag, const T& redshift) const {
+      return 1.0e-9 * pow(10.0, -0.4 * (absmag + z2dm(redshift,0.3,0.7) - 22.5));}
+};
+
+template <class T> struct omfluxop : std::unary_function <T,T> {
+  T operator() (const T& appmag) const {
+      return 1.0e-9 * pow(10.0, -0.4 * (appmag - 22.5));}
+};
+
+void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 			 float zmax, float band_shift, char filterfile[], float *maggies);
 
 void match_coeff(std::vector<int> &sed_ids, float *coeffs);
@@ -54,10 +65,10 @@ void k_calculate_magnitudes(std::vector<float> &coeff, std::vector<float> &redsh
 			    char filterfile[], std::vector<float> &omag,
 			    std::vector<float> &amag);
 
-void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff, 
+void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff,
 		   std::vector<float> &redshift, float zmin, float zmax,
-		   float band_shift, int nbands, char filterfile[], 
-		   std::vector<float> &omag, std::vector<float> &amag, 
+		   float band_shift, int nbands, char filterfile[],
+		   std::vector<float> &omag, std::vector<float> &amag,
 		   std::vector<float> abcorr, bool refflag=true);
 
 
