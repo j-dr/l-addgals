@@ -1,3 +1,5 @@
+import numpy as np
+
 def readHaloRdel(filepath):
     """
     Read text output from calcRnn code for halos
@@ -7,4 +9,4 @@ def readHaloRdel(filepath):
     dtype = np.dtype([('id', int), ('delta', float)])
     rdel = np.genfromtxt(filepath, dtype=dtype)
     rdel = rdel[rdel['id']!=0]
-    return delta['delta']
+    return rdel['delta']

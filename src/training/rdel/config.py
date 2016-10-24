@@ -40,7 +40,7 @@ def parseConfig(cfg):
 
     for i, s in enumerate(simcfg['hlistbase']):
         hlists = glob('{0}/hlist*list'.format(s))
-        rnn    = glob('{0}/snapdir_*/rnn*[0-9]'.format(simcfg['rnnbase']))
+        rnn    = glob('{0}/snapdir_*/rnn*[0-9]'.format(simcfg['rnnbase'][i]))
         
         #snaptimes should always be provided in order that snapshots
         #were output in (in order of increasing time)
@@ -50,6 +50,7 @@ def parseConfig(cfg):
             sims.append(Simulation(simcfg['boxsize'][i],
                                    hlists,
                                    rnn,
+                                   simcfg['outdir'],
                                    simcfg['h'][i],
                                    zs=zs))
 
@@ -57,6 +58,7 @@ def parseConfig(cfg):
             sims.append(Simulation(simcfg['boxsize'][i],
                                    hlists,
                                    rnn,
+                                   simcfg['outdir'],
                                    simcfg['h'][i],
                                    zmin=simcfg['zmin'][i],
                                    zmax=simcfg['zmax'][i],

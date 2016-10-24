@@ -10,5 +10,15 @@ sim, lf, m = config.parseConfig(cfg)
 
 for s in sim:
 
-    s.abundanceMatch(lf, cfg['AbundanceMatch']['outdir'],
-                       parallel=cfg['AbundanceMatch']['parallel'])
+    if cfg['AbundanceMatch']['run']:
+        s.abundanceMatch(lf, cfg['AbundanceMatch']['outdir'],
+                         parallel=cfg['AbundanceMatch']['parallel'])
+        
+    if cfg['RdelModel']['run']:
+        parallel = cfg['RdelModel'].pop('parallel', False)
+        debug    = cfg['RdelModel'].pop('debug', False)
+        startat  = cfg['RdelModel'].pop('startat', None)
+
+        s.rdelMagDist(lf, parallel=parallel, debug=debug,
+                        startat=startat)
+    

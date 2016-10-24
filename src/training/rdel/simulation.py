@@ -1,21 +1,31 @@
 from __future__ import print_function, division
 from helpers import SimulationAnalysis
+from itertools import izip
 import scipy.constants as const
 import numpy as np
+import warnings
 import fitsio
+import os
 
 from .abundancematch import abundanceMatchSnapshot
 from .rdelmag        import fitSnapshot
 
 class Simulation(object):
 
-    def __init__(self, boxsize, hfiles, rnnfiles, h, zs=None,
-                    zmin=None, zmax=None, zstep=None, nz=None):
+    def __init__(self, boxsize, hfiles, rnnfiles, outdir, 
+                    h, zs=None, zmin=None, zmax=None, 
+                    zstep=None, nz=None, shamfiles=None):
 
         self.boxsize = boxsize
         self.h = h
         self.hfiles = np.array(hfiles)
         self.rnnfiles = np.array(rnnfiles)
+        self.outdir   = outdir
+
+        if shamfiles is not None:
+            self.shamfiles = np.array(shamfiles)
+        else:
+            self.shamfiles = shamfiles
 
         self.lums = np.linspace(-30, -10, 100)
 
@@ -56,7 +66,7 @@ class Simulation(object):
                                                 fs[-1])
         return fs[-1]
 
-    def abundanceMatch(self, lf, outdir, alpha=0.5, scatter=0.17, debug=False,
+    def abundanceMatch(self, lf, alpha=0.5, scatter=0.17, debug=False,
                        parallel=False, startat=None):
         """
         Abundance match all of the hlists
@@ -81,13 +91,22 @@ class Simulation(object):
 
             hfiles = self.hfiles[rank::size]
             zs     = self.zs[rank::size]
-        else:
+
+        else: 
+            rank = 0
             hfiles = self.hfiles
             zs = self.zs
 
         if startat is not None:
             hfiles = hfiles[startat:]
             zs = zs[startat:]
+            
+        if rank == 0:
+            try:
+                os.makedirs('{0}/sham/'.format(self.outdir))
+            except OSError as e:
+                warnings.warn('Directory {0}/sham/ already exists!'.format(self.outdir), Warning)
+                pass
 
         for i, hf in enumerate(hfiles):
 
@@ -134,13 +153,25 @@ class Simulation(object):
             sfname = self.getSHAMFileName(hf, alpha, scatter,
                                             lf.name)
 
-            fitsio.write('{0}/{1}'.format(outdir, sfname), out)
+            fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
 
+    def getSHAMFiles(self, lf, alpha=0.5, scatter=0.17):
+        
+        shamfiles = []
+        
+        for hf in self.hfiles:
+            shamfiles.append('{}/sham/{}'.format(self.outdir, self.getSHAMFileName(hf, alpha, scatter, lf.name)))
 
-    def rdelMagDist(self, outdir, debug=False):
+        self.shamfiles = np.array(shamfiles)
+
+    def rdelMagDist(self, lf, debug=False, 
+                      startat=None, parallel=False):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
+
+        if self.shamfiles is None:
+            self.getSHAMFiles(lf)
 
         if parallel:
             from mpi4py import MPI
@@ -154,14 +185,20 @@ class Simulation(object):
         else:
             shamfiles = self.shamfiles
             rnnfiles  = self.rnnfiles
+            rank = 0
 
         if startat is not None:
             shamfiles = shamfiles[startat:]
             rnnfiles = rnnfiles[startat:]
 
-        for i, sf, rf in izip(shamfiles, rnnfiles):
+        if rank == 0:
+            try:
+                os.makedirs('{}/rdel'.format(self.outdir))
+            except OSError as e:
+                warnings.warn('Directory {}/rdel already exists!', Warning)
 
-            fitSnapshot(sf, rf, outdir, debug=debug)
+        for sf, rf in izip(shamfiles, rnnfiles):
+            fitSnapshot(sf, rf, '{}/rdel/'.format(self.outdir), debug=debug)
 
         #read in all models, fit global model
 

@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 from AbundanceMatching import AbundanceFunction, calc_number_densities, add_scatter, rematch, LF_SCATTER_MULT
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 

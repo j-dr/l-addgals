@@ -49,7 +49,7 @@ def gold_cuts(gal_data, ra_col='RA', dec_col='DEC',
     return use.astype(bool)
 
 
-def WL_cuts(obs, truth, sys_map_vals,
+def WL_cuts(obs, truth, pz, sys_map_vals,
                 maglim_cut_factor, rgrp_cut, z_col):
 
     psf_size = 0.26 * 0.5 * sys_map_vals['psf_fwhm_r']
@@ -59,7 +59,7 @@ def WL_cuts(obs, truth, sys_map_vals,
     if z_col=='Z':
         z = truth[z_col]
     else:
-        z = obs[z_col]
+        z = pz[z_col]
 
     other_mask = (np.isfinite(sys_map_vals['maglim_r']) * np.isfinite(sys_map_vals['psf_fwhm_r'])
                   * (z > 0.1))
@@ -68,10 +68,10 @@ def WL_cuts(obs, truth, sys_map_vals,
 
     return good
 
-def LSS_cuts(obs, truth, sys_map_vals, zcol):
+def LSS_cuts(obs, truth, pz, sys_map_vals, zcol):
 
     if 'BPZ' in zcol:
-        z = obs[zcol]
+        z = pz[zcol]
     else:
         z = truth[zcol]
 
@@ -89,7 +89,7 @@ def LSS_cuts(obs, truth, sys_map_vals, zcol):
 
     return mask
 
-def make_single_selection(obs, truth, mask,
+def make_single_selection(obs, truth, pz, mask,
                             sys_map_data, cut_func):
 
     #mask based on systematics maps
@@ -99,7 +99,7 @@ def make_single_selection(obs, truth, mask,
     mask &= smask
 
     #apply galaxy property cuts
-    mask &= cut_func(obs, truth, sys_map_vals)
+    mask &= cut_func(obs, truth, pz, sys_map_vals)
 
     return mask
 
@@ -135,18 +135,21 @@ if __name__=="__main__":
 
     ofiles = np.array(glob(cfg['sim']['obspath']))
     tfiles = np.array(glob(cfg['sim']['truthpath']))
+    pzfiles = np.array(glob(cfg['sim']['pzpath']))
 
-    ofiles, tfiles = pair_files(ofiles, tfiles)
+    ofiles, tfiles = pair_files(ofiles, tfiles, pzfiles)
 
     sys_map_data = {}
 
-    for of, tf in izip(ofiles, tfiles):
+    for of, tf, pz in izip(ofiles, tfiles, pzfiles):
 
         obsf   = fitsio.FITS(of, 'rw')
         truthf = fitsio.FITS(tf, 'r')
+        pf     = fitsio.FITS(pz, 'r')
 
         obs    = obsf[-1].read()
         truth  = truthf[-1].read()
+        pz     = pf[-1].read()
 
         mask = gold_cuts(obs, gold_fp_map=gold_fp,
                             gold_br_map=gold_br)
@@ -162,11 +165,12 @@ if __name__=="__main__":
             if sample == 'LSS':
                 cut_fcn = LSS_cuts
             elif sample == 'WL':
-                cut_fcn = lambda obs, truth, sys_map_vals : WL_cuts(obs, truth, sys_map_vals,
+                cut_fcn = lambda o, t, p, sys_map_vals : WL_cuts(o, t, p, 
+                                                                   sys_map_vals,
                     scfg['maglim_cut_factor'],
                     scfg['rgrp_cut'], scfg['z_col'])
 
-            smask = make_single_selection(obs, truth, mask, sys_map_data, cut_fcn)
+            smask = make_single_selection(obs, truth, pz, mask, sys_map_data, cut_fcn)
 
             #add flag to file here!
             sflag = '{0}_FLAG'.format(sample)
@@ -178,3 +182,4 @@ if __name__=="__main__":
 
             obsf.close()
             truthf.close()
+            pf.close()
