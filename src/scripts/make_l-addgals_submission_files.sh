@@ -33,8 +33,8 @@ case $BOXSIZE in
 esac
 
 sed -e 's:CATPATH=:CATPATH='$DIR':'\
-    -e 's:>&:>&'$SIMNAME'_'$BOXSIZE'.${1}.${2}:'\
-	<$RUNSCRIPT > $DIR/$RUNSCRIPT
+    -e 's:&:&'$SIMNAME'_'$BOXSIZE'.${1}.${2}:'\
+	<$RUNSCRIPT > $RUNSCRIPT
 chmod 744 $DIR/$RUNSCRIPT
 sed -e 's:for Z in:for Z in '"$ZSTR"':'\
         <$SUB > $DIR/$SUB
