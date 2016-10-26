@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+from mpi4py import MPI
 from glob import glob
 from copy import copy
 from itertools import izip
@@ -7,7 +8,10 @@ import healpy as hp
 import healpix_util as hu
 import fitsio
 import os
+import sys
 import yaml
+
+MASKED_VAL = -9999
 
 def read_partial_map(filename, ext=1, masked_val=MASKED_VAL,
                         pix_col='PIXEL', val_col='SIGNAL'):
@@ -26,7 +30,7 @@ def sys_map_cuts(gal_data, sys_map_data=None, ra_col='ra',
     sys_map_vals={}
     mask=np.ones(len(gal_data),dtype='bool')
 
-    for i, name, m in enumerate(sys_map_data.iteritems()):
+    for i, (name, m) in enumerate(sys_map_data.iteritems()):
 
          sys_map_vals[name]=m.get_mapval(gal_data[ra_col],
                                             gal_data[dec_col])
@@ -70,43 +74,51 @@ def WL_cuts(obs, truth, pz, sys_map_vals,
 
 def LSS_cuts(obs, truth, pz, sys_map_vals, zcol):
 
-    if 'BPZ' in zcol:
+    if 'MEAN_Z' == zcol:
         z = pz[zcol]
     else:
         z = truth[zcol]
 
-    mask = (obs['MAG_I'] > 17.5) &
-            (obs['MAG_I'] < 22)  &
-            (obs['MAG_I'] < (19.0 + 3.0 * z)) &
-            ((obs['MAG_I'] - obs['MAG_Z'] + 2.0 * obs['MAG_R'] - obs['MAG_I']) > 1.7) &
-            (-1 < (obs['MAG_G'] - obs['MAG_R'])) &
-            (obs['MAG_G'] - obs['MAG_R']) < 3)   &
-            (-1 < (obs['MAG_R'] - obs['MAG_I'])) &
-            (obs['MAG_R'] - obs['MAG_I']) < 2.5)   &
-            (-1 < (obs['MAG_I'] - obs['MAG_Z'])) &
-            (obs['MAG_I'] - obs['MAG_Z']) < 2.)   &
+    mask = (obs['MAG_I'] > 17.5) & \
+            (obs['MAG_I'] < 22)  & \
+            (obs['MAG_I'] < (19.0 + 3.0 * z)) & \
+            ((obs['MAG_I'] - obs['MAG_Z'] + 2.0 * obs['MAG_R'] - obs['MAG_I']) > 1.7) & \
+            (-1 < (obs['MAG_G'] - obs['MAG_R'])) & \
+            ((obs['MAG_G'] - obs['MAG_R']) < 3)   & \
+            (-1 < (obs['MAG_R'] - obs['MAG_I'])) & \
+            ((obs['MAG_R'] - obs['MAG_I']) < 2.5)   & \
+            (-1 < (obs['MAG_I'] - obs['MAG_Z'])) & \
+            ((obs['MAG_I'] - obs['MAG_Z']) < 2.)   & \
             ((obs['RA'] < 15.) | (obs['RA']>290) | (obs['DEC']<-35))
 
     return mask
 
 def make_single_selection(obs, truth, pz, mask,
-                            sys_map_data, cut_func):
+                            sys_map_data, cut_func, zcol):
 
     #mask based on systematics maps
-    smask, sys_map_vals = sys_map_cuts(data,
+    print('Survey mask: {}'.format(mask))
+    print('{}'.format(mask.any()))
+    smask, sys_map_vals = sys_map_cuts(obs,
                             sys_map_data=sys_map_data,
                             ra_col='RA',dec_col='DEC')
+
+    print('Systematic mask: {}'.format(smask))
+    print('{}'.format(smask.any()))    
     mask &= smask
 
     #apply galaxy property cuts
-    mask &= cut_func(obs, truth, pz, sys_map_vals)
-
+    mask &= cut_func(obs, truth, pz, sys_map_vals, zcol)
+    print('Cut mask: {}'.format(mask))
+    print('{}'.format(mask.any()))
+    
     return mask
 
-def pair_files(ofiles, tfiles):
+def pair_files(ofiles, tfiles, pzfiles):
 
-    opix = np.array([int(o.split('.')[-2]) for i in ofiles])
-    tpix = np.array([int(t.split('.')[-2]) for i in tfiles])
+    opix = np.array([int(i.split('.')[-2]) for i in ofiles])
+    tpix = np.array([int(i.split('.')[-2]) for i in tfiles])
+    ppix = np.array([int(i.split('.')[-2]) for i in pzfiles])
 
     ssidx = np.in1d(tpix, opix)
 
@@ -114,34 +126,42 @@ def pair_files(ofiles, tfiles):
     tpix   = tpix[ssidx]
 
     assert(len(tpix)==len(opix))
+    assert(len(tpix)==len(ppix))
 
     oidx = opix.argsort()
     tidx = tpix.argsort()
+    pidx = ppix.argsort()
 
     ofiles = ofiles[oidx]
     tfiles = tfiles[tidx]
+    pzfiles = pzfiles[pidx]
 
-    return ofiles, tfiles
+    return ofiles, tfiles, pzfiles
 
 
 if __name__=="__main__":
 
-    cfgfile = sys.argv[1]
-    cfg = yaml.load(cfgfile)
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
 
+    cfgfile = sys.argv[1]
+    with open(cfgfile, 'r') as fp:
+        cfg = yaml.load(fp)
+    print(cfg)
     #Read in gold masks
-    gold_fp=hu.readMap(config['gold']['gold_footprint_fn'])
-    gold_br=hu.readMap(config['gold']['gold_badreg_fn'])
+    gold_fp=hu.readMap(cfg['gold']['gold_footprint_fn'])
+    gold_br=hu.readMap(cfg['gold']['gold_badreg_fn'])
 
     ofiles = np.array(glob(cfg['sim']['obspath']))
     tfiles = np.array(glob(cfg['sim']['truthpath']))
     pzfiles = np.array(glob(cfg['sim']['pzpath']))
 
-    ofiles, tfiles = pair_files(ofiles, tfiles, pzfiles)
+    ofiles, tfiles, pzfiles = pair_files(ofiles, tfiles, pzfiles)
 
     sys_map_data = {}
 
-    for of, tf, pz in izip(ofiles, tfiles, pzfiles):
+    for of, tf, pz in izip(ofiles[rank::size], tfiles[rank::size], pzfiles[rank::size]):
 
         obsf   = fitsio.FITS(of, 'rw')
         truthf = fitsio.FITS(tf, 'r')
@@ -157,29 +177,31 @@ if __name__=="__main__":
         for sample in cfg['samples']:
             smask = copy(mask)
             scfg = cfg['samples'][sample]
-            for name, mfile in scfg['sys_maps'].iteritems():
-                if name not in sys_map_data.keys()
-                    m=read_partial_map(mfile,masked_val=np.nan)
-                    sys_map_data[name] = m
+            if 'sys_maps' in scfg.keys():
+                for name, mfile in scfg['sys_maps'].iteritems():
+                    if name not in sys_map_data.keys():
+                        m=read_partial_map(mfile,masked_val=np.nan)
+                        sys_map_data[name] = m
 
             if sample == 'LSS':
                 cut_fcn = LSS_cuts
             elif sample == 'WL':
-                cut_fcn = lambda o, t, p, sys_map_vals : WL_cuts(o, t, p, 
+                cut_fcn = lambda o, t, p, sys_map_vals, zcol : WL_cuts(o, t, p, 
                                                                    sys_map_vals,
                     scfg['maglim_cut_factor'],
-                    scfg['rgrp_cut'], scfg['z_col'])
+                    scfg['rgrp_cut'], zcol)
 
-            smask = make_single_selection(obs, truth, pz, mask, sys_map_data, cut_fcn)
+            print(sys_map_data)
 
+            smask = make_single_selection(obs, truth, pz, mask, sys_map_data, cut_fcn, scfg['z_col'])
+            print('Any in {} sample?: {}'.format(sample, smask.any()))
             #add flag to file here!
             sflag = '{0}_FLAG'.format(sample)
             if sflag not in obs.dtype.names:
-                obsf[-1].insert_column(sflag, smask)
+                obsf[-1].insert_column(sflag, smask.astype(int))
             else:
-                obs[sflag] = smask
-                fitsio.write(of, obs, clobber=True)
+                obsf[-1].write_column(sflag, smask.astype(int))
 
-            obsf.close()
-            truthf.close()
-            pf.close()
+        obsf.close()
+        truthf.close()
+        pf.close()
