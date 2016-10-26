@@ -72,6 +72,10 @@ class buzzard_flat_cat(object):
 
         lenst = 0
 
+        gout = fio.FITS('Buzzard_v1.1_'+self.simnum+'_gold.fits.gz', 'rw') 
+        sout = fio.FITS('Buzzard_v1.1_'+self.simnum+'_shape.fits.gz', 'rw') 
+        pout = fio.FITS('Buzzard_v1.1_'+self.simnum+'_pz.fits.gz', 'rw')
+
         for ifile,filename in enumerate(glob.glob(self.rootdir+self.obsdir+'*'+self.obsname+'*.fit')):
             tname = filename.replace(self.obsname, self.truthname).replace(self.obsdir, self.truthdir)
             pzname = filename.replace(self.obsname, self.pzname).replace(self.obsdir, self.pzdir).replace('fit', 'fits')
@@ -114,11 +118,20 @@ class buzzard_flat_cat(object):
             photoz['redshift'][lenst:lenst+len(truth)]         = truth['Z']
             photoz['weight'][lenst:lenst+len(truth)]           += 1.
 
-            lenst+=len(truth)
+            if ifile == 0:
+                gout.write(gold[lenst:lenst+len(truth)])
+                sout.write(shape[lenst:lenst+len(truth)])
+                pout.write(photoz[lenst:lenst+len(truth)])
+            else:
+                gout[-1].append(gold[lenst:lenst+len(truth)])
+                sout[-1].append(shape[lenst:lenst+len(truth)])
+                pout[-1].append(photoz[lenst:lenst+len(truth)])
 
-        fio.write('Buzzard_v1.1_'+self.simnum+'_gold.fits.gz',gold) 
-        fio.write('Buzzard_v1.1_'+self.simnum+'_shape.fits.gz',shape) 
-        fio.write('Buzzard_v1.1_'+self.simnum+'_pz.fits.gz',photoz)
+            lenst+=len(truth)
+        
+        gout.close()
+        sout.close()
+        pout.close()
 
         return 
 
