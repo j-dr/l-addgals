@@ -65,8 +65,8 @@ def WL_cuts(obs, truth, pz, sys_map_vals,
     else:
         z = pz[z_col]
 
-    other_mask = (np.isfinite(sys_map_vals['maglim_r']) * np.isfinite(sys_map_vals['psf_fwhm_r'])
-                  * (z > 0.1))
+    other_mask = (np.isfinite(sys_map_vals['maglim_r']) * np.isfinite(sys_map_vals['psf_fwhm_r']))
+
 
     good = mag_mask * size_mask * other_mask
 
@@ -104,14 +104,14 @@ def make_single_selection(obs, truth, pz, mask,
                             ra_col='RA',dec_col='DEC')
 
     print('Systematic mask: {}'.format(smask))
-    print('{}'.format(smask.any()))    
+    print('{}'.format(smask.any()))
     mask &= smask
 
     #apply galaxy property cuts
     mask &= cut_func(obs, truth, pz, sys_map_vals, zcol)
     print('Cut mask: {}'.format(mask))
     print('{}'.format(mask.any()))
-    
+
     return mask
 
 def pair_files(ofiles, tfiles, pzfiles):
@@ -126,11 +126,15 @@ def pair_files(ofiles, tfiles, pzfiles):
     tpix   = tpix[ssidx]
 
     assert(len(tpix)==len(opix))
+
     assert(len(tpix)==len(ppix))
 
     oidx = opix.argsort()
     tidx = tpix.argsort()
     pidx = ppix.argsort()
+
+    assert((tpix[tidx]==opix[oidx]).all())
+    assert((tpix[tidx]==ppix[pidx]).all())
 
     ofiles = ofiles[oidx]
     tfiles = tfiles[tidx]
@@ -149,6 +153,7 @@ if __name__=="__main__":
     with open(cfgfile, 'r') as fp:
         cfg = yaml.load(fp)
     print(cfg)
+
     #Read in gold masks
     gold_fp=hu.readMap(cfg['gold']['gold_footprint_fn'])
     gold_br=hu.readMap(cfg['gold']['gold_badreg_fn'])
@@ -175,25 +180,28 @@ if __name__=="__main__":
                             gold_br_map=gold_br)
 
         for sample in cfg['samples']:
+            if sample not in sys_map_data.keys():
+                sys_mask_data[sample] = {}
+
             smask = copy(mask)
             scfg = cfg['samples'][sample]
             if 'sys_maps' in scfg.keys():
                 for name, mfile in scfg['sys_maps'].iteritems():
-                    if name not in sys_map_data.keys():
+                    if name not in sys_map_data[sample].keys():
                         m=read_partial_map(mfile,masked_val=np.nan)
-                        sys_map_data[name] = m
+                        sys_map_data[sample][name] = m
 
             if sample == 'LSS':
                 cut_fcn = LSS_cuts
             elif sample == 'WL':
-                cut_fcn = lambda o, t, p, sys_map_vals, zcol : WL_cuts(o, t, p, 
-                                                                   sys_map_vals,
+                cut_fcn = lambda o, t, p, sys_map_vals, zcol : WL_cuts(o, t, p,
+                    sys_map_vals,
                     scfg['maglim_cut_factor'],
                     scfg['rgrp_cut'], zcol)
 
             print(sys_map_data)
 
-            smask = make_single_selection(obs, truth, pz, mask, sys_map_data, cut_fcn, scfg['z_col'])
+            smask = make_single_selection(obs, truth, pz, smask, sys_map_data[sample], cut_fcn, scfg['z_col'])
             print('Any in {} sample?: {}'.format(sample, smask.any()))
             #add flag to file here!
             sflag = '{0}_FLAG'.format(sample)
