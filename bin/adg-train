@@ -9,12 +9,14 @@ cfg = config.readCfg(cfgfile)
 sim, lf, m = config.parseConfig(cfg)
 
 for s in sim:
+    
+    ar = cfg['AbundanceMatch'].pop('run', True)
+    rr = cfg['RdelModel'].pop('run', True)
 
-    if cfg['AbundanceMatch']['run']:
-        s.abundanceMatch(lf, cfg['AbundanceMatch']['outdir'],
-                         parallel=cfg['AbundanceMatch']['parallel'])
+    if ar:
+        s.abundanceMatch(lf, **cfg['AbundanceMatch'])
         
-    if cfg['RdelModel']['run']:
+    if rr:
         parallel = cfg['RdelModel'].pop('parallel', False)
         debug    = cfg['RdelModel'].pop('debug', False)
         startat  = cfg['RdelModel'].pop('startat', None)

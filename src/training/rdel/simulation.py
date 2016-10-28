@@ -12,15 +12,20 @@ from .rdelmag        import fitSnapshot
 
 class Simulation(object):
 
-    def __init__(self, boxsize, hfiles, rnnfiles, outdir, 
-                    h, zs=None, zmin=None, zmax=None, 
-                    zstep=None, nz=None, shamfiles=None):
+    def __init__(self, name, boxsize, snapdirs, 
+                   hfiles, rnnfiles, outdir, 
+                   h, zs=None, zmin=None, zmax=None, 
+                   zstep=None, nz=None, shamfiles=None,
+                   simtype='LGADGET2'):
 
-        self.boxsize = boxsize
-        self.h = h
-        self.hfiles = np.array(hfiles)
+        self.name     = name
+        self.boxsize  = boxsize
+        self.h        = h
+        self.snapdirs= np.array(snapdirs)
+        self.hfiles   = np.array(hfiles)
         self.rnnfiles = np.array(rnnfiles)
         self.outdir   = outdir
+        self.simtype  = simtype
 
         if shamfiles is not None:
             self.shamfiles = np.array(shamfiles)
@@ -60,13 +65,14 @@ class Simulation(object):
     def getSHAMFileName(self, hfname, alpha, scatter, lfname):
 
         fs = hfname.split('/')
-        fs[-1] = 'sham_{0}_{1}_{2}_{3}'.format(lfname,
+        fs[-1] = 'sham_{}_{}_{}_{}_{}'.format(self.name, 
+                                                lfname,
                                                 alpha,
                                                 scatter,
                                                 fs[-1])
         return fs[-1]
 
-    def abundanceMatch(self, lf, alpha=0.5, scatter=0.17, debug=False,
+    def abundanceMatch(self, lf, alpha=0.7, scatter=0.17, debug=False,
                        parallel=False, startat=None):
         """
         Abundance match all of the hlists
@@ -155,7 +161,7 @@ class Simulation(object):
 
             fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
 
-    def getSHAMFiles(self, lf, alpha=0.5, scatter=0.17):
+    def getSHAMFiles(self, lf, alpha=0.7, scatter=0.17):
         
         shamfiles = []
         
