@@ -37,29 +37,56 @@ class buzzard_flat_cat(object):
 
         return
 
-    def loop_cats(self): 
+    def loop_cats(self, debug=False): 
 
-        gold  = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
-                                          + [('ra','f4')]
-                                          + [('dec','f4')]
-                                          + [('redshift','f4')]
-                                          + [('flags_badregion','i8')] 
-                                          + [('flags_gold','i8')]
-                                          + [('hpix','i8')]
-                                          + [('sample','i8')])
+        if debug:
+            gold  = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
+                             + [('ra','f4')]
+                             + [('dec','f4')]
+                             + [('redshift','f4')]
+                             + [('mag_r', 'f4')]
+                             + [('mag_lim_r', 'f4')]
+                             + [('flags_badregion','i8')] 
+                             + [('flags_gold','i8')]
+                             + [('hpix','i8')]
+                             + [('sample','i8')])
+        else:
+            gold  = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
+                             + [('ra','f4')]
+                             + [('dec','f4')]
+                             + [('redshift','f4')]
+                             + [('flags_badregion','i8')] 
+                             + [('flags_gold','i8')]
+                             + [('hpix','i8')]
+                             + [('sample','i8')])            
 
-        shape = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
-                                          + [('e1','f4')] 
-                                          + [('e2','f4')] 
-                                          + [('g1','f4')] 
-                                          + [('g2','f4')] 
-                                          + [('kappa','f4')] 
-                                          + [('m1','f4')] 
-                                          + [('m2','f4')] 
-                                          + [('c1','f4')] 
-                                          + [('c2','f4')] 
-                                          + [('weight','f4')] 
-                                          + [('flags','i8')])
+        if debug:
+            shape = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
+                             + [('e1','f4')] 
+                             + [('e2','f4')] 
+                             + [('g1','f4')] 
+                             + [('g2','f4')] 
+                             + [('kappa','f4')] 
+                             + [('m1','f4')] 
+                             + [('m2','f4')] 
+                             + [('c1','f4')] 
+                             + [('c2','f4')] 
+                             + [('weight','f4')]
+                             + [('size','f4')]
+                             + [('flags','i8')])
+        else:
+            shape = np.zeros(self.maxrows, dtype = [('coadd_objects_id','i8')] 
+                             + [('e1','f4')] 
+                             + [('e2','f4')] 
+                             + [('g1','f4')] 
+                             + [('g2','f4')] 
+                             + [('kappa','f4')] 
+                             + [('m1','f4')] 
+                             + [('m2','f4')] 
+                             + [('c1','f4')] 
+                             + [('c2','f4')] 
+                             + [('weight','f4')]
+                             + [('flags','i8')])
 
 
         photoz = np.zeros(self.maxrows, dtype = [('coadd_objects_id', 'i8')]
@@ -81,7 +108,10 @@ class buzzard_flat_cat(object):
             pzname = filename.replace(self.obsname, self.pzname).replace(self.obsdir, self.pzdir).replace('fit', 'fits')
 
             truth  = fio.FITS(tname)[-1].read(columns=['ID','GAMMA1','GAMMA2','KAPPA','Z'])
-            obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG'])
+            if not debug:
+                obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG'])
+            else:
+                obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG', 'MAG_R', 'SIZE'])
             pz     = fio.FITS(pzname)[-1].read(columns=['MEAN_Z','Z_MC'])
 
 
@@ -101,6 +131,8 @@ class buzzard_flat_cat(object):
             gold['redshift'][lenst:lenst+len(truth)]          = truth['Z']
             gold['hpix'][lenst:lenst+len(truth)]              = hp.ang2pix(4096, np.pi/2.-np.radians(obs['DEC']),np.radians(obs['RA']), nest=True)
             gold['sample'][lenst:lenst+len(truth)]            = sflag
+            if debug:
+                gold['mag_r'][lenst:lenst+len(truth)]         = obs['MAG_R']
 
             shape['coadd_objects_id'][lenst:lenst+len(truth)] = truth['ID']
             shape['e1'][lenst:lenst+len(truth)]               = obs['EPSILON1']
@@ -111,6 +143,8 @@ class buzzard_flat_cat(object):
             shape['m1'][lenst:lenst+len(truth)]               += 1.
             shape['m2'][lenst:lenst+len(truth)]               += 1.
             shape['weight'][lenst:lenst+len(truth)]           += 1.
+            if debug:
+                shape['size'][lenst:lenst+len(truth)]         = obs['SIZE']
 
             photoz['coadd_objects_id'][lenst:lenst+len(truth)] = truth['ID']
             photoz['mean_z'][lenst:lenst+len(truth)]           = pz['MEAN_Z']
