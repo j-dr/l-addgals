@@ -181,7 +181,7 @@ if __name__=="__main__":
 
         for sample in cfg['samples']:
             if sample not in sys_map_data.keys():
-                sys_mask_data[sample] = {}
+                sys_map_data[sample] = {}
 
             smask = copy(mask)
             scfg = cfg['samples'][sample]
