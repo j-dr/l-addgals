@@ -64,15 +64,15 @@ def fitRdelDist(rdist, rdisterr, rmean, useerror=False):
         try:
 
             if useerror:
-                mphat[:,nmcuts-i-1], mpcovhat[:,:,nmcuts-i-1] = curve_fit(rdelModel, 
-                                                                          rmean, 
+                mphat[:,nmcuts-i-1], mpcovhat[:,:,nmcuts-i-1] = curve_fit(rdelModel,
+                                                                          rmean,
                                                                           rdist[:,nmcuts-i-1],
-                                                                          sigma=rdisterr[:,nmcuts-i-1], 
-                                                                          p0 = p0, 
+                                                                          sigma=rdisterr[:,nmcuts-i-1],
+                                                                          p0 = p0,
                                                                           absolute_error=True)
             else:
-                mphat[:,nmcuts-i-1], mpcovhat[:,:,nmcuts-i-1] = curve_fit(rdelModel, 
-                                                                          rmean, 
+                mphat[:,nmcuts-i-1], mpcovhat[:,:,nmcuts-i-1] = curve_fit(rdelModel,
+                                                                          rmean,
                                                                           rdist[:,nmcuts-i-1],
                                                                           p0 = p0)
         except RuntimeError as e:
@@ -114,11 +114,11 @@ def visRdelSnapshotFit(mphat, mpcovhat, rdist,
         ax[i//xal, i%xal].plot(rmean, rdisthat)
 
         ax[i//xal, i%xal].set_xscale('log')
-        
+
         chisq = np.sum((rdisthat - rdist[:,i]) ** 2 / rdisterr[:,i]**2)
 
         #ax[i//xal, i%xal].text(0.1, 0.9, r"$M_{r}<%.2f$" % m, fontsize=14)
-                    
+
         #ax[i//xal, i%xal].text(0.1, 0.7, r"$\chi^{2}=%.2e$" % chisq, fontsize=14)
 
     try:
@@ -156,10 +156,10 @@ def fitSnapshot(shamfile, rnnfile, outdir, debug=False):
 
     #measure normalized distribution of densities above magnitude cuts
     rmdist, rmerr = rdelMagDist(rdel, mag['LUMINOSITY'], rbins, mcuts)
-    
+
     #clean up nans and infs
     rmdist, rmerr = cleanDist(rmdist, rmerr)
-    
+
     #fit models to individual density distributions
     mphat, mpcovhat = fitRdelDist(rmdist, rmerr, rmean)
 
@@ -170,5 +170,147 @@ def fitSnapshot(shamfile, rnnfile, outdir, debug=False):
                             rmerr, rmean, mcuts,
                             smname, outdir)
 
-def fitRdelMagZDist(rmzdist):
-    pass
+def loadSnapshotFits(inbase, smbase):
+
+    modelfiles = glob('{}/{}*rdelmodel.pkl'.format(inbase, smbase))
+    models     = []
+
+    for m in modelfiles:
+        with open(m. 'r') as fp:
+            models.append(pickle.load(fp))
+
+    models = np.array(models)
+    scales = np.array([float(m.split('_')[-2]) for m in modelfiles])
+    sidx   = scales.argsort
+    z      = 1 / scales[sidx[::-1]] - 1
+    models = models[sidx[::-1]]
+
+    return models, z
+
+def fitRdelMagZDist(inbase, smbase, z, mcuts, zmcut,
+                zmin=0.0, zmax=2.0, fmlim=-18, bmlim=-22.5):
+
+    #load single snapshot models
+    models = []
+
+    for i in range(len(smbase)):
+        smodels, szm = loadSnapshotFits(inbase, smbase[i])
+        models.append(smodels)
+
+
+
+    #construct parameter arrays
+    parr = np.zeros((len(z), len(models[0]['mphat'][0,:])))
+    pearr = np.zeros((len(z), len(models[0]['mphat'][0,:])))
+    mucarr = np.zeros((len(z), len(models[0]['mphat'][1,:])))
+    mucearr = np.zeros((len(z), len(models[0]['mphat'][1,:])))
+    sigmacarr = np.zeros((len(z), len(models[0]['mphat'][2,:])))
+    sigmacearr = np.zeros((len(z), len(models[0]['mphat'][2,:])))
+    mufarr = np.zeros((len(z), len(models[0]['mphat'][3,:])))
+    mufearr = np.zeros((len(z), len(models[0]['mphat'][3,:])))
+    sigmafarr = np.zeros((len(z), len(models[0]['mphat'][4,:])))
+    sigmafearr = np.zeros((len(z), len(models[0]['mphat'][4,:])))
+
+    #select parameter fits from appropriate simulation for each z-mag bin
+    for i in xrange(len(z)):
+        for j in xrange(len(mcuts)):
+            midx = zmcut[i,j]
+            parr[i,j] = models[midx]['mphat'][0,j]
+            pearr[i,j] = models[midx]['mpcovhat'][0,0,j]
+            mucarr[i,j] = models[midx]['mphat'][1,j]
+            mucearr[i,j] = models[midx]['mpcovhat'][1,1,j]
+            sigmacarr[i,j] = models[midx]['mphat'][2,j]
+            sigmacearr[i,j] = models[midx]['mpcovhat'][2,2,j]
+            mufarr[i,j] = models[midx]['mphat'][3,j]
+            mufearr[i,j] = models[midx]['mpcovhat'][3,3,j]
+            sigmafarr[i,j] = models[midx]['mphat'][4,j]
+            sigmafearr[i,j] = models[midx]['mpcovhat'][4,4,j]
+
+    mag_ref = -20.5
+    bright_mag_lim = bmlim-mag_ref
+    faint_mag_lim  = fmlim-mag_ref
+
+    zmidx  = z.searchsorted(zmin)
+    zmaidx = z.searchsorted(zmax)
+
+    mbidx = mcuts.searchsorted(bmlim)
+    mfidx = mcuts.searchsorted(fmlim)
+
+    #construct x, y vectors to fit to
+    x = np.meshgrid(mcuts[bmidx:mfidx], z[zmidx:zmaidx])
+    zv = x[1].flatten() -1.0
+    mv = x[0].flatten()
+    mv = mv - mag_ref
+    mv[mv<bright_mag_lim]  = bright_mag_lim
+    mv[mv>faint_mag_lim]   = faint_mag_lim
+    o  = np.ones(len(zv))
+
+    #construct vandermonde matrix
+    xvec = np.array([o, zv, zv**2, zv**3, zv**4,
+                        mv, mv**2, mv**3, mv**4,
+                        mv*zv, mv*zv**2, mv**2*zv,
+                        (mv*zv)**2, mv*zv**3, mv**2*zv**2,
+                         mv**3*zv])
+
+    pf   = parr[zmidx:zmaidx, bmidx:bfidx].flatten().reshape(-1, 1)
+    mucf = mucarr[zmidx:zmaidx, bmidx:bfidx].flatten().reshape(-1,1)
+    sigmacf = sigmacarr[zmidx:zmaidx, bmidx:bfidx].flatten().reshape(-1,1)
+    muff = mufarr[zmidx:zmaidx, bmidx:bfidx].flatten().reshape(-1,1)
+    sigmaff = sigmafarr[zmidx:zmaidx, bmidx:bfidx].flatten().reshape(-1,1)
+
+    #construct x, y vectors to predict for
+    x = np.meshgrid(mcuts, z)
+    zv = x[1].flatten() -1.0
+    mv = x[0].flatten()
+    mv = mv - mag_ref
+    mv[mv<bright_mag_lim]  = bright_mag_lim
+    mv[mv>faint_mag_lim]   = faint_mag_lim
+    o  = np.ones(len(zv))
+
+    xpvec = np.array([o, zv, zv**2, zv**3,
+                        zv**4, mv, mv**2, mv**3,
+                        mv**4, mv*zv, mv*zv**2,
+                        mv**2*zv, (mv*zv)**2,
+                        mv*zv**3, mv**2*zv**2,
+                        mv**3*zv])
+
+    betap = np.linalg.lstsq(xvec.T, pf)
+    betamuc = np.linalg.lstsq(xvec.T, mucf)
+    betamuf = np.linalg.lstsq(xvec.T, muff)
+    betasigmacf = np.linalg.lstsq(xvec.T, sigmacf)
+    betasigmaff = np.linalg.lstsq(xvec.T, sigmaff)
+    phat = np.dot(xpvec.T, betap[0])
+    muchat = np.dot(xpvec.T, betamuc[0])
+    mufhat = np.dot(xpvec.T, betamuf[0])
+    sigmachat = np.dot(xpvec.T, betasigmacf[0])
+    sigmafhat = np.dot(xpvec.T, betasigmaff[0])
+    phatarr = np.array(phat).reshape(zidx, len(mcuts)-1)
+    muchatarr = np.array(muchat).reshape(zidx, len(mcuts)-1)
+    mufhatarr = np.array(mufhat).reshape(zidx, len(mcuts)-1)
+    sigmachatarr = np.array(sigmachat).reshape(zidx, len(mcuts)-1)
+    sigmafhatarr = np.array(sigmafhat).reshape(zidx, len(mcuts)-1)
+
+    validateRdelMagZDist(phatarr, muchatarr, sigmachatarr,
+                            mufhatarr, sigmafhararr, models,
+                            mcuts, z, outdir)
+
+
+def validateRdelMagZDist(parr, mcarr, scarr, mfarr,
+                          sfarr, inmodels, rmean,
+                          mcuts, z, outdir):
+
+    predrdist = np.zeros((len(rmean), len(mcuts), len(z)))
+    for i, zi in enumerate(z):
+        for j, mc in enumerate(mcuts):
+            predrdist[:,j,i] = rdelModel(rmean, parr[i,j],
+                                           mcarr[i,j], scarr[i,j],
+                                           mfarr[i,j], sfarr[i,j])
+
+    for i, zi in enumerate(z):
+        visRdelSnapshotFit(inmodels[i]['mphat'],
+                            inmodels[i]['mpcovhat'],
+                            predrdist[:,:,i],
+                            np.zeros_like(predrdist[:,:,i]),
+                            rmean, mcuts,
+                            'pred_'+models[i]['smname'],
+                            outdir);
