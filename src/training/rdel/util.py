@@ -3,6 +3,8 @@ __all__ = ['load_projected_correlation', 'load_abundance_function', 'guess_rbins
 import os
 import numpy as np
 from scipy.optimize import minimize
+from helpers.SimulationAnalysis import readHlist
+import fitsio
 
 def _get_fname(s, cut):
     cut_str = '{0:g}'.format(cut)
@@ -176,3 +178,12 @@ def load_abundance_function(proxy='l', sample_cut=18, \
         return af[:,0], af[:,1]
     else:
         return af
+
+def hlist2bin(hlistname, fields, outdir):
+
+    halos = readHlist(hlistname, fields)
+
+    hs   = hlistname.split('/')
+    hout = '{}/{}.fits.gz'.format(outdir, hs[-1])
+
+    fitsio.write(hout, halos, compress='gzip', clobber=True)

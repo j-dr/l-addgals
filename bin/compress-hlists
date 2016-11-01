@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+from __future__ import print_function, division
+from glob import glob
+from rdel import util
+import sys
+
+
+if __name__ == '__main__':
+
+    hlistdir = sys.argv[1]
+    outdir   = sys.argv[2]
+    fields   = sys.argv[3:]
+
+    if len(fields)==0:
+        fields = ['vmax', 'mvir', 'rvir',
+                    'upid', 'x', 'y', 'z',
+                    'rs', 'b_to_a', 'c_to_a']
+
+    hlists = glob(hlistdir)
+
+    for hlist in hlists:
+        util.hlist2bin(hlist, fields)

@@ -122,7 +122,7 @@ def fitRdelDist(rdist, rdisterr, rmean, useerror=False):
 
 def visRdelSnapshotFit(mphat, mpcovhat, rdist,
                         rdisterr, rmean, mcuts,
-                        smname, outdir):
+                        smname, outdir, pmphat=None):
 
     nmcuts   = len(mcuts)
 
@@ -147,9 +147,14 @@ def visRdelSnapshotFit(mphat, mpcovhat, rdist,
     sax.set_ylabel(r'$M_{r}\, [Mag]$', fontsize=18, labelpad=20)
 
     for i, m in enumerate(mcuts[:-1]):
+
         rdisthat = rdelModel(rmean, *mphat[:,i])
         ax[i//xal, i%xal].errorbar(rmean, rdist[:,i], yerr=rdisterr[:,i])
         ax[i//xal, i%xal].plot(rmean, rdisthat)
+
+        if pmphat is not None:
+            prdisthat = rdelmodel(rmean, *pmphat[:,i])
+            ax[i//xal, i%xal].plot(rmean, prdisthat)
 
         ax[i//xal, i%xal].set_xscale('log')
 
@@ -171,9 +176,9 @@ def visRdelSnapshotFit(mphat, mpcovhat, rdist,
 
     return f, ax
 
-def saveRdelSnapshotFit(mphat, mpcovhat, modelname, outdir):
+def saveRdelSnapshotFit(mphat, mpcovhat, rmdist, rmerr, modelname, outdir):
 
-    sdict = {'mphat':mphat, 'mpcovhat':mpcovhat, 'smname':modelname}
+    sdict = {'mphat':mphat, 'mpcovhat':mpcovhat, 'rmdist':rmdist, 'rmerr':rmerr, 'smname':modelname}
 
     with open('{}/{}_rdelmodel.pkl'.format(outdir, modelname), 'w') as fp:
         pickle.dump(sdict, fp)
@@ -201,7 +206,7 @@ def fitSnapshot(shamfile, rnnfile, outdir, debug=False):
     #fit models to individual density distributions
     mphat, mpcovhat = fitRdelDist(rmdist, rmerr, rmean)
 
-    saveRdelSnapshotFit(mphat, mpcovhat, smname, outdir)
+    saveRdelSnapshotFit(mphat, mpcovhat, rmdist, smname, outdir)
 
     if debug:
         visRdelSnapshotFit(mphat, mpcovhat, rmdist,
@@ -334,21 +339,21 @@ def fitRdelMagZDist(inbase, smbase, z, mcuts, zmcut,
 
 
 def validateRdelMagZDist(parr, mcarr, scarr, mfarr,
-                          sfarr, inmodels, rmean,
-                          mcuts, z, outdir):
+                          sfarr, inmodels, rmdist,
+                          rmean, rmdisterr, mcuts,
+                          z, outdir):
 
-    predrdist = np.zeros((len(rmean), len(mcuts), len(z)))
+    pmphat = np.zeros((5, len(mcuts), len(z)))
     for i, zi in enumerate(z):
         for j, mc in enumerate(mcuts):
-            predrdist[:,j,i] = rdelModel(rmean, parr[i,j],
-                                           mcarr[i,j], scarr[i,j],
-                                           mfarr[i,j], sfarr[i,j])
+            pmphat[:,j,i] = [parr[i,j], mcarr[i,j], scarr[i,j],
+                                 mfarr[i,j], sfarr[i,j])
 
     for i, zi in enumerate(z):
-        visRdelSnapshotFit(inmodels[i]['mphat'],
+        f, ax = visRdelSnapshotFit(inmodels[i]['mphat'],
                             inmodels[i]['mpcovhat'],
-                            predrdist[:,:,i],
-                            np.zeros_like(predrdist[:,:,i]),
+                            inmodels[i]['rmdist'],
+                            inmodels[i]['rmerr'],
                             rmean, mcuts,
                             'pred_'+models[i]['smname'],
-                            outdir);
+                            outdir, pmphat=pmphat)
