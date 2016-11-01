@@ -9,8 +9,8 @@ import sys
 if __name__ == '__main__':
 
     comm = MPI.COMM_WORLD
-    rank = MPI.Get_rank()
-    size = MPI.Get_size()
+    rank = comm.Get_rank()
+    size = comm.Get_size()
 
     hlistdir = sys.argv[1]
     outdir   = sys.argv[2]
@@ -24,4 +24,4 @@ if __name__ == '__main__':
     hlists = glob(hlistdir)
 
     for hlist in hlists[rank::size]:
-        util.hlist2bin(hlist, fields)
+        util.hlist2bin(hlist, fields, outdir)
