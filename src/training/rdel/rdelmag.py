@@ -71,7 +71,7 @@ def lcenMassDist(x, y, z, lcen, mass, mbins, lbox, njackside=5):
 
     lcmass    = np.mean(jlcmass, axis=1)
     lcmassvar = (np.sum(jlcmass - lcmass.reshape(nmbins, 1), axis=1) *
-                    (njacktot - 1) / njacktot
+                    (njacktot - 1) / njacktot)
 
     return lcmass, lcmassvar
 
@@ -219,7 +219,7 @@ def loadSnapshotFits(inbase, smbase):
     models     = []
 
     for m in modelfiles:
-        with open(m. 'r') as fp:
+        with open(m, 'r') as fp:
             models.append(pickle.load(fp))
 
     models = np.array(models)
@@ -347,7 +347,7 @@ def validateRdelMagZDist(parr, mcarr, scarr, mfarr,
     for i, zi in enumerate(z):
         for j, mc in enumerate(mcuts):
             pmphat[:,j,i] = [parr[i,j], mcarr[i,j], scarr[i,j],
-                                 mfarr[i,j], sfarr[i,j])
+                                 mfarr[i,j], sfarr[i,j]]
 
     for i, zi in enumerate(z):
         f, ax = visRdelSnapshotFit(inmodels[i]['mphat'],
