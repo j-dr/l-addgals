@@ -18,6 +18,12 @@ def rdelModel(rmean, p, muc, sigmac, muf, sigmaf):
 
     return (1 - p) * np.exp(-(np.log(rmean) - muc) ** 2 / (2 * sigmac ** 2)) / ( rmean * np.sqrt(2 * np.pi ) * sigmac ) + p * np.exp(-(rmean - muf) ** 2 / (2 * sigmaf ** 2)) / (np.sqrt(2 * np.pi ) * sigmaf )
 
+def lcenModel(mass, m0, mc, a, b, k):
+
+    return (mr0 - 2.5 * ( a * np.log10(mass / mc) -
+              np.log10(1 + (mass/mc) ** (b * k)) / k))
+
+
 def rdelMagDist(rdel, mag, rbins, magcuts):
     """
     Calculate the distribution of rdel of galaxies brighter
@@ -37,6 +43,38 @@ def rdelMagDist(rdel, mag, rbins, magcuts):
     nrmerr     = rmerr  / rmcounts / (rbins[1:] - rbins[:-1]).reshape(rbins.shape[0]-1,1)
 
     return nrmdist, nrmerr
+
+def lcenMassDist(x, y, z, lcen, mass, mbins, lbox, njackside=5):
+
+    nmbins   = len(mbins) - 1
+    njacktot = njackside ** 3
+    jlcmass  = np.zeros((nmbins, njackside))
+
+    #want jackknife errors on lcenmass
+    xi = (njackside * x) // lbox
+    yi = (njackside * y) // lbox
+    zi = (njackside * z) // lbox
+
+    bidx = xi * njackside ** 2 + yi * njackside + zi
+
+    for i in xrange(njacktot):
+        idx = bidx == i
+        lc  = lcen[idx]
+        m   = mass[idx]
+
+        midx = np.digitize(m, mbins)
+
+        for j in xrange(1, nmbins+1):
+            jlcmass[j, i] = np.mean(lc[midx==j])
+
+    #do the jackknifing
+
+    lcmass    = np.mean(jlcmass, axis=1)
+    lcmassvar = (np.sum(jlcmass - lcmass.reshape(nmbins, 1), axis=1) *
+                    (njacktot - 1) / njacktot
+
+    return lcmass, lcmassvar
+
 
 def cleanDist(rmdist, rmerr):
 
