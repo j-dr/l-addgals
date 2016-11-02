@@ -181,9 +181,17 @@ def load_abundance_function(proxy='l', sample_cut=18, \
 
 def hlist2bin(hlistname, fields, outdir):
 
-    halos = readHlist(hlistname, fields)
-
     hs   = hlistname.split('/')
     hout = '{}/{}.fits.gz'.format(outdir, hs[-1])
+    
+    #return if file already exists
+    if os.path.isfile(hout): return
+
+    try:
+        halos = readHlist(hlistname, fields)
+    except UnicodeEncodeError as e:
+        print(e)
+        print('****Cannot compress file: {0}****'.format(hlistname))
+        return
 
     fitsio.write(hout, halos, compress='gzip', clobber=True)

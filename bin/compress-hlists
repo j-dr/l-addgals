@@ -24,4 +24,5 @@ if __name__ == '__main__':
     hlists = glob(hlistdir)
 
     for hlist in hlists[rank::size]:
+        print(hlist)
         util.hlist2bin(hlist, fields, outdir)
