@@ -48,7 +48,7 @@ def lcenMassDist(x, y, z, lcen, mass, mbins, lbox, njackside=5):
 
     nmbins   = len(mbins) - 1
     njacktot = njackside ** 3
-    jlcmass  = np.zeros((nmbins, njackside))
+    jlcmass  = np.zeros((nmbins, njacktot))
 
     #want jackknife errors on lcenmass
     xi = (njackside * x) // lbox
@@ -65,15 +65,15 @@ def lcenMassDist(x, y, z, lcen, mass, mbins, lbox, njackside=5):
         midx = np.digitize(m, mbins)
 
         for j in xrange(1, nmbins+1):
-            jlcmass[j, i] = np.mean(lc[midx==j])
+            jlcmass[j-1, i] = np.nanmean(lc[midx==j])
 
     #do the jackknifing
 
-    lcmass    = np.mean(jlcmass, axis=1)
-    lcmassvar = (np.sum(jlcmass - lcmass.reshape(nmbins, 1), axis=1) *
-                    (njacktot - 1) / njacktot)
+    lcmass    = np.nanmean(jlcmass, axis=1)
+    lcmassvar = (np.nanvar(jlcmass, axis=1) *
+                    (njacktot - 1))
 
-    return lcmass, lcmassvar
+    return lcmass, lcmassvar, jlcmass
 
 
 def cleanDist(rmdist, rmerr):

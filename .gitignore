@@ -1,0 +1,8 @@
+*.o
+*~
+*out
+*log
+*#
+hv
+kcorrect_utils
+build/
