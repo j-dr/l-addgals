@@ -111,6 +111,7 @@ void read_galaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies, 
 
   float px, py, pz, vx, vy, vz, mr, d8, m200, r200;
   int hid, gid, cent;
+  string tmps;
 #ifdef BOLSHOI
   float vmax, vpeak, mpeak, zpeak, mag0, mag1, mag2, mag3, mag4, mag5, mag6;
   string tmps;
@@ -122,7 +123,11 @@ void read_galaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies, 
     }
   //file>>tmps;
   //cout<<tmps<<endl;
+#elif MASSIVE_BLACK
+  file>>tmps>>tmps>>tmps>>tmps>>tmps;
+  cout<<tmps<<endl;
 #endif
+
   int ngal = 0;
   int nhalo = 0;
   float zmin = 100.;
@@ -145,6 +150,15 @@ void read_galaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies, 
 	cent = 1;
 	hid = gid;
       }
+#elif MASSIVE_BLACK
+    file>>gid>>px>>py>>pz>>mr;
+    hid = int(gid);
+    d8 = 0;
+    cent = 0;
+    vx = 0.0;
+    vy = 0.0;
+    vz = 0.0;
+    m200 = 0.0;
 #else
     file>>px>>py>>pz>>vx>>vy>>vz>>mr>>hid>>m200>>r200>>gid>>d8>>cent;
 #endif

@@ -121,7 +121,7 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
 
 }
 
-#ifndef BCC
+#ifndef CATALOG
 int main(int argc, char* argv[])
 {
   int ngal, nelem, vl, i;

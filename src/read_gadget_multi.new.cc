@@ -24,6 +24,14 @@
 
 static const int MMAXINT=32767;
 
+bool notInVolume(Particle *part)
+{
+  float tr = part->R();
+  return ! ( ( RMIN_REAL <= tr ) && (tr <= RMAX_REAL) &&
+	     ( RAMIN <= part->Ra() ) && ( part->Ra() < RAMAX ) &&
+	     ( DECMIN <= part->Dec() ) && ( part->Dec() < DECMAX ) );
+}
+
 struct ToRing : public std::unary_function<long,long> {
   const int order_;
   ToRing(int o) : order_(o) {}
@@ -692,6 +700,7 @@ vector <Particle *> ReadGadgetParticles(int &nread){
 
 }
 
+#ifdef BCC
 struct io_header readLCCellHeader(std::string fname)
 {
   std::ifstream pfile(fname.c_str());
@@ -873,13 +882,6 @@ long getNparts(int minrb, int maxrb, long order1_, long order2_, vector<long> &p
   return nparts;
 }
 
-bool notInVolume(Particle *part)
-{
-  float tr = part->R();
-  return ! ( ( RMIN_REAL <= tr ) && (tr <= RMAX_REAL) &&
-	     ( RAMIN <= part->Ra() ) && ( part->Ra() < RAMAX ) &&
-	     ( DECMIN <= part->Dec() ) && ( part->Dec() < DECMAX ) );
-}
 
 vector <Particle *> ReadGadgetLCCell()
 {
@@ -1154,3 +1156,4 @@ vector <Particle *> ReadGadgetLCCell()
 
   return parts;
 }
+#endif

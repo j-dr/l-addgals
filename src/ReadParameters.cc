@@ -212,9 +212,10 @@ void fillParameters(StringDatabase* sd)
 	colortrdir = sd->findParameterValue("colortrdir");
 #ifdef SHAM_TEST
 	sham_file = sd->findParameterValue("SHAM_file");
-#endif
+#elif BCC
 	PSTR = sd->findParameterValue("pstr");
 	ZSTR = sd->findParameterValue("zstr");
+#endif
 	hodfile = sd->findParameterValue("hodfile");
 	if (hodfile != "not_found") read_hod = 1;
 }

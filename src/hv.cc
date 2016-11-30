@@ -172,8 +172,13 @@ int main(void){
   string outdfn = out_path+"/dens_test.dat";
   string outrfn = out_path+"/rnn_test.dat";
 #endif
+#ifdef BCC
   string outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";;
   string outghfn= out_path;
+#else
+  string outgfn = out_path+"/"+flabel+".galaxies"+".fits";
+  string outghfn= out_path;
+#endif
 
   cout << "outgfn: " << outgfn << endl;
 
@@ -557,7 +562,7 @@ int main(void){
   double TimeColor = (t2-t1)/CLOCKS_PER_SEC;
   cout<<"Assigned galaxy SEDs in "<<TimeColor<<" seconds."<<endl;
 
-#ifdef BCC
+#ifdef CATALOG
   //Eventually need to add u
   t1 = clock();
   int nbands = 5;

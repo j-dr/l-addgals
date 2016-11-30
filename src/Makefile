@@ -28,11 +28,11 @@ LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-catalog_type="BCC"
+#catalog_type="BCC"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"
-#catalog_type="snapshot_colors"
+catalog_type="snapshot_colors"
 
 ifeq ($(catalog_type),"classic")
 CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
@@ -42,6 +42,7 @@ CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy den
 #CPPFLAGS += -DDENSPDF_IN_MAG_BIN  #Use DENSPDF of Mr instead of greater than Mr
 CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
+CPPFLAGS += -DCATALOG
 endif
 
 ifeq ($(catalog_type),"BCC")
@@ -55,6 +56,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
+CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
@@ -67,6 +69,7 @@ CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy den
 CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 CPPFLAGS += -DSNAPSHOT         #Using a snapshot instead of a lightcone
 CPPFLAGS += -DSHAM_TEST      #add Consuelo SHAM galaxies back to Consuelo
+CPPFLAGS += -DCATALOG
 endif
 
 ifeq ($(catalog_type),"snapshot")
@@ -78,6 +81,7 @@ CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy den
 CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first sort
 CPPFLAGS += -DSNAPSHOT         #Using a snapshot instead of a lightcone
+CPPFLAGS += -DCATALOG
 endif
 
 ifeq ($(catalog_type),"just_colors")
@@ -88,6 +92,7 @@ CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy den
 #CPPFLAGS += -DDENSPDF_IN_MAG_BIN  #Use DENSPDF of Mr instead of greater than Mr
 ###CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 CPPFLAGS += -DJUST_COLORS       #Use magnitudes assigned from another code
+CPPFLAGS += -DCATALOG
 #CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 endif
 
@@ -101,6 +106,8 @@ CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first so
 CPPFLAGS += -DSNAPSHOT         #Using a snapshot instead of a lightcone
 
 CPPFLAGS += -DJUST_COLORS       #Use magnitudes assigned from another code
+CPPFLAGS += -DCATALOG
+CPPFLAGS += -DNOCUT
 endif
 
 
@@ -116,6 +123,7 @@ endif
 #CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 #CPPFLAGS += -DJUST_COLORS       #Use magnitudes assigned from another code
 #CPPFLAGS += -DBOLSHOI  #Readin one of the bolshoi-formatted galaxy files
+CPPFLAGS  += -DMASSIVE_BLACK
 #CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first sort
 #CPPFLAGS += -DPARALLEL -i-dynamic
 #CPPFLAGS += -DDEBUG_GET_GALS

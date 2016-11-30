@@ -89,7 +89,10 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
       b = (itr-mag.begin())%nband;
       good = good || (*itr <= (maglim_cut[b] + delta_maglim));
       if (b==(nband-1)) {
-	if (good) {
+#ifndef NOCUT
+	if (good) 
+#endif
+        {
 	  copy(itr-nband+1, itr+1, mag.begin()+count);
 	  count+=nband;
 	}
@@ -109,7 +112,7 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
 
 }
 
-#ifndef BCC
+#ifndef CATALOG
 int main(int argc, char *argv[])
 {
   int i, ngal;

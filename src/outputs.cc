@@ -289,7 +289,9 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   Particle * p;
   for (int i=0; i<size; i++)
     {
+#ifndef NOCUT
       if (!idx[i]) continue;
+#endif
       p = galaxies[i]->P();
       int hid = p->Hid();
       ra[count] = galaxies[i]->Ra();

@@ -23,7 +23,9 @@ vector <Particle *> ReadParticles(){
 
   if(sim.Type() == "GADGET2") particles = ReadGadgetParticles(nread);
   else if(sim.Type() == "MGS") particles = ReadMGSParticles(nread);
+#ifdef BCC
   else if (sim.Type() == "BCCGADGET2") particles = ReadGadgetLCCell();
+#endif
   else {cout<<"[ReadParticles] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}
   return particles;
 }
