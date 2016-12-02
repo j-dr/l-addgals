@@ -36,6 +36,10 @@ template <class T> struct magop : std::binary_function <T,T,T> {
   T operator() (const T& lhs, const T& rhs) const {return 2.5*log10(lhs/rhs);}
 };
 
+template <class T> struct expminus : std::binary_function <T,T,T> {
+  T operator() (const T& lhs, const T& rhs) const {return pow(10.0, (lhs - rhs) / -2.5);}
+};
+
 template <class T> struct appmagnitude : std::binary_function <T,T,T> {
   T operator() (const T& maggie, const T& zeropoint) const {return zeropoint-2.5*log10(maggie/1.0e-9);}
 };
@@ -69,7 +73,7 @@ void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff,
 		   std::vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[],
 		   std::vector<float> &omag, std::vector<float> &amag,
-		   std::vector<float> &deltam, std::vector<float> abcorr,
+		   std::vector<float> &coeff_norm, std::vector<float> abcorr,
 		   bool refflag=true);
 
 
