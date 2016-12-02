@@ -1,11 +1,16 @@
+#machine
+SYSTYPE="sherlock"
+#SYSTYPE="slac"
+
 #compiler
 CXX=g++
 CC=${CXX}
+
+#system specific
+ifeq ($(SYSTYPE),"sherlock")
 OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
 WARN =
-#END_FLAG = -DBIGENDIAN
 END_FLAG = -DLITTLEENDIAN
-
 
 NR_LIB = -L/home/jderose/src/recipes
 NR_INC = -I/home/jderose/src/recipes
@@ -14,25 +19,53 @@ KCORRECT_INC = -I${KCORRECT_DIR}/include
 CCFITS_LIB   = -L/home/jderose/.local/lib
 CCFITS_INC   = -I/home/jderose/.local/include
 
+INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
+LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
+LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
+endif
+
+ifeq ($(SYSTYPE),"slac")
+OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
+WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
+END_FLAG = -DBIGENDIAN
+
+ANN_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/lib  
+ANN_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/ann/include 
+NR_LIB = -L/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes 
+NR_INC = -I/nfs/slac/g/ki/ki22/cosmo/jderose/addgals/recipes 
+KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
+KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
+GSL_LIB = -L/afs/slac.stanford.edu/g/ki/software/gsl/1.15/lib
+GSL_INC = -I/afs/slac.stanford.edu/g/ki/software/gsl/1.15/include/gsl
+CFITSIO_LIB = -L/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CFITSIO_INC = -I/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CCFITS_LIB = -L/afs/slac/g/ki/software/ccfits/2.4/lib
+CCFITS_INC = -I/afs/slac/g/ki/software/ccfits/2.4/include
+
+ifeq "$(HOSTNAME)" "orange"
+        CXX=g++
+        OPT= -O3 -Wno-deprecated #-ffast-math
+        WARN=
+        END_FLAG = -DLITTLEENDIAN
+        OMPFLAG =
+endif
+
+INCL = -I. ${ANN_INC} ${NR_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC}
+LDFLAGS = ${ANN_LIB} ${NR_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
+LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lCCfits
+
+endif
+
 RM = rm -f
 LD = /usr/bin/ld
 
-#directories to look for include files
-INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
-
-#directories to look for libraries
-LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
-
-#libraries to link
-LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
-
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-#catalog_type="BCC"
+catalog_type="BCC"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"
-catalog_type="snapshot_colors"
+#catalog_type="snapshot_colors"
 
 ifeq ($(catalog_type),"classic")
 CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
@@ -123,7 +156,7 @@ endif
 #CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
 #CPPFLAGS += -DJUST_COLORS       #Use magnitudes assigned from another code
 #CPPFLAGS += -DBOLSHOI  #Readin one of the bolshoi-formatted galaxy files
-CPPFLAGS  += -DMASSIVE_BLACK
+#CPPFLAGS  += -DMASSIVE_BLACK
 #CPPFLAGS += -DSINGLE_Z_BIN     #we only have 1 z-bin, no need to do the first sort
 #CPPFLAGS += -DPARALLEL -i-dynamic
 #CPPFLAGS += -DDEBUG_GET_GALS
@@ -143,8 +176,8 @@ CPPFLAGS  += -DMASSIVE_BLACK
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
-#CPPFLAGS += -DOUTPUTDENSITY
-CPPFLAGS += -DMAKEMAGS
+CPPFLAGS += -DOUTPUTDENSITY
+#CPPFLAGS += -DMAKEMAGS
 #CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++
