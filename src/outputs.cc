@@ -323,6 +323,12 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       count++;
     }
 
+  cout << "Deleting duplicated info" << endl;
+  mr.clear();
+  sed_ids.clear();
+  coeffs.clear();
+  amag.clear();
+
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;
   assert(count==keep);
@@ -615,6 +621,15 @@ void  write_bcc_catalogs_w_densities(
 	}
       count++;
     }
+
+  cout << "Deleting duplicated info" << endl;
+  mr.clear();
+  sed_ids.clear();
+  coeffs.clear();
+  amag.clear();
+  dist8.clear();
+  nndist.clear();
+  nndist_percent.clear();
 
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;

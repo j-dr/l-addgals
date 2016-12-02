@@ -577,7 +577,7 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
-  vector<float> deltam(galaxies.size());
+  vector<float> coeff_norm(galaxies.size());
   #ifdef OUTPUTDENSITY
   vector<float> dist8(galaxies.size());
   read_out_galaxy_info_w_densities(galaxies, mr, z,
@@ -598,7 +598,7 @@ int main(void){
 
   assign_colors(mr, coeff, z, zmin, zmax,
 		band_shift, nbands, filterfile,
-		tmag, amag, deltam, abcorr);
+		tmag, amag, coeff_norm, abcorr);
   t2 = clock();
 
   cout << "Generated colors in " << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
