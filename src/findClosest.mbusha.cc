@@ -5,7 +5,7 @@
 #include "color.h"
 #include "stl_util.h"
 #include "myrand.h"
-#include "choose.h"
+//#include "choose.h"
 //#include "iostream.h"
 #include <iostream>
 #include<ctime>

@@ -2,7 +2,7 @@
 #include <cassert> 
 #include <iostream>
 #include "galaxy.h"
-#include "choose.h"
+//#include "choose.h"
 #include "point.h"
 #include "particle.h"
 #include "myrand.h"

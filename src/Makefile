@@ -1,5 +1,6 @@
 #machine
-SYSTYPE="sherlock"
+#SYSTYPE="sherlock"
+SYSTYPE="edison"
 #SYSTYPE="slac"
 
 #compiler
@@ -22,6 +23,30 @@ CCFITS_INC   = -I/home/jderose/.local/include
 INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
 LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
 LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
+endif
+
+ifeq ($(SYSTYPE),"edison")
+OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
+WARN =
+END_FLAG = -DLITTLEENDIAN
+
+NR_LIB = -L/global/u2/j/jderose/usr/local/recipes
+NR_INC = -I/global/u2/j/jderose/usr/local/recipes
+KCORRECT_LIB = -L${KCORRECT_DIR}/lib
+KCORRECT_INC = -I${KCORRECT_DIR}/include
+CFITSIO_LIB   = -L${cfitsio_PREFIX}/lib
+CFITSIO_INC   = -I${cfitsio_PREFIX}/include
+CCFITS_LIB   = -L${ccfits_PREFIX}/lib
+CCFITS_INC   = -I${ccfits_PREFIX}/include
+ANN_LIB      = -L${ann_PREFIX}/lib
+ANN_INC      = -I${ann_PREFIX}/include
+GSL_LIB      = -L${GSL_DIR}/lib
+GSL_INC      = -I${GSL_DIR}/include
+
+INCL = -I. ${ANN_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC} ${GSL_INC}
+LDFLAGS = ${ANN_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB} ${GSL_LIB}
+LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
+
 endif
 
 ifeq ($(SYSTYPE),"slac")

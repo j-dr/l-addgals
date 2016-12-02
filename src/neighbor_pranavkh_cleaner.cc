@@ -5,7 +5,7 @@
 #include "nr.h"
 #include "galaxy.h"
 #include "singleton.h"
-#include "choose.h"
+//#include "choose.h"
 #include <math.h>
 
 int findCloseGalaxies2(vector <GalSED> &v, float mag, float den, float ThisZ, int ThisBCGs);
@@ -383,24 +383,24 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
 }
 
 //This is for use without neighbor distances
-vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <GalSED> & galseds){
-  vector <int> sed_ids(galaxies.size());
-  for(int gi=0;gi<galaxies.size();gi++){
-    Particle * p = galaxies[gi]->P();
-    assert(p);  
-
-#ifdef DEBUG
-    if(gi%20000==0) {cout<<gi<<endl; system("date");}
-#endif
-    double mr = galaxies[gi]->Mr();
-    //if(mr>Magmin_col) mr = Magmin_col;
-
-    sed_ids[gi] = ChooseSED(galseds,mr,0, galaxies[gi]->Z(), galaxies[gi]->Central());
-    //}
-    //else sed_ids[gi]=-1;
-  }
-  return sed_ids;
-}
+//vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <GalSED> & galseds){
+//  vector <int> sed_ids(galaxies.size());
+//  for(int gi=0;gi<galaxies.size();gi++){
+//    Particle * p = galaxies[gi]->P();
+//    assert(p);  
+//
+//#ifdef DEBUG
+//    if(gi%20000==0) {cout<<gi<<endl; system("date");}
+//#endif
+//    double mr = galaxies[gi]->Mr();
+//    //if(mr>Magmin_col) mr = Magmin_col;
+//
+//    sed_ids[gi] = ChooseSED(galseds,mr,0, galaxies[gi]->Z(), galaxies[gi]->Central());
+//    //}
+//    //else sed_ids[gi]=-1;
+//  }
+//  return sed_ids;
+//}
 
 //This is for use without neighbor distances
 vector <int> GetBCG_SEDs(vector <Galaxy *> &galaxies, vector <GalSED> & galseds){

@@ -1,7 +1,7 @@
 #ifndef hv2_h
 #define hv2_h
 #include "galaxy.h"
-#include "choose.h" //galaxy recipes
+//#include "choose.h" //galaxy recipes
 #include "cosmo.h"
 #include "vector3.h"
 #include "color.h"
