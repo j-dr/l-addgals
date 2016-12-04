@@ -60,6 +60,9 @@ extern int LCNUM;
 extern string PSTR;
 extern string ZSTR;
 #endif
+#ifdef FITS_GALAXIES
+extern string ffile;
+#endif
 extern float minrnn, maxrnn;
 #ifdef SHAM_TEST
 extern string sham_file;

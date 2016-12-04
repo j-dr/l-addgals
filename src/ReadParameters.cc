@@ -49,6 +49,9 @@
  string PSTR;
  string ZSTR;
 #endif
+#ifdef FITS_GALAXIES
+ string ffile;
+#endif
  double sim_redshift;
   
   //hod file parameters
@@ -216,6 +219,9 @@ void fillParameters(StringDatabase* sd)
 	PSTR = sd->findParameterValue("pstr");
 	ZSTR = sd->findParameterValue("zstr");
 #endif
+#ifdef FITS_GALAXIES
+	ffile = sd->findParameterValue("fitsfile");
+#endif	  
 	hodfile = sd->findParameterValue("hodfile");
 	if (hodfile != "not_found") read_hod = 1;
 }

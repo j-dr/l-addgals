@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
+#include <CCfits/CCfits>
 #include "galaxy.h"
 #include "biniostream.h"
 #include "point.h"
@@ -95,6 +95,86 @@ void get_mhost(vector <Halo *> &halos, vector <Galaxy *> &galaxies){
 }
 
 #ifdef JUST_COLORS
+
+void read_bcc_fits_galaxies(vector <Particle*> &particles, vector <Galaxy*> &galaxies, vector <Halo*> &halos,
+			    vector<float> &nndist, vector<float> &nndist_percent)
+{
+  using namespace CCfits;
+
+  long i;
+  long nrows;
+  std::auto_ptr<FITS> pInfile;
+
+  //Create fits object
+  cout << "Reading " << ffile << "..." << endl;
+  try{
+    pInfile.reset(new FITS(ffile, Read, 1, true));
+  }
+  catch (CCfits::FITS::CantOpen){
+    cerr << "Can't open " << ffile << endl;
+  }
+  
+
+  ExtHDU& table = pInfile->extension(1);
+  nrows = table.column("MAG_R").rows();
+  cout << "nrows = " << nrows << ". Done." << endl;
+
+  vector<float> sdss_mag_r(nrows),redshift(nrows), r200(nrows),
+    px(nrows), py(nrows), pz(nrows), vx(nrows), vy(nrows), vz(nrows),
+    m200(nrows), rhalo(nrows), ra(nrows), dec(nrows), d8(nrows);
+  vector<int> id(nrows), haloid(nrows), index(nrows), central(nrows);
+  
+  //read sdss mag, kcorrect coeffs, and redshifts
+  table.column("MAG_R").read(sdss_mag_r,1,nrows);
+  table.column("Z").read(redshift,1,nrows);
+  table.column("ID").read(id,1,nrows);
+  table.column("INDEX").read(index,1,nrows);  
+  table.column("SIGMA5").read(nndist,1,nrows);
+  table.column("SIGMA5P").read(nndist_percent,1,nrows);
+  table.column("PDIST8").read(d8,1,nrows);
+  table.column("RHALO").read(rhalo,1,nrows);
+  table.column("R200").read(r200,1,nrows);  
+  table.column("M200").read(rhalo,1,nrows);
+  table.column("HALOID").read(haloid,1,nrows);
+  table.column("CENTRAL").read(central,1,nrows);    
+  table.column("PX").read(px,1,nrows);
+  table.column("PY").read(py,1,nrows);
+  table.column("PZ").read(pz,1,nrows);
+  table.column("VX").read(vx,1,nrows);
+  table.column("VY").read(vy,1,nrows);
+  table.column("VZ").read(vz,1,nrows);
+  table.column("RA").read(ra,1,nrows);
+  table.column("DEC").read(dec,1,nrows);
+
+  for (i=0; i<nrows; i++)
+    {
+      Point xx(px[i],py[i],pz[i]);
+      Point vv(vx[i],vy[i],vz[i]);
+ 
+      Particle * particle = new Particle(xx,vv,d8[i]);
+      particle->SetHaloId(haloid[i]);
+      particle->RHalo(rhalo[i]);
+      particle->MVir(m200[i]);
+      
+      Galaxy * galaxy = new Galaxy(sdss_mag_r[i],id[i],d8[i]);
+      
+      if (central[i] && m200[i] > BCG_Mass_lim) {
+	galaxy->DefineCentral();
+	int np = 0;
+	Halo * halo = new Halo(xx,vv,m200[i],redshift[i],np,haloid[i],0.,r200[i]);
+	halos.push_back(halo);
+	particle->SetHaloId(haloid[i]);
+      }
+      
+      galaxies.push_back(galaxy);
+      particles.push_back(particle);
+      galaxies[i]->zGal(redshift[i]);
+      galaxies[i]->P(particles[i]);
+      particles[i]->MakeGal(id[i]);
+      DeEvolveGal(galaxy);
+    }
+}
+  
 
 void read_galaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vector <Halo *> &halos){
   string filename;
