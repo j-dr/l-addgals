@@ -94,6 +94,10 @@ vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &gal
 #ifdef JUST_COLORS
 void read_galaxies(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vector <Halo *> &halos);
 #endif
+#ifdef ADJUST_COLORS
+void read_bcc_fits_galaxies(vector <Particle*> &particles, vector <Galaxy*> &galaxies, vector <Halo*> &halos,
+			    vector<float> &nndist, vector<float> &nndist_percent);
+#endif
 vector <Galaxy *> ReadSHAMGalaxies(string shamfile);
 void get_mhost(vector <Halo *> &halos, vector <Galaxy *> &galaxies);
 
@@ -172,14 +176,18 @@ int main(void){
   string outdfn = out_path+"/dens_test.dat";
   string outrfn = out_path+"/rnn_test.dat";
 #endif
+
 #ifdef BCC
-  string outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";;
-  string outghfn= out_path;
+#ifndef ADJUST_COLORS
+  string outgfn = out_path+"/"+flabel+"."+PSTR+"."+ZSTR+".fits";
+#else
+  string outgfn = out_path+"/"+flabel+"."+PSTR+".fits";
+#endif
 #else
   string outgfn = out_path+"/"+flabel+".galaxies"+".fits";
-  string outghfn= out_path;
 #endif
-
+  
+  string outghfn= out_path;
   cout << "outgfn: " << outgfn << endl;
 
   sim = DefineSimulation();
@@ -220,7 +228,6 @@ int main(void){
   cout<<"Radial limits: "<<RMIN_REAL<<" - "<<RMAX_REAL<<endl;
   cout<<"Redshift limits: "<<ZREDMIN<<" "<<ZREDMAX<<endl;
 
-
   //Define some functions that are called later in the code
 #ifdef SHAM_TEST
   void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vector <Halo *> &halos);
@@ -235,21 +242,11 @@ int main(void){
   vector <Galaxy *> galaxies;
   vector <Halo*> halos;
 
-  //make output directory if it doesn't exist
-  string mkstring = "mkdir "+out_path+"; cp ./NumericalParameters ./StringParameters "+out_path;
-  PRNT("hv",mkstring);
-  system(mkstring.c_str());
+#ifndef JUST_COLORS  //We can skip to color assignment if we read in full galaxy list
 
 #ifdef LF_FROM_DATA
   read_lf_data();
 #endif
-
-  //ReadLFFile(); //pretty sure this does nothing
-
-  cout<<endl;
-
-#ifndef JUST_COLORS  //We can skip to color assignment if we read in full galaxy list
-
   //Calculate some basic properties about our galaxy distribution
   double ngbar = LumNumberDensity(Magmin);
   PRNT("hv",LumNumberDensity(Magmin));
@@ -312,10 +309,9 @@ int main(void){
 
   //Now we're done loading the particles
 
-
-
   // Sort particles on redshift.  Only do this if we're running a LC.
   // mbusha:  Note that I don't think this is evern necessary anymore because a sort is done in assignment....
+
 #ifndef SNAPSHOT
   //MSG("[hv] Sorting particles.");
   //sort(particles.begin(),particles.end(),zLess);
@@ -450,7 +446,13 @@ int main(void){
   PRNT("hv",galaxies.size());
 
 #else //skip the if not JUST_COLORS statement
+#ifdef ADJUST_COLORS
+  vector<float> nndist;
+  vector<float> nndist_percent;
+  read_bcc_fits_galaxies(particles, galaxies, halos, nndist, nndist_percent);
+#else
   read_galaxies(particles, galaxies, halos);
+#endif
 #endif
 
   //Read in our SED training set
@@ -469,6 +471,8 @@ int main(void){
     nndist_percent[i] = 0.;
   }
 #else
+  vector <Galaxy *> galaxycopy;  
+#ifndef PRECOMPUTE_DENSITY
   //get the colors
   cout<<"[hv] Getting nearest neighbors."<<endl;
   system("date");
@@ -478,7 +482,7 @@ int main(void){
   float junk = 0.;
   BrightGal bg(junk);
   cout<<" Doing any magnitude cuts"<<endl;
-  vector <Galaxy *> galaxycopy;
+
   cout<<" doing copy_if"<<endl;
   for(int i=0;i<galaxies.size();i++)
     if (galaxies[i]->Mr() <= Magmin_dens)
@@ -531,6 +535,7 @@ int main(void){
     Galaxy * gal = galaxies[gi];
     outddmfile<<gal->Dist8()<<" "<<nndist[gi]<<" "<<gal->Mr()<<endl;
   }
+#endif // endif for precompute_density
 
   galaxycopy = galaxies;
   cout<<"[hv] Assigning colors."<<endl;
@@ -538,10 +543,11 @@ int main(void){
   cout << "check mem" << endl;
   system("ps ux | grep hv > mem.tmp");
 
-#ifndef COLORS_FROM_RELATIVE_DENSITY
   cout << "z_redfraction1, z_redfraction2, redfraction1, redfraction2"
        << Z_REDFRACTION1 << " " << Z_REDFRACTION2 << " "
        << REDFRACTION1 << " " << REDFRACTION2 << endl;
+
+#ifndef COLORS_FROM_RELATIVE_DENSITY
 
   sed_ids = GetSEDs(galaxycopy, nndist, galseds, halos);
 #else
@@ -552,7 +558,6 @@ int main(void){
   system("date");
 
 #endif // doing the colors?
-
   //Passivly evolve galaxy magnitudes
   MSG("Evolving galaxies now");
   for_each(galaxies.begin(),galaxies.end(),EvolveGal);
@@ -578,14 +583,15 @@ int main(void){
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
   vector<float> coeff_norm(galaxies.size());
-  #ifdef OUTPUTDENSITY
+
+#ifdef OUTPUTDENSITY
   vector<float> dist8(galaxies.size());
   read_out_galaxy_info_w_densities(galaxies, mr, z,
                                     galseds,sed_ids, id,
                                     dist8);
-  #else
+#else
   read_out_galaxy_info(galaxies, mr, z, galseds, sed_ids, id);
-  #endif
+#endif
 
   match_coeff(id, &coeff[0]);
 
@@ -611,6 +617,8 @@ int main(void){
 
   observe_des_y5(tmag, flux, ivar, omag, omagerr, idx);
   assert(omag.size()%nbands == 0);
+
+#ifndef PRECOMPUTE_SHAPES  
   t1 = clock();
   vector<double> e(omag.size()/nbands*2);
   vector<double> s(omag.size()/nbands);
@@ -619,7 +627,8 @@ int main(void){
 
   cout << "Generated ellipticities and sizes in "
        << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
-
+#endif
+  
   t1 = clock();
 #ifdef OUTPUTDENSITY
   write_bcc_catalogs_w_densities(galaxies, particles, amag, tmag,

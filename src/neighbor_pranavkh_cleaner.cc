@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <omp.h>
 #include <ANN/ANN.h>			// ANN declarations
 #include "nr.h"
 #include "galaxy.h"
@@ -362,9 +363,12 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
   float Percent = 0.0;
   cout<<galaxies[0]->Mr()<<endl;
 
+  omp_set_dynamic(0);
+#pragma omp parallel for num_threads(4)
   for(int gi=0;gi<galaxies.size();gi++){
     //cout<<gi<<" "<<galaxies[gi]->Mr()<<endl;
     if(float(gi)/float(galaxies.size()) > Percent){
+      cout<<"threads="<<omp_get_num_threads()<<endl;        
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
     }
