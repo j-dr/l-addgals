@@ -1,6 +1,6 @@
 #machine
-#SYSTYPE="sherlock"
-SYSTYPE="edison"
+SYSTYPE="sherlock"
+#SYSTYPE="edison"
 #SYSTYPE="slac"
 
 #compiler
@@ -22,7 +22,7 @@ CCFITS_INC   = -I/home/jderose/.local/include
 
 INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
 LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
-LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
+LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas -fopenmp
 endif
 
 ifeq ($(SYSTYPE),"edison")
@@ -86,7 +86,8 @@ LD = /usr/bin/ld
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-catalog_type="BCC"
+#catalog_type="BCC"
+catalog_type="adjust_colors"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"
@@ -117,6 +118,40 @@ CPPFLAGS += -DBCC
 CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
+
+ifeq ($(catalog_type),"BCC")
+CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
+CPPFLAGS += -DCOLORS            #Do we add colors to the galaxies?
+CPPFLAGS += -DBCGS              #Add BCGs in accordance with Sarah's observations
+CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy density in zbins instaed of absoloute densities
+#CPPFLAGS += -DDENSPDF_IN_MAG_BIN  #Use DENSPDF of Mr instead of greater than Mr
+CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
+CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
+CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
+CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
+CPPFLAGS += -DBCC
+CPPFLAGS += -DCATALOG
+#OMPFLAG = -fopenmp
+endif
+
+ifeq ($(catalog_type),"adjust_colors")
+CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
+CPPFLAGS += -DCOLORS            #Do we add colors to the galaxies?
+CPPFLAGS += -DBCGS              #Add BCGs in accordance with Sarah's observations
+CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy density in zbins instaed of absoloute densities
+#CPPFLAGS += -DDENSPDF_IN_MAG_BIN  #Use DENSPDF of Mr instead of greater than Mr
+CPPFLAGS += -DLF_FROM_DATA      #Use a tabluated Luminosity Function instead of a Schechter Fit
+CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
+CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
+CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
+CPPFLAGS += -DBCC
+CPPFLAGS += -DJUST_COLORS
+CPPFLAGS += -DFITS_GALAXIES
+CPPFLAGS += -DADJUST_COLORS
+CPPFLAGS += -DPRECOMPUTE_DENSITY
+CPPFLAGS += -DCATALOG
+endif
+
 
 ifeq ($(catalog_type),"SHAM_TEST")
 CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
