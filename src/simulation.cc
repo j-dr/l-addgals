@@ -52,8 +52,6 @@ Simulation DefineGadgetSimulation(void){
 
 Simulation DefineBCCGadgetSimulation(void){
 
-  int buf, np13;
-  long long npart;
   io_header head;
   int r = 0;
 
@@ -90,5 +88,3 @@ Simulation DefineSimulation(void){
 
   return simulation;
 }
-
-

@@ -10,18 +10,21 @@ using namespace std;
 const float amax = 0.1;
 
 void Cosmology::GetZofR(float OmegaM, float OmegaL){
-  int entries = 30000;
+  int entries_this = 30000;
   //float amax = 0.1;
   double This_a, da, This_H;
 
-  redshift.resize(entries);
-  losdist.resize(entries);
+  redshift.clear();
+  losdist.clear();
+
+  redshift.resize(entries_this);
+  losdist.resize(entries_this);
 
   redshift[0] = 0;
   losdist[0] = 0;
-  da = (1.0 - amax)/entries;
+  da = (1.0 - amax)/entries_this;
 
-  for(int i=0;i<entries;i++)
+  for(int i=1;i<entries_this;i++)
     {
       This_a = 1.0 - da*i;
       This_H = 100.*sqrt(OmegaM/(This_a*This_a*This_a) + OmegaL);

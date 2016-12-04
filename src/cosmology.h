@@ -14,20 +14,18 @@ class Cosmology{
     omega_m=0;
     set = false;
   };
-  //  Cosmology(float omm, float s8=0.9, float h=0.7):
+
   Cosmology(float omm, float s8, float h):
     omega_m(omm),omega_l(1-omm),omega_nu(0),sigma_8(s8),hubble(h){set=true;};
-    Cosmology(float omm, float omb, float s8, float h):
-      omega_m(omm),omega_l(1-omm),omega_nu(0),omega_bar(omb), sigma_8(s8),hubble(h){set=true;};
-      Cosmology(float omm, float s8, float h, std::string n):
+  Cosmology(float omm, float omb, float s8, float h):
+    omega_m(omm),omega_l(1-omm),omega_nu(0),omega_bar(omb), sigma_8(s8),hubble(h){set=true;};
+  Cosmology(float omm, float s8, float h, std::string n):
     omega_m(omm),omega_l(1-omm),omega_nu(0),sigma_8(s8),hubble(h),name(n){set=true;
-    std::cout<<"set up cosmology"<<name<<std::endl;
-};
-    Cosmology(float omm, float omb, float s8, float h, std::string n):
-      omega_m(omm),omega_l(1-omm),omega_nu(0),omega_bar(omb), sigma_8(s8),
-      hubble(h),name(n){set=true;    std::cout<<"set up cosmology"<<name<<std::endl;
-};
-      float OmegaM()const{return omega_m;};
+      std::cout<<"set up cosmology"<<name<<std::endl;};
+  Cosmology(float omm, float omb, float s8, float h, std::string n):
+    omega_m(omm),omega_l(1-omm),omega_nu(0),omega_bar(omb), sigma_8(s8),
+      hubble(h),name(n){set=true; std::cout<<"set up cosmology"<<name<<std::endl;};
+    float OmegaM()const{return omega_m;};
       float OmegaL()const{return omega_l;};
       float OmegaNu()const{return omega_nu;};
       float Sigma8()const{return sigma_8;};
@@ -62,11 +60,11 @@ class Cosmology{
   bool set;
   float omega_m;
   float omega_l;
-  float omega_nu;
-  float omega_bar;
+  float omega_nu=0.0;
+  float omega_bar=0.0;
   float sigma_8;
   float hubble;
-  std::string name;
+  std::string name="";
   bool zfileread;
   std::vector <double> redshift;
   std::vector <double> losdist;

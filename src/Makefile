@@ -4,12 +4,12 @@ SYSTYPE="edison"
 #SYSTYPE="slac"
 
 #compiler
-CXX=g++
-CC=${CXX}
 
 #system specific
 ifeq ($(SYSTYPE),"sherlock")
-OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
+CXX=g++
+CC=${CXX}
+OPT = -O3 -Wno-deprecated -ffast-math -g
 WARN =
 END_FLAG = -DLITTLEENDIAN
 
@@ -26,7 +26,10 @@ LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
 endif
 
 ifeq ($(SYSTYPE),"edison")
-OPT = -O3 -Wno-deprecated -ffast-math -g #-ffast-math
+CXX=g++
+CC=${CXX}
+#OPT = -O3 -Wno-deprecated -ffast-math
+OPT = -O1 -Wno-deprecated -g
 WARN =
 END_FLAG = -DLITTLEENDIAN
 
@@ -50,6 +53,8 @@ LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas
 endif
 
 ifeq ($(SYSTYPE),"slac")
+CXX=g++
+CC=${CXX}
 OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
 WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
 END_FLAG = -DBIGENDIAN
@@ -82,7 +87,7 @@ LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lCCfits
 endif
 
 RM = rm -f
-LD = /usr/bin/ld
+#LD = /usr/bin/ld
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
