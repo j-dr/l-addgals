@@ -664,7 +664,7 @@ void read_out_galaxy_info_w_densities(vector<Galaxy *> &gal,
     {
       p = gal[i]->P();
       mr[i] = gal[i]->Mr();
-      z[i] = p->Zred();
+      z[i] = p->ZredReal();
       sed_cat_id[i] = seds[sed_id[i]].CatId();
       dist8[i] = gal[i]->Dist8();
     }

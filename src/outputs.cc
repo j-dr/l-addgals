@@ -303,7 +303,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       vx[count] = p->Vx();
       vy[count] = p->Vy();
       vz[count] = p->Vz();
-      z[count] = p->Zred();
+      z[count] = p->ZredReal();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
       ecatid[count] = sed_ids[i];
@@ -602,7 +602,7 @@ void  write_bcc_catalogs_w_densities(
       vx[count] = p->Vx();
       vy[count] = p->Vy();
       vz[count] = p->Vz();
-      z[count] = p->Zred();
+      z[count] = p->ZredReal();
       pdist8[count] = p->Dist8();
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];

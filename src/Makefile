@@ -22,7 +22,7 @@ CCFITS_INC   = -I/home/jderose/.local/include
 
 INCL = -I. -I${LOCAL_INC} ${NR_INC} ${KCORRECT_INC} ${CFITSIO_INC} ${CCFITS_INC}
 LDFLAGS = -L${LOCAL_LIB} ${NR_LIB} ${KCORRECT_LIB} ${CFITSIO_LIB} ${CCFITS_LIB}
-LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas -fopenmp
+LOADLIBES = -lANN -lcfitsio -lrecipes -lkcorrect -lCCfits -lgsl -lgslcblas #-fopenmp
 endif
 
 ifeq ($(SYSTYPE),"edison")
@@ -91,8 +91,8 @@ RM = rm -f
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-#catalog_type="BCC"
-catalog_type="adjust_colors"
+catalog_type="BCC"
+#catalog_type="adjust_colors"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"
@@ -155,6 +155,7 @@ CPPFLAGS += -DFITS_GALAXIES
 CPPFLAGS += -DADJUST_COLORS
 CPPFLAGS += -DPRECOMPUTE_DENSITY
 CPPFLAGS += -DCATALOG
+CPPFLAGS += -DNOCUT
 endif
 
 

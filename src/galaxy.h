@@ -134,7 +134,7 @@ inline float evolve_mag(float mag, float z){
 }
 
 inline void EvolveGal(Galaxy*& pgalaxy){
-  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->Z()));
+  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->zGal()));
   /*
   if(evolution == BLAN)
     //pgalaxy->Mr(pgalaxy->Mr()+Q*(pgalaxy->Z()-0.1));
@@ -170,7 +170,7 @@ inline float deevolve_mag(float mag, float z){
 }
 
 inline void DeEvolveGal(Galaxy*& pgalaxy){
-  pgalaxy->Mr(deevolve_mag(pgalaxy->Mr(),pgalaxy->Z()));
+  pgalaxy->Mr(deevolve_mag(pgalaxy->Mr(),pgalaxy->zGal()));
 }
 
 //vector <Galaxy *> GetGalaxies(double vol, float, float, float, float, float, float, float);

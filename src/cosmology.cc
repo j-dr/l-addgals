@@ -10,7 +10,7 @@ using namespace std;
 const float amax = 0.1;
 
 void Cosmology::GetZofR(float OmegaM, float OmegaL){
-  int entries_this = 30000;
+  int entries_this = 100000;
   //float amax = 0.1;
   double This_a, da, This_H;
 
