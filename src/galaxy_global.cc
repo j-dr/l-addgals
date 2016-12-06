@@ -491,6 +491,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
   //initialize the random number generator
   srand48(seed);
 
+
   //rescale the LF for cosmic variance
   for(int i=0;i<gdensity.size();i++)
     gdensity[i] *= phi_rescale;
@@ -547,11 +548,13 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
 
     //fill an array of pdf's for rapid lookup
     vector <den_ent> pdfarray;
+    float tz = 0.0;
+    float tmag;
     pdfarray.reserve(nzbins);
     for (int iz=0;iz<nzbins;iz++)
       {
-	float tz = ZREDMIN + tz*dz_pdf;
-	float tmag = mag;
+	tz = ZREDMIN + iz*dz_pdf;
+	tmag = mag;
 	if (tmag > -19.0) tmag = -19.0;
         pdfarray[iz] = define_prob(tmag,tz,vol);
       }

@@ -597,12 +597,12 @@ int main(void){
 
   strcpy(filterfile, (colortrdir+"/des_filters.txt").c_str());
 
-  float zmin = 0.0;
-  float zmax = 2.5;
+  float zmin_this = 0.0;
+  float zmax_this = 2.5;
 
   vector<float> abcorr(5,0.0);
 
-  assign_colors(mr, coeff, z, zmin, zmax,
+  assign_colors(mr, coeff, z, zmin_this, zmax_this,
 		band_shift, nbands, filterfile,
 		tmag, amag, coeff_norm, abcorr);
   t2 = clock();
