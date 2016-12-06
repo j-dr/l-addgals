@@ -209,6 +209,14 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
     }
   cout << endl;
 
+  cout << "First few redshifts: " << endl;
+  for (i=0;i<5;i++) 
+    {
+      cout << redshift[i] << ", ";
+    }
+  cout << endl;
+  
+
   cout<<"Coeffs: "<<endl;
   for (i=0;i<25;i++){
     cout<<coeff[i]<<", ";

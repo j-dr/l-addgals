@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <omp.h>
+//#include <omp.h>
 #include <ANN/ANN.h>			// ANN declarations
 #include "nr.h"
 #include "galaxy.h"
@@ -361,14 +361,16 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
   srand48(seed);
   vector <int> sed_ids(galaxies.size());
   float Percent = 0.0;
+  double mr;
   cout<<galaxies[0]->Mr()<<endl;
+  cout<<nndist[0]<<endl;
 
-  omp_set_dynamic(0);
-#pragma omp parallel for num_threads(4)
+  //  omp_set_dynamic(0);
+  //#pragma omp parallel for num_threads(4)
   for(int gi=0;gi<galaxies.size();gi++){
     //cout<<gi<<" "<<galaxies[gi]->Mr()<<endl;
     if(float(gi)/float(galaxies.size()) > Percent){
-      cout<<"threads="<<omp_get_num_threads()<<endl;        
+      //      cout<<"threads="<<omp_get_num_threads()<<endl;        
       cout<<"  "<<Percent*100.<<"% done"<<endl;
       Percent += 0.1;
     }
@@ -379,9 +381,12 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
 #ifdef DEBUG
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
-    double mr = galaxies[gi]->Mr();
+    mr = galaxies[gi]->Mr();
     sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
-
+    if (gi==0)
+      {
+	cout << "Mr, dens found: " << galseds[sed_ids[0]].MR() << " " << galseds[sed_ids[0]].Dens() << endl;
+      }
   }
   return sed_ids;
 }

@@ -537,18 +537,28 @@ int main(void){
   }
 #endif // endif for precompute_density
 
+#ifdef ADJUST_COLORS
+  nndist_percent.clear();
+  nndist_percent = GetNeighborPercents(nndist, galaxies);
+#endif
   galaxycopy = galaxies;
   cout<<"[hv] Assigning colors."<<endl;
   system("date");
   cout << "check mem" << endl;
   system("ps ux | grep hv > mem.tmp");
 
-  cout << "z_redfraction1, z_redfraction2, redfraction1, redfraction2"
+  cout << "z_redfraction1, z_redfraction2, redfraction1, redfraction2 "
        << Z_REDFRACTION1 << " " << Z_REDFRACTION2 << " "
        << REDFRACTION1 << " " << REDFRACTION2 << endl;
 
-#ifndef COLORS_FROM_RELATIVE_DENSITY
+  cout << "first few nndist_percent: " <<endl;
+  for(int gi=0;gi<10;gi++){
+    Galaxy * gal = galaxies[gi];
+    cout << nndist_percent[gi] << endl;
+  }
+  
 
+#ifndef COLORS_FROM_RELATIVE_DENSITY
   sed_ids = GetSEDs(galaxycopy, nndist, galseds, halos);
 #else
   sed_ids = GetSEDs(galaxycopy, nndist_percent, galseds, halos);
@@ -631,6 +641,7 @@ int main(void){
   
   t1 = clock();
 #ifdef OUTPUTDENSITY
+  cout << "nndist_percent " << nndist_percent[0] << endl;
   write_bcc_catalogs_w_densities(galaxies, particles, amag, tmag,
              mr, omag, omagerr, flux, ivar, e, s,
              idx, halos, id, coeff, dist8, nndist,

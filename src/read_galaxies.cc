@@ -148,7 +148,7 @@ void read_bcc_fits_galaxies(vector <Particle*> &particles, vector <Galaxy*> &gal
 
   for (i=0; i<nrows; i++)
     {
-      Point xx(px[i],py[i],pz[i]);
+      Point xx(px[i]/sim.LengthUnit(),py[i]/sim.LengthUnit(),pz[i]/sim.LengthUnit());
       Point vv(vx[i],vy[i],vz[i]);
  
       Particle * particle = new Particle(xx,vv,d8[i]);
@@ -171,7 +171,24 @@ void read_bcc_fits_galaxies(vector <Particle*> &particles, vector <Galaxy*> &gal
       galaxies[i]->zGal(redshift[i]);
       galaxies[i]->P(particles[i]);
       particles[i]->MakeGal(id[i]);
+      if (i==0)
+	{
+	  cout << "First galaxy:" << endl;
+	  cout << "Mr: " << galaxy->Mr() << endl;
+	  cout << "Z:  " << galaxy->zGal() << endl;
+	  cout << "Zred: " << galaxy->Z() << endl;
+	}
+	  
       DeEvolveGal(galaxy);
+
+#ifdef SNAPSHOT
+      if(particle->Z()>zmax->GetVal())
+	zmax->SetVal(particle->Z());
+#else
+      if(particle->ZredReal()>zmax->GetVal())
+	zmax->SetVal(particle->ZredReal());
+#endif
+      
     }
 }
   

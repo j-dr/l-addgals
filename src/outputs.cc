@@ -587,7 +587,9 @@ void  write_bcc_catalogs_w_densities(
   Particle * p;
   for (int i=0; i<size; i++)
     {
+#ifndef NOCUT
       if (!idx[i]) continue;
+#endif
       p = galaxies[i]->P();
       hid[count] = p->Hid();
       rhalo[count] = p->RHalo();
@@ -714,7 +716,7 @@ void  write_bcc_catalogs_w_densities(
     cout << "writing 40" << endl;
     newTable->column(tcolName[40]).write(nndist_percentk,1);
     cout << "writing 41" << endl;
-    newTable->column(tcolName[40]).write(pdist8,1);
+    newTable->column(tcolName[41]).write(pdist8,1);
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");
