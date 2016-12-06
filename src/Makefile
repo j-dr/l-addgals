@@ -1,6 +1,6 @@
 #machine
-SYSTYPE="sherlock"
-#SYSTYPE="edison"
+#SYSTYPE="sherlock"
+SYSTYPE="edison"
 #SYSTYPE="slac"
 
 #compiler
@@ -28,8 +28,8 @@ endif
 ifeq ($(SYSTYPE),"edison")
 CXX=g++
 CC=${CXX}
-#OPT = -O3 -Wno-deprecated -ffast-math
-OPT = -O1 -Wno-deprecated -g
+OPT = -O3 -Wno-deprecated -ffast-math -g
+#OPT = -O1 -Wno-deprecated -g
 WARN =
 END_FLAG = -DLITTLEENDIAN
 
@@ -120,12 +120,12 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-CPPFLAGS += -DCATALOG
+#CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
 ifeq ($(catalog_type),"BCC")
-CPPFLAGS = $(WARN) $(OPT) $(INCL) -DCATALOG $(END_FLAG)
+CPPFLAGS = $(WARN) $(OPT) $(INCL) $(END_FLAG)
 CPPFLAGS += -DCOLORS            #Do we add colors to the galaxies?
 CPPFLAGS += -DBCGS              #Add BCGs in accordance with Sarah's observations
 CPPFLAGS += -DCOLORS_FROM_RELATIVE_DENSITY #Match SEDs using relative galaxy density in zbins instaed of absoloute densities
@@ -135,7 +135,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-CPPFLAGS += -DCATALOG
+#CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
@@ -242,9 +242,9 @@ endif
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
-CPPFLAGS += -DOUTPUTDENSITY
+#CPPFLAGS += -DOUTPUTDENSITY
 #CPPFLAGS += -DMAKEMAGS
-#CPPFLAGS += -DDEBUG_SHAPES
+CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++
 
