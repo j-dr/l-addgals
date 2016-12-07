@@ -632,7 +632,7 @@ int main(void){
   t1 = clock();
   vector<double> e(omag.size()/nbands*2);
   vector<double> s(omag.size()/nbands);
-  generate_shapes(omag, e, s, nelem, nbands);
+  generate_shapes(omag, idx, e, s, nelem, nbands);
   t2 = clock();
 
   cout << "Generated ellipticities and sizes in "

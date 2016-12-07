@@ -19,8 +19,8 @@ istream & operator>>(istream & is, shapemag & in)
 
 //Given a vector of DES mags, assuming 6 mags per galaxy
 //generate an ellipticity and shape for each.
-void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
-		     int nelem, int vl)
+void generate_shapes(vector<float>& mag, vector<bool>& idx, vector<double>& e, 
+		     vector<double>& s, int nelem, int vl)
 {
   cout << "generating shapes" << endl;  
   int i, iam;
@@ -69,6 +69,7 @@ void generate_shapes(vector<float>& mag, vector<double>& e, vector<double>& s,
   //Might consider using OMP here?
   for (i=0; i<s.size(); i++)
     {
+      if (!idx[i]) continue;
       mymag = mag[nelem - 1 + i * vl];
       if (i==0) cout << "calculating e params" << endl;
       if (isnan(mymag))
@@ -153,10 +154,12 @@ int main(int argc, char* argv[])
   vector<double> e(2*ngal);
   vector<double> s(ngal);
   vector<float> mag(ngal*5);
+  vector<bool> idx(ngal);
 
   cout<< "copying shapemag struct into double array" << endl;
   for (vector<float>::iterator itr=mag.begin(); itr!=mag.end(); itr++){
     *itr = smag[(itr-mag.begin())/5].bands[(itr-mag.begin())%5];
+    idx[(itr-mag.begin())/5] = true;
   }
 
   cout << "First few mags: ";
@@ -165,7 +168,7 @@ int main(int argc, char* argv[])
     if ((i+1)%5==0) cout << endl;
   }
 
-  generate_shapes(mag, e, s, nelem, vl);
+  generate_shapes(mag, idx, e, s, nelem, vl);
   
   //write out shapes
   cout << "writing shapes" << endl;

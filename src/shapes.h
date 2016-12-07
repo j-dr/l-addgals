@@ -17,7 +17,8 @@ struct shapemag
 
 std::istream & operator>>(std::istream & is, shapemag & in);
 
-void generate_shapes(std::vector<float>& mags, std::vector<double>& e, std::vector<double>& s,
+void generate_shapes(std::vector<float>& mags, std::vector<bool>& idx, 
+		     std::vector<double>& e, std::vector<double>& s,
 		     int nelem, int vl);
 
 #endif
