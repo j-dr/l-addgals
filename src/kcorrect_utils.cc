@@ -44,7 +44,7 @@ string colortrdir;
 string colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals";
 #endif
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
+void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 			 float zmax, float band_shift, char filterfile[], float *maggies)
 {
   cout<<"Reconstructing maggies"<<endl;
@@ -57,7 +57,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   strcpy(vfile,"vmatrix.default.dat");
   strcpy(lfile,"lambda.default.dat");
   sprintf(path,"%s/data/templates",getenv("KCORRECT_DIR"));
-  
+
   sprintf(vmatrixfile, "%s/%s", path, vfile);
   sprintf(lambdafile, "%s/%s", path, lfile);
 
@@ -122,7 +122,7 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
 	<<sdsscoeffs[0].bands[n]<<", ";
   }
   cout<<endl;
-  
+
   for (it = sed_ids.begin(); it!=sed_ids.end(); it++)
     {
       for (n=0; n<ntemps; ++n) {
@@ -146,19 +146,27 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 
   //observer frame maggies
   reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &omag[0]);
+		      zmax, 0.0, filterfile, &omag[0]);
 
   //rest frame maggies
   reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &amag[0]);
+		      zmax, 0.0, filterfile, &amag[0]);
 
-  cout<<"Converting magnitudes to fluxes"<<endl;
+  cout<<"Calculating kcorrections"<<endl;
+  //calculate k-correction in mags
+  transform(amag.begin(), amag.end(), omag.begin(),
+	    kcorrection.begin(), magop<float>());
+
+  cout<<"First few kcorrections: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<kcorrection[i]<<", ";
+  }
+  cout<<endl;
+
+  cout<<"Calculating apparent magnitudes"<<endl;
   //calculate apparent magnitudes
   transform(omag.begin(), omag.end(), omag.begin(),
 	    bind2nd(appmagnitude<float>(),zeropoint));
-
-  transform(amag.begin(), amag.end(), amag.begin(),
-	    bind2nd(appmagnitude<float>(),zeropoint));  
 
   cout<<"First few apparent mags: "<<endl;
   for (i=0; i<nband; i++){
@@ -168,14 +176,19 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 
   cout<<"Calculating absolute magnitudes"<<endl;
   //calculate absolute magnitudes without kcorrection
-  
+
   vector<float>::iterator it;
   absmagnitude<float> absmagn;
   for (it=redshift.begin(); it!=redshift.end(); it++){
     for (i=0; i<nband; i++){
-      amag[nband*(it-redshift.begin())+i] = absmagn(amag[nband*(it-redshift.begin())+i],*it);
+      amag[nband*(it-redshift.begin())+i] = absmagn(omag[nband*(it-redshift.begin())+i],*it);
     }
   }
+
+  cout<<"Subtracting kcorrection"<<endl;
+  //add k-correction to absolute magnitudes
+  transform(amag.begin(), amag.end(), kcorrection.begin(),
+	    amag.begin(), minus<float>());
 
   cout<<"First few absolute mags: "<<endl;
   for (i=0; i<nband; i++){
@@ -186,11 +199,10 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   cout<<"Done calculating magnitudes"<<endl;
 }
 
-void assign_colors(vector<float> &reference_mag, vector<float> &coeff, 
+void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 		   vector<float> &redshift, float zmin, float zmax,
-		   float band_shift, int nbands, char filterfile[], 
-		   vector<float> &omag, vector<float> &amag,
-		   vector<float> &coeff_norm, vector<float> abcorr,
+		   float band_shift, int nbands, char filterfile[],
+		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
 		   bool refflag){
 
   int i;
@@ -199,23 +211,15 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   float sdss_bandshift = 0.1;
   float sdssab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
-  //vector<float> deltam(ngal);
+  vector<float> deltam(ngal);
   strcpy(sdss_filterfile, (colortrdir+"/sdss_filter.txt").c_str());
-  
+
   cout << "First few reference magnitudes: " << endl;
-  for (i=0;i<5;i++) 
+  for (i=0;i<5;i++)
     {
       cout << reference_mag[i] << ", ";
     }
   cout << endl;
-
-  cout << "First few redshifts: " << endl;
-  for (i=0;i<5;i++) 
-    {
-      cout << redshift[i] << ", ";
-    }
-  cout << endl;
-  
 
   cout<<"Coeffs: "<<endl;
   for (i=0;i<25;i++){
@@ -233,48 +237,41 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   if (refflag)
     {
       transform(amag.begin(), amag.end(), amag.begin(),
-  	    bind2nd(minus<float>(), sdssab_corr));
+		bind2nd(minus<float>(), sdssab_corr));
       transform(reference_mag.begin(), reference_mag.end(), amag.begin(),
-		coeff_norm.begin(), expminus<float>());
-    } 
-  else 
+		deltam.begin(), minus<float>());
+    }
+  else
     {
       transform(omag.begin(), omag.end(), omag.begin(),
-  	    bind2nd(minus<float>(), sdssab_corr));
+		bind2nd(minus<float>(), sdssab_corr));
 
       transform(reference_mag.begin(), reference_mag.end(), omag.begin(),
-		coeff_norm.begin(), minus<float>());
+		deltam.begin(), minus<float>());
     }
 
-  cout<<"10-100 coeff_norm"<<endl;
+  cout<<"10-100 deltam"<<endl;
   for (i=10;i<100;i++){
-    cout<<coeff_norm[i]<<", ";
+    cout<<deltam[i]<<", ";
     if ((i-10+1)%5==0) cout<<endl;
   }
   cout<<endl;
 
-  //renormalize coefficients
-  vector<float>::iterator it;
-  for (it=coeff_norm.begin();it!=coeff_norm.end();it++){
-    for (i=0;i<ntemp;i++){
-      coeff[(it-coeff_norm.begin())*ntemp+i] = coeff[(it-coeff_norm.begin())*ntemp+i]*(*it);
-    }
-  }
-  
   //calculate observed and abs mags in desired output bands without shift
   //calculated from SDSS bands
   k_calculate_magnitudes(coeff, redshift, zmin, zmax, band_shift,
 			 nbands, filterfile, omag, amag);
-  
+
   //apply SDSS shift to app and abs mags (same for all bands)
-  for (it=coeff_norm.begin();it!=coeff_norm.end();it++){
+  vector<float>::iterator it;
+  for (it=deltam.begin();it!=deltam.end();it++){
     for (i=0;i<nbands;i++){
-      omag[(it-coeff_norm.begin())*nbands+i] = omag[(it-coeff_norm.begin())*nbands+i]+abcorr[i];
-      amag[(it-coeff_norm.begin())*nbands+i] = amag[(it-coeff_norm.begin())*nbands+i]+abcorr[i];
+      omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
+      amag[(it-deltam.begin())*nbands+i] = amag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
     }
   }
 
-#ifdef COLORTEST
+  #ifdef COLORTEST
   ofstream amag_file("./des_amagtest.txt");
   vector<float>::iterator ditr;
 
@@ -286,7 +283,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 	  amag_file << "\n";
 	} else amag_file << " ";
     }
-#endif
+  #endif
 
 }
 
@@ -337,8 +334,8 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
     }
 }
 
-void write_colors(std::vector<float> amag, std::vector<float> omag, std::vector<float> coeff_norm,
-		  const int nbands, std::string outname, std::string surveyname)
+void write_colors(std::vector<float> amag, std::vector<float> omag, const int nbands,
+		  std::string outname, std::string surveyname)
 {
 
   using namespace CCfits;
@@ -418,23 +415,22 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, std::vector<
 
 enum string_code
   {
-  TWOMASS,
-  CFHTLS,
-  CANDELS,
-  DEEP2,
-  SDSS,
-  DECAM,
-  Euclid,
-  FLAMEX,
-  HSC,
-  IRAC,
-  Johnson,
-  LSST,
-  VISTA,
-  WFIRST,
-  WISE,
-  DESY3
-};
+    TWOMASS,
+    CFHTLS,
+    CANDELS,
+    DEEP2,
+    SDSS,
+    DECAM,
+    Euclid,
+    FLAMEX,
+    HSC,
+    IRAC,
+    Johnson,
+    LSST,
+    VISTA,
+    WFIRST,
+      WISE
+  };
 
 string_code hashit (std::string const& inString)
 {
@@ -444,7 +440,6 @@ string_code hashit (std::string const& inString)
   if (inString == "DEEP2") return DEEP2;
   if (inString == "SDSS") return SDSS;
   if (inString == "DECAM") return DECAM;
-  if (inString == "DESY3") return DESY3;
   if (inString == "Euclid") return Euclid;
   if (inString == "FLAMEX") return FLAMEX;
   if (inString == "HSC") return HSC;
@@ -534,10 +529,6 @@ int main(int argc, char *argv[])
 	  strcpy(filterfile, (colortrdir+"/decam_filters.txt").c_str());
 	  band_shift = 0.1;
 	  break;
-        case DESY3:
-	  strcpy(filterfile, (colortrdir+"des_y3_filters.txt").c_str());
-	  band_shift = 0.1;
-	  break;
 	case Euclid:
 	  strcpy(filterfile, (colortrdir+"/euclid_filters.txt").c_str());
 	  break;
@@ -574,7 +565,6 @@ int main(int argc, char *argv[])
 
       std::vector<float> omag(nrows*nk);
       std::vector<float> amag(nrows*nk);
-      std::vector<float> coeff_norm(nrows);
 
       //generate survey magnitudes
       if (hashit(survey)==SDSS)
@@ -585,7 +575,7 @@ int main(int argc, char *argv[])
 	    }
 
 	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
-			nk, filterfile, omag, amag, coeff_norm, abcorr);
+			nk, filterfile, omag, amag, abcorr);
 	}
       else
 	{
@@ -594,13 +584,13 @@ int main(int argc, char *argv[])
 	      abcorr.push_back(0.0);
 	    }
 
-      	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
-			nk, filterfile, omag, amag, coeff_norm, abcorr);
+	  assign_colors(sdss_mag_r, coeffs, redshift, 0.0, 2.5, band_shift,
+			nk, filterfile, omag, amag, abcorr);
 	}
-      
+
       outname = outdir + "/" + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
       cout << "Writing to " << outname << endl;
-      write_colors(amag, omag, coeff_norm, nk, outname, survey);
+      write_colors(amag, omag, nk, outname, survey);
     }
 }
 
@@ -635,15 +625,14 @@ int main(int argc, char **argv)
   strcpy(filterfile, "./des_filters.txt");
 
   copy(istream_iterator<ginfo>(ginfo_file),
-	    istream_iterator<ginfo>(),
-	    back_inserter(sdss_ginfo));
+       istream_iterator<ginfo>(),
+       back_inserter(sdss_ginfo));
 
   int ngal = sdss_ginfo.size();
   ntemp = 5;
   vector<int> sed_ids(ngal);
   vector<float> redshift(ngal);
   vector<float> refmag(ngal);
-  vector<float> coeff_norm(ngal);
   vector<float> omag(ngal*nbands);
   vector<float> amag(ngal*nbands);
   vector<float> coeff(ngal*ntemp);
@@ -665,7 +654,7 @@ int main(int argc, char **argv)
   match_coeff(sed_ids, &coeff[0]);
   assign_colors(refmag, coeff, redshift, zmin, zmax,
 		band_shift, nbands, filterfile, omag,
-		amag,coeff_norm,abcorr,false);
+		amag,abcorr,false);
 
   //write out magnitudes
   ofstream omag_file("./des_omagtest.txt");
