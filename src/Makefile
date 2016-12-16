@@ -1,6 +1,6 @@
 #machine
-#SYSTYPE="sherlock"
-SYSTYPE="edison"
+SYSTYPE="sherlock"
+#SYSTYPE="edison"
 #SYSTYPE="slac"
 
 #compiler
@@ -120,7 +120,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-#CPPFLAGS += -DCATALOG
+CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
@@ -135,7 +135,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-#CPPFLAGS += -DCATALOG
+CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
