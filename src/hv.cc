@@ -592,7 +592,7 @@ int main(void){
   vector<float> coeff(galaxies.size()*ntemp);
   vector<float> tmag(galaxies.size()*nbands);
   vector<float> amag(galaxies.size()*nbands);
-  vector<float> coeff_norm(galaxies.size());
+  vector<float> deltam(galaxies.size());
 
 #ifdef OUTPUTDENSITY
   vector<float> dist8(galaxies.size());
@@ -614,7 +614,7 @@ int main(void){
 
   assign_colors(mr, coeff, z, zmin_this, zmax_this,
 		band_shift, nbands, filterfile,
-		tmag, amag, abcorr);
+		tmag, amag, deltam, abcorr);
   t2 = clock();
 
   cout << "Generated colors in " << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
@@ -643,12 +643,12 @@ int main(void){
 #ifdef OUTPUTDENSITY
   cout << "nndist_percent " << nndist_percent[0] << endl;
   write_bcc_catalogs_w_densities(galaxies, particles, amag, tmag,
-             mr, omag, omagerr, flux, ivar, e, s,
-             idx, halos, id, coeff, dist8, nndist,
-             nndist_percent, outgfn, outghfn);
+				 mr, omag, deltam, omagerr, flux, ivar, e, s,
+				 idx, halos, id, coeff, dist8, nndist,
+				 nndist_percent, outgfn, outghfn);
 #else
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr,
-		     omag, omagerr, flux, ivar, e, s,
+		     omag, omagerr, deltam, flux, ivar, e, s,
 		     idx, halos, id, coeff, outgfn,
 		     outghfn);
 #endif

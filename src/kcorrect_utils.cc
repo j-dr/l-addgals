@@ -202,8 +202,8 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 		   vector<float> &redshift, float zmin_this, float zmax_this,
 		   float band_shift, int nbands, char filterfile[],
-		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
-		   bool refflag){
+		   vector<float> &omag, vector<float> &amag, vector<float> &deltam,
+		   vector<float> abcorr, bool refflag){
 
   int i;
   int ngal = reference_mag.size();
@@ -211,7 +211,6 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
   float sdss_bandshift = 0.1;
   float sdssab_corr = 0.012;
   char sdss_filterfile[FILESIZE];
-  vector<float> deltam(ngal);
   strcpy(sdss_filterfile, (colortrdir+"/sdss_filter.txt").c_str());
 
   cout << "First few reference magnitudes: " << endl;
@@ -269,6 +268,8 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
       omag[(it-deltam.begin())*nbands+i] = omag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
       amag[(it-deltam.begin())*nbands+i] = amag[(it-deltam.begin())*nbands+i]+(*it)+abcorr[i];
     }
+    for (i=0;i<ntemp;i++)
+      coeff[(it-deltam.begin())*ntemp+i] *= pow(10.0, *it/-2.5);
   }
 
   #ifdef COLORTEST
