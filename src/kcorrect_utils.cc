@@ -44,8 +44,8 @@ string colortrdir;
 string colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals";
 #endif
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
-			 float zmax, float band_shift, char filterfile[], float *maggies)
+void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin_this,
+			 float zmax_this, float band_shift, char filterfile[], float *maggies)
 {
   cout<<"Reconstructing maggies"<<endl;
 
@@ -84,7 +84,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 
   cout<<"Creating projection table"<<endl;
   for(i=0;i<nz;i++)
-    zvals[i]=zmin+(zmax-zmin)*((float)i+0.5)/(float)nz;
+    zvals[i]=zmin_this+(zmax_this-zmin_this)*((float)i+0.5)/(float)nz;
   k_projection_table(rmatrix,nk,nv,vmatrix,lambda,nl,zvals,nz,filter_n,
 		     filter_lambda,filter_pass,band_shift,maxn);
 
@@ -132,7 +132,7 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
 }
 
 void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
-			    float zmin, float zmax, float band_shift,
+			    float zmin_this, float zmax_this, float band_shift,
 			    int nband, char filterfile[], vector<float> &omag,
 			    vector<float> &amag)
 {
@@ -145,12 +145,12 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
   fill(rf_z.begin(), rf_z.end(), band_shift);
 
   //observer frame maggies
-  reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
-		      zmax, 0.0, filterfile, &omag[0]);
+  reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin_this,
+		      zmax_this, 0.0, filterfile, &omag[0]);
 
   //rest frame maggies
-  reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin,
-		      zmax, 0.0, filterfile, &amag[0]);
+  reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin_this,
+		      zmax_this, 0.0, filterfile, &amag[0]);
 
   cout<<"Calculating kcorrections"<<endl;
   //calculate k-correction in mags
@@ -200,7 +200,7 @@ void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
 }
 
 void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
-		   vector<float> &redshift, float zmin, float zmax,
+		   vector<float> &redshift, float zmin_this, float zmax_this,
 		   float band_shift, int nbands, char filterfile[],
 		   vector<float> &omag, vector<float> &amag, vector<float> abcorr,
 		   bool refflag){
@@ -230,7 +230,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 
   //calculate SDSS r-band abs mags to determine magnitude shifts to apply
   //to kcorrect outputs for other bands
-  k_calculate_magnitudes(coeff, redshift, zmin, zmax, sdss_bandshift,
+  k_calculate_magnitudes(coeff, redshift, zmin_this, zmax_this, sdss_bandshift,
 			 1, sdss_filterfile, omag, amag);
 
   //determine shift needed to get reference_mag from sdss_amag
@@ -259,7 +259,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 
   //calculate observed and abs mags in desired output bands without shift
   //calculated from SDSS bands
-  k_calculate_magnitudes(coeff, redshift, zmin, zmax, band_shift,
+  k_calculate_magnitudes(coeff, redshift, zmin_this, zmax_this, band_shift,
 			 nbands, filterfile, omag, amag);
 
   //apply SDSS shift to app and abs mags (same for all bands)
@@ -606,7 +606,7 @@ int main(int argc, char **argv)
   }
 
   ifstream ginfo_file(argv[1]);
-  float zmin, zmax, band_shift;
+  float zmin_this, zmax_this, band_shift;
   int nbands, ntemp, i;
   char filterfile[FILESIZE];
   float ZREDMIN = 0.00000;
@@ -618,8 +618,8 @@ int main(int argc, char **argv)
     cerr<<"error: cannot open "<<argv[1]<<endl;
     exit(1);
   }
-  zmin = 0.0;
-  zmax = 2.5;
+  zmin_this = 0.0;
+  zmax_this = 2.5;
   band_shift = 0.1;
   nbands = 5;
   strcpy(filterfile, "./des_filters.txt");
@@ -652,7 +652,7 @@ int main(int argc, char **argv)
   cout<<endl;
 
   match_coeff(sed_ids, &coeff[0]);
-  assign_colors(refmag, coeff, redshift, zmin, zmax,
+  assign_colors(refmag, coeff, redshift, zmin_this, zmax_this,
 		band_shift, nbands, filterfile, omag,
 		amag,abcorr,false);
 

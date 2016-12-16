@@ -614,7 +614,7 @@ int main(void){
 
   assign_colors(mr, coeff, z, zmin_this, zmax_this,
 		band_shift, nbands, filterfile,
-		tmag, amag, coeff_norm, abcorr);
+		tmag, amag, abcorr);
   t2 = clock();
 
   cout << "Generated colors in " << (t2-t1)/CLOCKS_PER_SEC << " seconds" << endl;
