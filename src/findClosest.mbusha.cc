@@ -783,6 +783,10 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 		}
 		assigned[particleID] = true;
 		galaxies[gID]->P(particles[particleID]);
+		if (particles[particleID]->Hid()==-1)
+		  {
+		    cout << "Assigned particle with no halo associated!" << endl;
+		  }
 		particles[particleID]->MakeGal(gID);
 	}
 
