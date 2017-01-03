@@ -137,8 +137,8 @@ void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles,
 
 void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles,
 			 vector<float> &amag, vector<float> &tmag, vector<float> &mr,
-			 vector<float> &omag, vector<float> &omagerr, vector<float> &deltam,
-			 vector<float> &flux, vector<float> &ivar, vector<double> &e,
+			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux,
+			 vector<float> &ivar, vector<float> &deltam,vector<double> &e,
 			 vector<double> &s, vector<bool> &idx, vector <Halo *> &halos,
 			 vector<int> &sed_ids, vector<float> &coeffs,
 			 string outgfn, string outghfn)
@@ -424,8 +424,8 @@ void  write_bcc_catalogs_w_densities(
     vector<Galaxy *> &galaxies, vector<Particle *> &particles,
     vector<float> &amag, vector<float> &tmag,
     vector<float> &mr, vector<float> &omag, vector<float>
-    &omagerr, vector<float> &deltam, vector<float> &flux,
-    vector<float> &ivar, vector<double> &e, vector<double> &s,
+    &omagerr,  vector<float> &flux, vector<float> &ivar,
+    vector<float> &deltam, vector<double> &e, vector<double> &s,
     vector<bool> &idx, vector <Halo *> &halos, vector<int> &sed_ids,
     vector<float> &coeffs, vector<float> &dist8,
     vector<float> &nndist, vector<float> &nndist_percent,
