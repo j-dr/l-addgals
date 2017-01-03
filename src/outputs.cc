@@ -137,9 +137,9 @@ void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles,
 
 void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles,
 			 vector<float> &amag, vector<float> &tmag, vector<float> &mr,
-			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux,
-			 vector<float> &ivar, vector<double> &e, vector<double> &s,
-			 vector<bool> &idx, vector <Halo *> &halos,
+			 vector<float> &omag, vector<float> &omagerr, vector<float> &deltam,
+			 vector<float> &flux, vector<float> &ivar, vector<double> &e,
+			 vector<double> &s, vector<bool> &idx, vector <Halo *> &halos,
 			 vector<int> &sed_ids, vector<float> &coeffs,
 			 string outgfn, string outghfn)
 {
@@ -158,9 +158,9 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     cerr << "Can't open " << outgfn << endl;
   }
 
-  vector<string> tcolName(38,"");
-  vector<string> tcolUnit(38,"");
-  vector<string> tcolForm(38,"");
+  vector<string> tcolName(39,"");
+  vector<string> tcolUnit(39,"");
+  vector<string> tcolForm(39,"");
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -200,6 +200,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolName[35] = "TSIZE";
   tcolName[36] = "LMAG";
   tcolName[37] = "W";
+  tcolName[38] = "DELTAM";
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -239,6 +240,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolUnit[35] = "arcseconds";
   tcolUnit[36] = "mag";
   tcolUnit[37] = "";
+  tcolUnit[38] = "mag";  
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -278,11 +280,13 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[35] = "E";
   tcolForm[36] = "5E";
   tcolForm[37] = "E";
+  tcolForm[38] = "E";  
 
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5), ecatid(keep);
+    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5),
+    ecatid(keep), dm(keep);
 
   //Go through the galaxies and get the info we want
   int count=0;
@@ -307,6 +311,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       central[count] = galaxies[i]->Central();
       sdssr[count] = mr[i];
       ecatid[count] = sed_ids[i];
+      dm[count] = deltam[i];
       for (int c=0; c<5; c++)
 	{
 	  cf[count*5+c] = coeffs[i*5+c];
@@ -328,6 +333,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   sed_ids.clear();
   coeffs.clear();
   amag.clear();
+  deltam.clear();
 
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;
@@ -399,6 +405,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     newTable->column(tcolName[34]).write(e,count,1);
     cout << "writing 35" << endl;
     newTable->column(tcolName[35]).write(s,1);
+    cout << "writing 38" << endl;
+    newTable->column(tcolName[38]).write(dm,1);
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");
@@ -416,9 +424,9 @@ void  write_bcc_catalogs_w_densities(
     vector<Galaxy *> &galaxies, vector<Particle *> &particles,
     vector<float> &amag, vector<float> &tmag,
     vector<float> &mr, vector<float> &omag, vector<float>
-    &omagerr, vector<float> &flux, vector<float> &ivar,
-    vector<double> &e, vector<double> &s, vector<bool> &idx,
-    vector <Halo *> &halos, vector<int> &sed_ids,
+    &omagerr, vector<float> &deltam, vector<float> &flux,
+    vector<float> &ivar, vector<double> &e, vector<double> &s,
+    vector<bool> &idx, vector <Halo *> &halos, vector<int> &sed_ids,
     vector<float> &coeffs, vector<float> &dist8,
     vector<float> &nndist, vector<float> &nndist_percent,
     string outgfn, string outghfn)
@@ -438,9 +446,9 @@ void  write_bcc_catalogs_w_densities(
     cerr << "Can't open " << outgfn << endl;
   }
 
-  vector<string> tcolName(42,"");
-  vector<string> tcolUnit(42,"");
-  vector<string> tcolForm(42,"");
+  vector<string> tcolName(43,"");
+  vector<string> tcolUnit(43,"");
+  vector<string> tcolForm(43,"");
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -484,6 +492,7 @@ void  write_bcc_catalogs_w_densities(
   tcolName[39] = "SIGMA5";
   tcolName[40] = "SIGMA5P";
   tcolName[41] = "PDIST8";
+  tcolName[42] = "DELTAM";  
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -527,6 +536,7 @@ void  write_bcc_catalogs_w_densities(
   tcolUnit[39] = "Mpc/h";
   tcolUnit[40] = "";
   tcolUnit[41] = "Mpc/h";
+  tcolUnit[42] = "mag";  
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -570,6 +580,7 @@ void  write_bcc_catalogs_w_densities(
   tcolForm[39] = "E";
   tcolForm[40] = "E";
   tcolForm[41] = "E";
+  tcolForm[42] = "E";  
 
 
   cout << "Extracting relevant galaxy information" << endl;
@@ -578,7 +589,7 @@ void  write_bcc_catalogs_w_densities(
     central(keep), empty(keep,-1), cf(keep*5),
     am(keep*5), ecatid(keep), dist8k(keep), nndistk(keep),
     nndist_percentk(keep), pdist8(keep), rhalo(keep),
-    rvir(keep), mvir(keep);
+    rvir(keep), mvir(keep), dm(keep);
 
   vector<int> hid(keep);
 
@@ -612,6 +623,7 @@ void  write_bcc_catalogs_w_densities(
       dist8k[count] = dist8[i];
       nndistk[count] = nndist[i];
       nndist_percentk[count] = nndist_percent[i];
+      dm[count] = deltam[i];
       for (int c=0; c<5; c++)
 	{
 	  cf[count*5+c] = coeffs[i*5+c];
@@ -632,6 +644,7 @@ void  write_bcc_catalogs_w_densities(
   dist8.clear();
   nndist.clear();
   nndist_percent.clear();
+  deltam.clear();
 
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;
@@ -717,6 +730,8 @@ void  write_bcc_catalogs_w_densities(
     newTable->column(tcolName[40]).write(nndist_percentk,1);
     cout << "writing 41" << endl;
     newTable->column(tcolName[41]).write(pdist8,1);
+    cout << "writing 42" << endl;
+    newTable->column(tcolName[42]).write(dm,1);    
   }
   catch(FitsException &except){
     printf("Caught Save Error: Column Write -- ");
