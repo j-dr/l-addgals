@@ -11,21 +11,6 @@
 #ifndef UNITTESTS
 int GalaxyZBin(float zRed);
 
-void printerror( int status)
-{
-  /*****************************************************/
-  /* Print out cfitsio error messages and exit program */
-  /*****************************************************/
-
-
-  if (status)
-    {
-      fits_report_error(stderr, status); /* print error report */
-
-      exit( status );    /* terminate the program, returning error status */
-    }
-  return;
-}
 
 void PrintMinMaxDens(vector <Galaxy *> &galaxies, vector <Particle *> &particles)
 {
@@ -163,7 +148,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 {
   fitsfile *fptr;
   int status, hdutype;
-  long firstrow, firstelem, nrows;
+  long firstrow, firstelemmag, firstelemelip, nrows;
+  int i;
 
   int size = galaxies.size();
   int keep = s.size();
@@ -172,7 +158,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   int tfields = 39;
   
   firstrow  = 1;
-  firstelem = 1;
+  firstelemmag = 1;
+  firstelemelip = 1;
 
   char *tcolName[tfields];
   char *tcolUnit[tfields];
@@ -268,8 +255,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[7] = "5E";
   tcolForm[8] = "5E";
   tcolForm[9] = "5E";
-  tcolForm[10] = "E";
-  tcolForm[11] = "E";
+  tcolForm[10] = "G";
+  tcolForm[11] = "G";
   tcolForm[12] = "E";
   tcolForm[13] = "K";
   tcolForm[14] = "E";
@@ -307,7 +294,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   //Go through the galaxies and get the info we want
   int count=0;
   Particle * p;
-  for (int i=0; i<size; i++)
+  for (i=0; i<size; i++)
     {
 #ifndef NOCUT
       if (!idx[i]) continue;
@@ -375,67 +362,84 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   if ( fits_get_rowsize( fptr, &nrows, &status) )
     {
       cerr << "Can't get optimal number of rows." << endl;
-      printerror(status);
+      fits_report_error(stderr, status);
     }
 
   cout << "Writing columns" << endl;
 
-  while (firstrow<size)
+  while (firstrow<=size)
     {
-      fits_write_col(fptr, TLONG, 1, firstrow, firstelem, 
-		     nrows, &id[0], &status);
-      fits_write_col(fptr, TLONG, 2, firstrow, firstelem, 
-		     nrows, &id[0], &status);
-      fits_write_col(fptr, TSHORT, 3, firstrow, firstelem, 
-		     nrows, &ecatid[0], &status);
-      fits_write_col(fptr, TFLOAT, 4, firstrow, firstelem, 
-		     nrows, &cf[0], &status);
-      fits_write_col(fptr, TFLOAT, 5, firstrow, firstelem, 
-		     nrows, &tmag[0], &status);
-      fits_write_col(fptr, TFLOAT, 6, firstrow, firstelem, 
-		     nrows, &omag[0], &status);
-      fits_write_col(fptr, TFLOAT, 7, firstrow, firstelem, 
-		     nrows, &flux[0], &status);
-      fits_write_col(fptr, TFLOAT, 8, firstrow, firstelem, 
-		     nrows, &ivar[0], &status);
-      fits_write_col(fptr, TFLOAT, 9, firstrow, firstelem, 
-		     nrows, &omagerr[0], &status);
-      fits_write_col(fptr, TFLOAT, 10, firstrow, firstelem, 
-		     nrows, &am[0], &status);
-      fits_write_col(fptr, TFLOAT, 11, firstrow, firstelem, 
-		     nrows, &ra[0], &status);
-      fits_write_col(fptr, TFLOAT, 12, firstrow, firstelem, 
-		     nrows, &dec[0], &status);
-      fits_write_col(fptr, TFLOAT, 13, firstrow, firstelem, 
-		     nrows, &z[0], &status);
-      fits_write_col(fptr, TLONG, 14, firstrow, firstelem, 
-		     nrows, &haloid[0], &status);
-      fits_write_col(fptr, TFLOAT, 19, firstrow, firstelem, 
-		     nrows, &central[0], &status);
-      fits_write_col(fptr, TFLOAT, 22, firstrow, firstelem, 
-		     nrows, &e[0], &status);
-      fits_write_col(fptr, TSHORT, 27, firstrow, firstelem, 
-		     nrows, &sdssr[0], &status);
-      fits_write_col(fptr, TFLOAT, 28, firstrow, firstelem, 
-		     nrows, &s[0], &status);
-      fits_write_col(fptr, TSHORT, 29, firstrow, firstelem, 
-		     nrows, &px[0], &status);
-      fits_write_col(fptr, TFLOAT, 30, firstrow, firstelem, 
-		     nrows, &py[0], &status);
-      fits_write_col(fptr, TFLOAT, 31, firstrow, firstelem, 
-		     nrows, &pz[0], &status);
-      fits_write_col(fptr, TFLOAT, 32, firstrow, firstelem, 
-		     nrows, &vx[0], &status);
-      fits_write_col(fptr, TFLOAT, 33, firstrow, firstelem, 
-		     nrows, &vy[0], &status);
-      fits_write_col(fptr, TFLOAT, 34, firstrow, firstelem, 
-		     nrows, &vz[0], &status);
-      fits_write_col(fptr, TFLOAT, 35, firstrow, firstelem, 
-		     nrows, &e[0], &status);
-      fits_write_col(fptr, TFLOAT, 36, firstrow, firstelem, 
-		     nrows, &s[0], &status);
-      fits_write_col(fptr, TFLOAT, 40, firstrow, firstelem, 
-		     nrows, &dm[0], &status);
+      fits_write_col(fptr, TINT, 1, firstrow, NULL, 
+		     nrows, &id[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 2, firstrow, NULL, 
+		     nrows, &id[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 3, firstrow, NULL, 
+		     nrows, &ecatid[firstrow-1], &status);
+
+      //write vector columns 5 times for every one scalar write
+      for (i=0;i<5;i++)
+	{
+	  fits_write_col(fptr, TFLOAT, 4, firstrow, firstelemmag, 
+			 nrows, &cf[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 5, firstrow, firstelemmag, 
+			 nrows, &tmag[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 6, firstrow, firstelemmag, 
+			 nrows, &omag[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 7, firstrow, firstelemmag, 
+			 nrows, &flux[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 8, firstrow, firstelemmag, 
+			 nrows, &ivar[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 9, firstrow, firstelemmag, 
+			 nrows, &omagerr[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 10, firstrow, firstelemmag, 
+			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
+
+	  //increment first vector element
+	  firstelemmag += nrows % 5;
+	}
+      
+      fits_write_col(fptr, TFLOAT, 11, firstrow, NULL, 
+		     nrows, &ra[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 12, firstrow, NULL, 
+		     nrows, &dec[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 13, firstrow, NULL, 
+		     nrows, &z[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 14, firstrow, NULL, 
+		     nrows, &haloid[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 19, firstrow, NULL, 
+		     nrows, &central[firstrow-1], &status);
+
+      for (i=0;i<2;i++)
+	{
+	  fits_write_col(fptr, TFLOAT, 22, firstrow, firstelemelip, 
+			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 35, firstrow, firstelemelip, 
+			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
+
+	  //increment first vector element to write to
+	  firstelemelip += nrows % 2;
+	}
+      
+      fits_write_col(fptr, TFLOAT, 27, firstrow, NULL, 
+		     nrows, &sdssr[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 28, firstrow, NULL, 
+		     nrows, &s[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 29, firstrow, NULL, 
+		     nrows, &px[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 30, firstrow, NULL, 
+		     nrows, &py[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 31, firstrow, NULL, 
+		     nrows, &pz[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 32, firstrow, NULL, 
+		     nrows, &vx[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 33, firstrow, NULL, 
+		     nrows, &vy[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 34, firstrow, NULL, 
+		     nrows, &vz[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 36, firstrow, NULL, 
+		     nrows, &s[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 40, firstrow, NULL, 
+		     nrows, &dm[firstrow-1], &status);
       if (status)
 	{
 	  fits_report_error(stderr,status);
@@ -443,6 +447,14 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 	}
       firstrow += nrows;
     }
+
+  fits_close_file(fptr, &status);
+  if(status)
+    {
+      fits_report_error( stderr, status );
+      exit(status);
+    }
+  
 
 }
 
@@ -460,7 +472,8 @@ void  write_bcc_catalogs_w_densities(
 
   fitsfile *fptr;
   int status, hdutype;
-  long firstrow, firstelem, nrows;
+  long firstrow, firstelemmag, firstelemelip, nrows;
+  int i;
 
   int size = galaxies.size();
   int keep = s.size();
@@ -469,7 +482,8 @@ void  write_bcc_catalogs_w_densities(
   int tfields = 43;
   
   firstrow  = 1;
-  firstelem = 1;
+  firstelemmag = 1;
+  firstelemelip = 1;  
 
   char *tcolName[tfields];
   char *tcolUnit[tfields];
@@ -573,8 +587,8 @@ void  write_bcc_catalogs_w_densities(
   tcolForm[7] = "5E";
   tcolForm[8] = "5E";
   tcolForm[9] = "5E";
-  tcolForm[10] = "E";
-  tcolForm[11] = "E";
+  tcolForm[10] = "G";
+  tcolForm[11] = "G";
   tcolForm[12] = "E";
   tcolForm[13] = "K";
   tcolForm[14] = "E";
@@ -621,7 +635,7 @@ void  write_bcc_catalogs_w_densities(
   //Go through the galaxies and get the info we want
   int count=0;
   Particle * p;
-  for (int i=0; i<size; i++)
+  for (i=0; i<size; i++)
     {
 #ifndef NOCUT
       if (!idx[i]) continue;
@@ -686,90 +700,112 @@ void  write_bcc_catalogs_w_densities(
     fits_report_error(stderr,status);
 
   cout << "Creating TRUTH HDU" << endl;
-  fits_create_tbl( fptr, BINARY_TBL, keep, tfields, tcolName, tcolForm,
+  fits_create_tbl( fptr, BINARY_TBL, 0, tfields, tcolName, tcolForm,
 		   tcolUnit, "TRUTH", &status);
   if(status)
     fits_report_error(stderr,status);      
 
   cout << "Getting rowsize" << endl;
 
-  if ( fits_get_rowsize( fptr, &nrows, &status) )
-    {
-      cerr << "Can't get optimal number of rows." << endl;
-      printerror(status);
-    }
+  fits_get_rowsize( fptr, &nrows, &status);
+
+  if(status)
+    fits_report_error(stderr,status);
 
   cout << "Writing columns" << endl;
 
-  while (firstrow<size)
+  while (firstrow<=size)
     {
-      fits_write_col(fptr, TLONG, 1, firstrow, firstelem, 
-		     nrows, &id[0], &status);
-      fits_write_col(fptr, TLONG, 2, firstrow, firstelem, 
-		     nrows, &id[0], &status);
-      fits_write_col(fptr, TSHORT, 3, firstrow, firstelem, 
-		     nrows, &ecatid[0], &status);
-      fits_write_col(fptr, TFLOAT, 4, firstrow, firstelem, 
-		     nrows, &cf[0], &status);
-      fits_write_col(fptr, TFLOAT, 5, firstrow, firstelem, 
-		     nrows, &tmag[0], &status);
-      fits_write_col(fptr, TFLOAT, 6, firstrow, firstelem, 
-		     nrows, &omag[0], &status);
-      fits_write_col(fptr, TFLOAT, 7, firstrow, firstelem, 
-		     nrows, &flux[0], &status);
-      fits_write_col(fptr, TFLOAT, 8, firstrow, firstelem, 
-		     nrows, &ivar[0], &status);
-      fits_write_col(fptr, TFLOAT, 9, firstrow, firstelem, 
-		     nrows, &omagerr[0], &status);
-      fits_write_col(fptr, TFLOAT, 10, firstrow, firstelem, 
-		     nrows, &am[0], &status);
-      fits_write_col(fptr, TFLOAT, 11, firstrow, firstelem, 
-		     nrows, &ra[0], &status);
-      fits_write_col(fptr, TFLOAT, 12, firstrow, firstelem, 
-		     nrows, &dec[0], &status);
-      fits_write_col(fptr, TFLOAT, 13, firstrow, firstelem, 
-		     nrows, &z[0], &status);
-      fits_write_col(fptr, TLONG, 14, firstrow, firstelem, 
-		     nrows, &hid[0], &status);
-      fits_write_col(fptr, TFLOAT, 19, firstrow, firstelem, 
-		     nrows, &central[0], &status);
-      fits_write_col(fptr, TFLOAT, 22, firstrow, firstelem, 
-		     nrows, &e[0], &status);
-      fits_write_col(fptr, TSHORT, 27, firstrow, firstelem, 
-		     nrows, &sdssr[0], &status);
-      fits_write_col(fptr, TFLOAT, 28, firstrow, firstelem, 
-		     nrows, &s[0], &status);
-      fits_write_col(fptr, TSHORT, 29, firstrow, firstelem, 
-		     nrows, &px[0], &status);
-      fits_write_col(fptr, TFLOAT, 30, firstrow, firstelem, 
-		     nrows, &py[0], &status);
-      fits_write_col(fptr, TFLOAT, 31, firstrow, firstelem, 
-		     nrows, &pz[0], &status);
-      fits_write_col(fptr, TFLOAT, 32, firstrow, firstelem, 
-		     nrows, &vx[0], &status);
-      fits_write_col(fptr, TFLOAT, 33, firstrow, firstelem, 
-		     nrows, &vy[0], &status);
-      fits_write_col(fptr, TFLOAT, 34, firstrow, firstelem, 
-		     nrows, &vz[0], &status);
-      fits_write_col(fptr, TFLOAT, 35, firstrow, firstelem, 
-		     nrows, &e[0], &status);
-      fits_write_col(fptr, TFLOAT, 36, firstrow, firstelem, 
-		     nrows, &s[0], &status);
-      fits_write_col(fptr, TFLOAT, 39, firstrow, firstelem, 
-		     nrows, &dist8k[0], &status);
-      fits_write_col(fptr, TFLOAT, 40, firstrow, firstelem, 
-		     nrows, &nndistk[0], &status);
-      fits_write_col(fptr, TFLOAT, 41, firstrow, firstelem, 
-		     nrows, &nndist_percentk[0], &status);
-      fits_write_col(fptr, TFLOAT, 42, firstrow, firstelem, 
-		     nrows, &pdist8[0], &status);
-      fits_write_col(fptr, TFLOAT, 43, firstrow, firstelem, 
-		     nrows, &dm[0], &status);
+      fits_write_col(fptr, TINT, 1, firstrow, NULL, 
+		     nrows, &id[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 2, firstrow, NULL, 
+		     nrows, &id[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 3, firstrow, NULL, 
+		     nrows, &ecatid[firstrow-1], &status);
+      //write vector columns 5 times for every one scalar write
+      for (i=0;i<5;i++)
+	{
+	  fits_write_col(fptr, TFLOAT, 4, firstrow, firstelemmag, 
+			 nrows, &cf[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 5, firstrow, firstelemmag, 
+			 nrows, &tmag[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 6, firstrow, firstelemmag, 
+			 nrows, &omag[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 7, firstrow, firstelemmag, 
+			 nrows, &flux[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 8, firstrow, firstelemmag, 
+			 nrows, &ivar[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 9, firstrow, firstelemmag, 
+			 nrows, &omagerr[(firstrow-1)*5 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 10, firstrow, firstelemmag, 
+			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
+
+	  //increment first vector element
+	  firstelemmag += nrows % 5;
+	}
+
+      fits_write_col(fptr, TFLOAT, 11, firstrow, NULL, 
+		     nrows, &ra[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 12, firstrow, NULL, 
+		     nrows, &dec[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 13, firstrow, NULL, 
+		     nrows, &z[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 14, firstrow, NULL, 
+		     nrows, &hid[firstrow-1], &status);
+      fits_write_col(fptr, TINT, 19, firstrow, NULL, 
+		     nrows, &central[firstrow-1], &status);
+
+      for (i=0;i<2;i++)
+	{
+	  fits_write_col(fptr, TFLOAT, 22, firstrow, firstelemelip, 
+			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 35, firstrow, firstelemelip, 
+			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
+
+	  //increment first vector element to write to
+	  firstelemelip += nrows % 2;
+	}
+      
+      fits_write_col(fptr, TFLOAT, 27, firstrow, NULL, 
+		     nrows, &sdssr[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 28, firstrow, NULL, 
+		     nrows, &s[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 29, firstrow, NULL, 
+		     nrows, &px[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 30, firstrow, NULL, 
+		     nrows, &py[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 31, firstrow, NULL, 
+		     nrows, &pz[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 32, firstrow, NULL, 
+		     nrows, &vx[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 33, firstrow, NULL, 
+		     nrows, &vy[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 34, firstrow, NULL, 
+		     nrows, &vz[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 36, firstrow, NULL, 
+		     nrows, &s[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 39, firstrow, NULL, 
+		     nrows, &dist8k[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 40, firstrow, NULL, 
+		     nrows, &nndistk[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 41, firstrow, NULL, 
+		     nrows, &nndist_percentk[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 42, firstrow, NULL, 
+		     nrows, &pdist8[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 43, firstrow, NULL, 
+		     nrows, &dm[firstrow-1], &status);
       if (status)
 	{
 	  fits_report_error(stderr,status);
 	  exit( status );
 	}
       firstrow += nrows;
+    }
+
+  fits_close_file(fptr, &status);
+  if(status)
+    {
+      fits_report_error( stderr, status );
+      exit(status);
     }
 }
