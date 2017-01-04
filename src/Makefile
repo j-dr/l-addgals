@@ -120,7 +120,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-#CPPFLAGS += -DCATALOG
+CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
@@ -228,8 +228,8 @@ endif
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
-#CPPFLAGS += -DOUTPUTDENSITY
-CPPFLAGS += -DMAKEMAGS
+CPPFLAGS += -DOUTPUTDENSITY
+#CPPFLAGS += -DMAKEMAGS
 #CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++

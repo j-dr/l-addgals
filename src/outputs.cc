@@ -3,12 +3,29 @@
 #include <memory>
 #include <unistd.h>     //for sleep()
 #include <fstream>
+#include <cstring>
 #include <CCfits/CCfits>
 #include "fitsio.h"
 #include "outputs.h"
 
 #ifndef UNITTESTS
 int GalaxyZBin(float zRed);
+
+void printerror( int status)
+{
+  /*****************************************************/
+  /* Print out cfitsio error messages and exit program */
+  /*****************************************************/
+
+
+  if (status)
+    {
+      fits_report_error(stderr, status); /* print error report */
+
+      exit( status );    /* terminate the program, returning error status */
+    }
+  return;
+}
 
 void PrintMinMaxDens(vector <Galaxy *> &galaxies, vector <Particle *> &particles)
 {
@@ -348,8 +365,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
     fits_report_error(stderr,status);
 
   cout << "Creating TRUTH HDU" << endl;
-  fits_create_tbl( fptr, BINARY_TBL, size, tfields, ttype, tform,
-		   tcolunit, "TRUTH", &status);
+  fits_create_tbl( fptr, BINARY_TBL, keep, tfields, tcolName, tcolForm,
+		   tcolUnit, "TRUTH", &status);
   if(status)
     fits_report_error(stderr,status);      
 
@@ -669,8 +686,8 @@ void  write_bcc_catalogs_w_densities(
     fits_report_error(stderr,status);
 
   cout << "Creating TRUTH HDU" << endl;
-  fits_create_tbl( fptr, BINARY_TBL, size, tfields, ttype, tform,
-		   tcolunit, "TRUTH", &status);
+  fits_create_tbl( fptr, BINARY_TBL, keep, tfields, tcolName, tcolForm,
+		   tcolUnit, "TRUTH", &status);
   if(status)
     fits_report_error(stderr,status);      
 
@@ -713,7 +730,7 @@ void  write_bcc_catalogs_w_densities(
       fits_write_col(fptr, TFLOAT, 13, firstrow, firstelem, 
 		     nrows, &z[0], &status);
       fits_write_col(fptr, TLONG, 14, firstrow, firstelem, 
-		     nrows, &haloid[0], &status);
+		     nrows, &hid[0], &status);
       fits_write_col(fptr, TFLOAT, 19, firstrow, firstelem, 
 		     nrows, &central[0], &status);
       fits_write_col(fptr, TFLOAT, 22, firstrow, firstelem, 
