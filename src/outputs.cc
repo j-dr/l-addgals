@@ -395,7 +395,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
 
 	  //increment first vector element
-	  firstelemmag = ( firstelemmag + nrows % 5 ) % 5 + 1;
+	  firstelemmag = ( firstelemmag - 1 + nrows % 5 ) % 5 + 1;
 	}
       
       fits_write_col(fptr, TFLOAT, 11, firstrow, 1, 
@@ -411,18 +411,18 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
       for (i=0;i<2;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
+	  fits_write_col(fptr, TDOUBLE, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
+	  fits_write_col(fptr, TDOUBLE, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
 
 	  //increment first vector element to write to
-	  firstelemelip = ( firstelemelip + nrows % 2 ) % 2 + 1;
+	  firstelemelip = ( firstelemelip - 1 + nrows % 2 ) % 2 + 1;
 	}
       
       fits_write_col(fptr, TFLOAT, 27, firstrow, 1, 
 		     nrows, &sdssr[firstrow-1], &status);
-      fits_write_col(fptr, TFLOAT, 28, firstrow, 1, 
+      fits_write_col(fptr, TDOUBLE, 28, firstrow, 1, 
 		     nrows, &s[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 29, firstrow, 1, 
 		     nrows, &px[firstrow-1], &status);
@@ -436,7 +436,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 		     nrows, &vy[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 34, firstrow, 1, 
 		     nrows, &vz[firstrow-1], &status);
-      fits_write_col(fptr, TFLOAT, 36, firstrow, 1, 
+      fits_write_col(fptr, TDOUBLE, 36, firstrow, 1, 
 		     nrows, &s[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 40, firstrow, 1, 
 		     nrows, &dm[firstrow-1], &status);
@@ -741,7 +741,7 @@ void  write_bcc_catalogs_w_densities(
 			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
 
 	  //increment first vector element
-	  firstelemmag = ( firstelemmag + nrows % 5 ) % 5 + 1;
+	  firstelemmag = ( firstelemmag - 1 + nrows % 5 ) % 5 + 1;
 	}
 
       fits_write_col(fptr, TFLOAT, 11, firstrow, 1, 
@@ -757,18 +757,18 @@ void  write_bcc_catalogs_w_densities(
 
       for (i=0;i<2;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
+	  fits_write_col(fptr, TDOUBLE, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
+	  fits_write_col(fptr, TDOUBLE, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
 
 	  //increment first vector element to write to
-	  firstelemelip = ( firstelemelip + nrows % 2 ) % 2 + 1;
+	  firstelemelip = ( firstelemelip - 1 + nrows % 2 ) % 2 + 1;
 	}
       
       fits_write_col(fptr, TFLOAT, 27, firstrow, 1, 
 		     nrows, &sdssr[firstrow-1], &status);
-      fits_write_col(fptr, TFLOAT, 28, firstrow, 1, 
+      fits_write_col(fptr, TDOUBLE, 28, firstrow, 1, 
 		     nrows, &s[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 29, firstrow, 1, 
 		     nrows, &px[firstrow-1], &status);
@@ -782,7 +782,7 @@ void  write_bcc_catalogs_w_densities(
 		     nrows, &vy[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 34, firstrow, 1, 
 		     nrows, &vz[firstrow-1], &status);
-      fits_write_col(fptr, TFLOAT, 36, firstrow, 1, 
+      fits_write_col(fptr, TDOUBLE, 36, firstrow, 1, 
 		     nrows, &s[firstrow-1], &status);
       fits_write_col(fptr, TFLOAT, 39, firstrow, 1, 
 		     nrows, &dist8k[firstrow-1], &status);
