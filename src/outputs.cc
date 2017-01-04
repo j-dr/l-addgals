@@ -379,19 +379,19 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
       //write vector columns 5 times for every one scalar write
       for (i=0;i<5;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 4, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 4, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &cf[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 5, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 5, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &tmag[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 6, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 6, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &omag[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 7, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 7, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &flux[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 8, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 8, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &ivar[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 9, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 9, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &omagerr[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 10, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 10, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
 
 	  //increment first vector element
@@ -411,9 +411,9 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
       for (i=0;i<2;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 22, firstrow, firstelemelip, 
+	  fits_write_col(fptr, TFLOAT, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 35, firstrow, firstelemelip, 
+	  fits_write_col(fptr, TFLOAT, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
 
 	  //increment first vector element to write to
@@ -725,19 +725,19 @@ void  write_bcc_catalogs_w_densities(
       //write vector columns 5 times for every one scalar write
       for (i=0;i<5;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 4, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 4, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &cf[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 5, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 5, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &tmag[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 6, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 6, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &omag[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 7, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 7, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &flux[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 8, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 8, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &ivar[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 9, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 9, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &omagerr[(firstrow-1)*5 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 10, firstrow, firstelemmag, 
+	  fits_write_col(fptr, TFLOAT, 10, ((firstrow-1)*5 + nrows*i) / 5 + 1, firstelemmag, 
 			 nrows, &am[(firstrow-1)*5 + nrows*i], &status);
 
 	  //increment first vector element
@@ -757,9 +757,9 @@ void  write_bcc_catalogs_w_densities(
 
       for (i=0;i<2;i++)
 	{
-	  fits_write_col(fptr, TFLOAT, 22, firstrow, firstelemelip, 
+	  fits_write_col(fptr, TFLOAT, 22, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
-	  fits_write_col(fptr, TFLOAT, 35, firstrow, firstelemelip, 
+	  fits_write_col(fptr, TFLOAT, 35, ((firstrow-1)*2 + nrows*i) / 2 + 1, firstelemelip, 
 			 nrows, &e[(firstrow-1)*2 + nrows*i], &status);
 
 	  //increment first vector element to write to
