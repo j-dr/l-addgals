@@ -70,11 +70,10 @@ void k_calculate_magnitudes(std::vector<float> &coeff, std::vector<float> &redsh
 			    std::vector<float> &amag);
 
 void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff,
-		   std::vector<float> &redshift, float zmin, float zmax,
+		   std::vector<float> &redshift, float zmin_this, float zmax_this,
 		   float band_shift, int nbands, char filterfile[],
 		   std::vector<float> &omag, std::vector<float> &amag,
-		   std::vector<float> &coeff_norm, std::vector<float> abcorr,
+		   std::vector<float> &deltam, std::vector<float> abcorr,
 		   bool refflag=true);
-
 
 #endif
