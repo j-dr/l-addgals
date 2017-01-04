@@ -255,8 +255,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[7] = "5E";
   tcolForm[8] = "5E";
   tcolForm[9] = "5E";
-  tcolForm[10] = "G";
-  tcolForm[11] = "G";
+  tcolForm[10] = "D";
+  tcolForm[11] = "D";
   tcolForm[12] = "E";
   tcolForm[13] = "K";
   tcolForm[14] = "E";
@@ -587,8 +587,8 @@ void  write_bcc_catalogs_w_densities(
   tcolForm[7] = "5E";
   tcolForm[8] = "5E";
   tcolForm[9] = "5E";
-  tcolForm[10] = "G";
-  tcolForm[11] = "G";
+  tcolForm[10] = "D";
+  tcolForm[11] = "D";
   tcolForm[12] = "E";
   tcolForm[13] = "K";
   tcolForm[14] = "E";
