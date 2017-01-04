@@ -783,10 +783,6 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 		}
 		assigned[particleID] = true;
 		galaxies[gID]->P(particles[particleID]);
-		if (particles[particleID]->Hid()==-1)
-		  {
-		    cout << "Assigned particle with no halo associated!" << endl;
-		  }
 		particles[particleID]->MakeGal(gID);
 	}
 
@@ -1069,9 +1065,8 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	    //float scatter = 0.17;
 	    double mr = normal_random(mr0, 2.5*SCATTER);
 	    halos[i]->Mr(mr);
-    	    if(mr<-24) cout<<"Halo "<<i<<": M200 = "<<m200<<", Mr = "<<mr<<",Mr0 = "<<mr0<<endl;
 #ifdef DEBUG
-	    if(mr<-24) cout<<"Halo "<<i<<": M200 = "<<m200<<", Mr = "<<mr<<",Mr0 = "<<mr0<<endl;
+	    if(i<10) cout<<"Halo "<<i<<": M200 = "<<m200<<", Mr = "<<mr<<endl;
 #endif
 
 	    /*
@@ -1193,7 +1188,6 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 
 	//int ibad = 1882048;
 	int ibad = 2082048000;
-	int dbad = 0;
 	for(int hi=0;hi<haloCount;hi++)
 	{
 	        if (hi >= ibad) 
@@ -1291,13 +1285,8 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		else
 		  {
 		    //create a new galaxy for the halo center
-		    if (hi >= dbad)
-		      {
-			cout<<"Creating new galaxy."<<endl;
-			if(hMr<-24) cout<<"Halo "<<hi<<", M200 = " << halos[hID]->M() << ", hD = "<<hD<<", Mr = "<<hMr<<endl;
-		      }
+		    if (hi >= ibad) cout<<"Creating new galaxy."<<endl;
 		    Galaxy * galaxy = new Galaxy(hMr,galaxies.size(),hD);
-		    if(hMr<-24) cout<<"Halo "<<hi<<", M200 = " << halos[hID]->M() << ", hD = "<<hD<<", Mr = "<<hMr<<endl;		    
 		    galaxy->Dist8(halos[hID]->Dist8());
 		    galaxies.push_back(galaxy);
 		    galaxyID = galaxies.size()-1;

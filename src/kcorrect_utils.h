@@ -59,21 +59,21 @@ template <class T> struct omfluxop : std::unary_function <T,T> {
       return 1.0e-9 * pow(10.0, -0.4 * (appmag - 22.5));}
 };
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin_this,
-			 float zmax_this, float band_shift, char filterfile[], float *maggies);
+void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
+			 float zmax, float band_shift, char filterfile[], float *maggies);
 
 void match_coeff(std::vector<int> &sed_ids, float *coeffs);
 
 void k_calculate_magnitudes(std::vector<float> &coeff, std::vector<float> &redshift,
-			    float zmin_this, float zmax_this, float band_shift, int nband,
+			    float zmin, float zmax, float band_shift, int nband,
 			    char filterfile[], std::vector<float> &omag,
 			    std::vector<float> &amag);
 
 void assign_colors(std::vector<float> &reference_mag, std::vector<float> &coeff,
-		   std::vector<float> &redshift, float zmin_this, float zmax_this,
+		   std::vector<float> &redshift, float zmin, float zmax,
 		   float band_shift, int nbands, char filterfile[],
 		   std::vector<float> &omag, std::vector<float> &amag,
-		   std::vector<float> &deltam, std::vector<float> abcorr,
+		   std::vector<float> &coeff_norm, std::vector<float> abcorr,
 		   bool refflag=true);
 
 

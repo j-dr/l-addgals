@@ -4,6 +4,7 @@
 #include <unistd.h>     //for sleep()
 #include <fstream>
 #include <CCfits/CCfits>
+#include "fitsio.h"
 #include "outputs.h"
 
 #ifndef UNITTESTS
@@ -138,29 +139,27 @@ void print_galaxies(vector <Galaxy *> &galaxies, vector <Particle *> &particles,
 void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particles,
 			 vector<float> &amag, vector<float> &tmag, vector<float> &mr,
 			 vector<float> &omag, vector<float> &omagerr, vector<float> &flux,
-			 vector<float> &ivar, vector<float> &deltam,vector<double> &e,
+			 vector<float> &ivar, vector<float> &deltam, vector<double> &e, 
 			 vector<double> &s, vector<bool> &idx, vector <Halo *> &halos,
 			 vector<int> &sed_ids, vector<float> &coeffs,
 			 string outgfn, string outghfn)
 {
-  using namespace CCfits;
-  std::auto_ptr<FITS> tFits;
+  fitsfile *fptr;
+  int status, hdutype;
+  long firstrow, firstelem, nrows;
+
   int size = galaxies.size();
   int keep = s.size();
   unsigned long rows(5);
 
-  //Write truth file
-  cout << "Opening fits file" << endl;
-  try{
-    tFits.reset(new FITS(outgfn,Write));
-  }
-  catch (CCfits::FITS::CantOpen){
-    cerr << "Can't open " << outgfn << endl;
-  }
+  int tfields = 39;
+  
+  firstrow  = 1;
+  firstelem = 1;
 
-  vector<string> tcolName(39,"");
-  vector<string> tcolUnit(39,"");
-  vector<string> tcolForm(39,"");
+  char *tcolName[tfields];
+  char *tcolUnit[tfields];
+  char *tcolForm[tfields];
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -240,7 +239,7 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolUnit[35] = "arcseconds";
   tcolUnit[36] = "mag";
   tcolUnit[37] = "";
-  tcolUnit[38] = "mag";  
+  tcolUnit[38] = "mag";
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -280,12 +279,12 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   tcolForm[35] = "E";
   tcolForm[36] = "5E";
   tcolForm[37] = "E";
-  tcolForm[38] = "E";  
+  tcolForm[38] = "E";
 
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
     vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5),
+    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5), 
     ecatid(keep), dm(keep);
 
   //Go through the galaxies and get the info we want
@@ -333,90 +332,100 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
   sed_ids.clear();
   coeffs.clear();
   amag.clear();
-  deltam.clear();
 
   cout << "Number of galaxies with idx == true: " << count << endl;
   cout << "Number of galaxies with shapes: " << keep << endl;
   assert(count==keep);
 
-  cout << "Creating TRUTH HDU" << endl;
-  static string ttablename("TRUTH");
-  Table* newTable;
+  char filename[1024];
+  memcpy(filename, outgfn.c_str(), outgfn.size() + 1);
 
-  try{
-    newTable = tFits->addTable(ttablename,keep,tcolName,tcolForm,tcolUnit);
-  }
-  catch(...){
-    printf("Could not create table\n");
-    exit(1);
-  }
+  cout << "Creating file:  " << filename << endl;
+  status = 0;
+
+  fits_create_file(&fptr,filename,&status);
+  if(status)
+    fits_report_error(stderr,status);
+
+  cout << "Creating TRUTH HDU" << endl;
+  fits_create_tbl( fptr, BINARY_TBL, size, tfields, ttype, tform,
+		   tcolunit, "TRUTH", &status);
+  if(status)
+    fits_report_error(stderr,status);      
+
+  cout << "Getting rowsize" << endl;
+
+  if ( fits_get_rowsize( fptr, &nrows, &status) )
+    {
+      cerr << "Can't get optimal number of rows." << endl;
+      printerror(status);
+    }
 
   cout << "Writing columns" << endl;
-  try{
-    cout << "writing id 1" << endl;
-    newTable->column(tcolName[0]).write(id,1);
-    cout << "writing id 2" << endl;
-    newTable->column(tcolName[1]).write(id,1);
-    cout << "writing sed_ids" << endl;
-    newTable->column(tcolName[2]).write(ecatid,1);
-    cout << "writing coeffs" << endl;
-    newTable->column(tcolName[3]).write(cf,count,1);
-    cout << "writing tmag" << endl;
-    newTable->column(tcolName[4]).write(tmag,count,1);
-    cout << "writing omag" << endl;
-    newTable->column(tcolName[5]).write(omag,count,1);
-    cout << "writing omag" << endl;
-    newTable->column(tcolName[6]).write(flux,count,1);
-    cout << "writing flux" << endl;
-    newTable->column(tcolName[7]).write(ivar,count,1);
-    cout << "writing ivar" << endl;
-    newTable->column(tcolName[8]).write(omagerr,count,1);
-    cout << "writing coeffs" << endl;
-    newTable->column(tcolName[9]).write(am,count,1);
-    cout << "writing ra" << endl;
-    newTable->column(tcolName[10]).write(ra,1);
-    cout << "writing dec" << endl;
-    newTable->column(tcolName[11]).write(dec,1);
-    cout << "writing z" << endl;
-    newTable->column(tcolName[12]).write(z,1);
-    cout << "writing haloid" << endl;
-    newTable->column(tcolName[13]).write(haloid,1);
-    cout << "writing 18" << endl;
-    newTable->column(tcolName[18]).write(central,1);
-    cout << "writing 21" << endl;
-    newTable->column(tcolName[21]).write(e,count,1);
-    cout << "writing 26" << endl;
-    newTable->column(tcolName[26]).write(sdssr,1);
-    cout << "writing 27" << endl;
-    newTable->column(tcolName[27]).write(s,1);
-    cout << "writing 28" << endl;
-    newTable->column(tcolName[28]).write(px,1);
-    cout << "writing 29" << endl;
-    newTable->column(tcolName[29]).write(py,1);
-    cout << "writing 30" << endl;
-    newTable->column(tcolName[30]).write(pz,1);
-    cout << "writing 31" << endl;
-    newTable->column(tcolName[31]).write(vx,1);
-    cout << "writing 32" << endl;
-    newTable->column(tcolName[32]).write(vy,1);
-    cout << "writing 33" << endl;
-    newTable->column(tcolName[33]).write(vz,1);
-    cout << "writing 34" << endl;
-    newTable->column(tcolName[34]).write(e,count,1);
-    cout << "writing 35" << endl;
-    newTable->column(tcolName[35]).write(s,1);
-    cout << "writing 38" << endl;
-    newTable->column(tcolName[38]).write(dm,1);
-  }
-  catch(FitsException &except){
-    printf("Caught Save Error: Column Write -- ");
-    printf("%s\n",except.message().c_str());
-    exit(1);
-  }
-  catch(...){
-    printf("Caught Save Error: Column Write\n");
-    exit(1);
-  }
+
+  while (firstrow<size)
+    {
+      fits_write_col(fptr, TLONG, 1, firstrow, firstelem, 
+		     nrows, &id[0], &status);
+      fits_write_col(fptr, TLONG, 2, firstrow, firstelem, 
+		     nrows, &id[0], &status);
+      fits_write_col(fptr, TSHORT, 3, firstrow, firstelem, 
+		     nrows, &ecatid[0], &status);
+      fits_write_col(fptr, TFLOAT, 4, firstrow, firstelem, 
+		     nrows, &cf[0], &status);
+      fits_write_col(fptr, TFLOAT, 5, firstrow, firstelem, 
+		     nrows, &tmag[0], &status);
+      fits_write_col(fptr, TFLOAT, 6, firstrow, firstelem, 
+		     nrows, &omag[0], &status);
+      fits_write_col(fptr, TFLOAT, 7, firstrow, firstelem, 
+		     nrows, &flux[0], &status);
+      fits_write_col(fptr, TFLOAT, 8, firstrow, firstelem, 
+		     nrows, &ivar[0], &status);
+      fits_write_col(fptr, TFLOAT, 9, firstrow, firstelem, 
+		     nrows, &omagerr[0], &status);
+      fits_write_col(fptr, TFLOAT, 10, firstrow, firstelem, 
+		     nrows, &am[0], &status);
+      fits_write_col(fptr, TFLOAT, 11, firstrow, firstelem, 
+		     nrows, &ra[0], &status);
+      fits_write_col(fptr, TFLOAT, 12, firstrow, firstelem, 
+		     nrows, &dec[0], &status);
+      fits_write_col(fptr, TFLOAT, 13, firstrow, firstelem, 
+		     nrows, &z[0], &status);
+      fits_write_col(fptr, TLONG, 14, firstrow, firstelem, 
+		     nrows, &haloid[0], &status);
+      fits_write_col(fptr, TFLOAT, 19, firstrow, firstelem, 
+		     nrows, &central[0], &status);
+      fits_write_col(fptr, TFLOAT, 22, firstrow, firstelem, 
+		     nrows, &e[0], &status);
+      fits_write_col(fptr, TSHORT, 27, firstrow, firstelem, 
+		     nrows, &sdssr[0], &status);
+      fits_write_col(fptr, TFLOAT, 28, firstrow, firstelem, 
+		     nrows, &s[0], &status);
+      fits_write_col(fptr, TSHORT, 29, firstrow, firstelem, 
+		     nrows, &px[0], &status);
+      fits_write_col(fptr, TFLOAT, 30, firstrow, firstelem, 
+		     nrows, &py[0], &status);
+      fits_write_col(fptr, TFLOAT, 31, firstrow, firstelem, 
+		     nrows, &pz[0], &status);
+      fits_write_col(fptr, TFLOAT, 32, firstrow, firstelem, 
+		     nrows, &vx[0], &status);
+      fits_write_col(fptr, TFLOAT, 33, firstrow, firstelem, 
+		     nrows, &vy[0], &status);
+      fits_write_col(fptr, TFLOAT, 34, firstrow, firstelem, 
+		     nrows, &vz[0], &status);
+      fits_write_col(fptr, TFLOAT, 35, firstrow, firstelem, 
+		     nrows, &e[0], &status);
+      fits_write_col(fptr, TFLOAT, 36, firstrow, firstelem, 
+		     nrows, &s[0], &status);
+      fits_write_col(fptr, TFLOAT, 40, firstrow, firstelem, 
+		     nrows, &dm[0], &status);
+      if (status)
+	{
+	  fits_report_error(stderr,status);
+	  exit( status );
+	}
+      firstrow += nrows;
+    }
 
 }
 
@@ -424,31 +433,30 @@ void  write_bcc_catalogs_w_densities(
     vector<Galaxy *> &galaxies, vector<Particle *> &particles,
     vector<float> &amag, vector<float> &tmag,
     vector<float> &mr, vector<float> &omag, vector<float>
-    &omagerr,  vector<float> &flux, vector<float> &ivar,
-    vector<float> &deltam, vector<double> &e, vector<double> &s,
+    &omagerr, vector<float> &flux, vector<float> &ivar,
+    vector<float> &deltam, vector<double> &e, vector<double> &s, 
     vector<bool> &idx, vector <Halo *> &halos, vector<int> &sed_ids,
     vector<float> &coeffs, vector<float> &dist8,
     vector<float> &nndist, vector<float> &nndist_percent,
     string outgfn, string outghfn)
 {
-  using namespace CCfits;
-  std::auto_ptr<FITS> tFits;
+
+  fitsfile *fptr;
+  int status, hdutype;
+  long firstrow, firstelem, nrows;
+
   int size = galaxies.size();
   int keep = s.size();
   unsigned long rows(5);
 
-  //Write truth file
-  cout << "Opening fits file" << endl;
-  try{
-    tFits.reset(new FITS(outgfn,Write));
-  }
-  catch (CCfits::FITS::CantOpen){
-    cerr << "Can't open " << outgfn << endl;
-  }
+  int tfields = 43;
+  
+  firstrow  = 1;
+  firstelem = 1;
 
-  vector<string> tcolName(43,"");
-  vector<string> tcolUnit(43,"");
-  vector<string> tcolForm(43,"");
+  char *tcolName[tfields];
+  char *tcolUnit[tfields];
+  char *tcolForm[tfields];
 
   tcolName[0] = "ID";
   tcolName[1] = "INDEX";
@@ -492,7 +500,7 @@ void  write_bcc_catalogs_w_densities(
   tcolName[39] = "SIGMA5";
   tcolName[40] = "SIGMA5P";
   tcolName[41] = "PDIST8";
-  tcolName[42] = "DELTAM";  
+  tcolName[42] = "DELTAM";
 
   tcolUnit[0] = "";
   tcolUnit[1] = "";
@@ -536,7 +544,7 @@ void  write_bcc_catalogs_w_densities(
   tcolUnit[39] = "Mpc/h";
   tcolUnit[40] = "";
   tcolUnit[41] = "Mpc/h";
-  tcolUnit[42] = "mag";  
+  tcolUnit[42] = "mag";
 
   tcolForm[0] = "K";
   tcolForm[1] = "K";
@@ -580,7 +588,7 @@ void  write_bcc_catalogs_w_densities(
   tcolForm[39] = "E";
   tcolForm[40] = "E";
   tcolForm[41] = "E";
-  tcolForm[42] = "E";  
+  tcolForm[42] = "E";
 
 
   cout << "Extracting relevant galaxy information" << endl;
@@ -650,97 +658,101 @@ void  write_bcc_catalogs_w_densities(
   cout << "Number of galaxies with shapes: " << keep << endl;
   assert(count==keep);
 
-  cout << "Creating TRUTH HDU" << endl;
-  static string ttablename("TRUTH");
-  Table* newTable;
+  char filename[1024];
+  memcpy(filename, outgfn.c_str(), outgfn.size() + 1);
 
-  try{
-    newTable = tFits->addTable(ttablename,keep,tcolName,tcolForm,tcolUnit);
-  }
-  catch(...){
-    printf("Could not create table\n");
-    exit(1);
-  }
+  cout << "Creating file:  " << filename << endl;
+  status = 0;
+
+  fits_create_file(&fptr,filename,&status);
+  if(status)
+    fits_report_error(stderr,status);
+
+  cout << "Creating TRUTH HDU" << endl;
+  fits_create_tbl( fptr, BINARY_TBL, size, tfields, ttype, tform,
+		   tcolunit, "TRUTH", &status);
+  if(status)
+    fits_report_error(stderr,status);      
+
+  cout << "Getting rowsize" << endl;
+
+  if ( fits_get_rowsize( fptr, &nrows, &status) )
+    {
+      cerr << "Can't get optimal number of rows." << endl;
+      printerror(status);
+    }
 
   cout << "Writing columns" << endl;
-  try{
-    cout << "writing id 1" << endl;
-    newTable->column(tcolName[0]).write(id,1);
-    cout << "writing id 2" << endl;
-    newTable->column(tcolName[1]).write(id,1);
-    cout << "writing sed_ids" << endl;
-    newTable->column(tcolName[2]).write(ecatid,1);
-    cout << "writing coeffs" << endl;
-    newTable->column(tcolName[3]).write(cf,count,1);
-    cout << "writing tmag" << endl;
-    newTable->column(tcolName[4]).write(tmag,count,1);
-    cout << "writing omag" << endl;
-    newTable->column(tcolName[5]).write(omag,count,1);
-    cout << "writing omag" << endl;
-    newTable->column(tcolName[6]).write(flux,count,1);
-    cout << "writing flux" << endl;
-    newTable->column(tcolName[7]).write(ivar,count,1);
-    cout << "writing ivar" << endl;
-    newTable->column(tcolName[8]).write(omagerr,count,1);
-    cout << "writing coeffs" << endl;
-    newTable->column(tcolName[9]).write(am,count,1);
-    cout << "writing ra" << endl;
-    newTable->column(tcolName[10]).write(ra,1);
-    cout << "writing dec" << endl;
-    newTable->column(tcolName[11]).write(dec,1);
-    cout << "writing z" << endl;
-    newTable->column(tcolName[12]).write(z,1);
-    cout << "writing hid" << endl;
-    newTable->column(tcolName[13]).write(hid,1);
-    cout << "writing rhalo" << endl;
-    newTable->column(tcolName[14]).write(rhalo,1);
-    cout << "writing mvir" << endl;
-    newTable->column(tcolName[15]).write(mvir,1);
-    cout << "writing rvir" << endl;
-    newTable->column(tcolName[17]).write(rvir,1);
-    cout << "writing 18" << endl;
-    newTable->column(tcolName[18]).write(central,1);
-    cout << "writing 21" << endl;
-    newTable->column(tcolName[21]).write(e,count,1);
-    cout << "writing 26" << endl;
-    newTable->column(tcolName[26]).write(sdssr,1);
-    cout << "writing 27" << endl;
-    newTable->column(tcolName[27]).write(s,1);
-    cout << "writing 28" << endl;
-    newTable->column(tcolName[28]).write(px,1);
-    cout << "writing 29" << endl;
-    newTable->column(tcolName[29]).write(py,1);
-    cout << "writing 30" << endl;
-    newTable->column(tcolName[30]).write(pz,1);
-    cout << "writing 31" << endl;
-    newTable->column(tcolName[31]).write(vx,1);
-    cout << "writing 32" << endl;
-    newTable->column(tcolName[32]).write(vy,1);
-    cout << "writing 33" << endl;
-    newTable->column(tcolName[33]).write(vz,1);
-    cout << "writing 34" << endl;
-    newTable->column(tcolName[34]).write(e,count,1);
-    cout << "writing 35" << endl;
-    newTable->column(tcolName[35]).write(s,1);
-    cout << "writing 38" << endl;
-    newTable->column(tcolName[38]).write(dist8k,1);
-    cout << "writing 39" << endl;
-    newTable->column(tcolName[39]).write(nndistk,1);
-    cout << "writing 40" << endl;
-    newTable->column(tcolName[40]).write(nndist_percentk,1);
-    cout << "writing 41" << endl;
-    newTable->column(tcolName[41]).write(pdist8,1);
-    cout << "writing 42" << endl;
-    newTable->column(tcolName[42]).write(dm,1);    
-  }
-  catch(FitsException &except){
-    printf("Caught Save Error: Column Write -- ");
-    printf("%s\n",except.message().c_str());
-    exit(1);
-  }
-  catch(...){
-    printf("Caught Save Error: Column Write\n");
-    exit(1);
-  }
 
+  while (firstrow<size)
+    {
+      fits_write_col(fptr, TLONG, 1, firstrow, firstelem, 
+		     nrows, &id[0], &status);
+      fits_write_col(fptr, TLONG, 2, firstrow, firstelem, 
+		     nrows, &id[0], &status);
+      fits_write_col(fptr, TSHORT, 3, firstrow, firstelem, 
+		     nrows, &ecatid[0], &status);
+      fits_write_col(fptr, TFLOAT, 4, firstrow, firstelem, 
+		     nrows, &cf[0], &status);
+      fits_write_col(fptr, TFLOAT, 5, firstrow, firstelem, 
+		     nrows, &tmag[0], &status);
+      fits_write_col(fptr, TFLOAT, 6, firstrow, firstelem, 
+		     nrows, &omag[0], &status);
+      fits_write_col(fptr, TFLOAT, 7, firstrow, firstelem, 
+		     nrows, &flux[0], &status);
+      fits_write_col(fptr, TFLOAT, 8, firstrow, firstelem, 
+		     nrows, &ivar[0], &status);
+      fits_write_col(fptr, TFLOAT, 9, firstrow, firstelem, 
+		     nrows, &omagerr[0], &status);
+      fits_write_col(fptr, TFLOAT, 10, firstrow, firstelem, 
+		     nrows, &am[0], &status);
+      fits_write_col(fptr, TFLOAT, 11, firstrow, firstelem, 
+		     nrows, &ra[0], &status);
+      fits_write_col(fptr, TFLOAT, 12, firstrow, firstelem, 
+		     nrows, &dec[0], &status);
+      fits_write_col(fptr, TFLOAT, 13, firstrow, firstelem, 
+		     nrows, &z[0], &status);
+      fits_write_col(fptr, TLONG, 14, firstrow, firstelem, 
+		     nrows, &haloid[0], &status);
+      fits_write_col(fptr, TFLOAT, 19, firstrow, firstelem, 
+		     nrows, &central[0], &status);
+      fits_write_col(fptr, TFLOAT, 22, firstrow, firstelem, 
+		     nrows, &e[0], &status);
+      fits_write_col(fptr, TSHORT, 27, firstrow, firstelem, 
+		     nrows, &sdssr[0], &status);
+      fits_write_col(fptr, TFLOAT, 28, firstrow, firstelem, 
+		     nrows, &s[0], &status);
+      fits_write_col(fptr, TSHORT, 29, firstrow, firstelem, 
+		     nrows, &px[0], &status);
+      fits_write_col(fptr, TFLOAT, 30, firstrow, firstelem, 
+		     nrows, &py[0], &status);
+      fits_write_col(fptr, TFLOAT, 31, firstrow, firstelem, 
+		     nrows, &pz[0], &status);
+      fits_write_col(fptr, TFLOAT, 32, firstrow, firstelem, 
+		     nrows, &vx[0], &status);
+      fits_write_col(fptr, TFLOAT, 33, firstrow, firstelem, 
+		     nrows, &vy[0], &status);
+      fits_write_col(fptr, TFLOAT, 34, firstrow, firstelem, 
+		     nrows, &vz[0], &status);
+      fits_write_col(fptr, TFLOAT, 35, firstrow, firstelem, 
+		     nrows, &e[0], &status);
+      fits_write_col(fptr, TFLOAT, 36, firstrow, firstelem, 
+		     nrows, &s[0], &status);
+      fits_write_col(fptr, TFLOAT, 39, firstrow, firstelem, 
+		     nrows, &dist8k[0], &status);
+      fits_write_col(fptr, TFLOAT, 40, firstrow, firstelem, 
+		     nrows, &nndistk[0], &status);
+      fits_write_col(fptr, TFLOAT, 41, firstrow, firstelem, 
+		     nrows, &nndist_percentk[0], &status);
+      fits_write_col(fptr, TFLOAT, 42, firstrow, firstelem, 
+		     nrows, &pdist8[0], &status);
+      fits_write_col(fptr, TFLOAT, 43, firstrow, firstelem, 
+		     nrows, &dm[0], &status);
+      if (status)
+	{
+	  fits_report_error(stderr,status);
+	  exit( status );
+	}
+      firstrow += nrows;
+    }
 }

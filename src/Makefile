@@ -55,7 +55,7 @@ endif
 ifeq ($(SYSTYPE),"slac")
 CXX=g++
 CC=${CXX}
-OPT = -O3 -ffast-math -g #-mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
+OPT =-O0 -g # -O3 -ffast-math -mdynamic-no-pic #-mcpu=G5 #-mtune=G5 #-mpowerpc64
 WARN = -Wall -Wno-sign-compare -pedantic -Wno-deprecated -Wno-deprecated-writable-strings #-Wno-long-double
 END_FLAG = -DBIGENDIAN
 
@@ -67,8 +67,8 @@ KCORRECT_LIB = -L/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/lib
 KCORRECT_INC = -I/nfs/slac/g/ki/ki21/cosmo/jderose/lib/kcorrect/kcorrect/include
 GSL_LIB = -L/afs/slac.stanford.edu/g/ki/software/gsl/1.15/lib
 GSL_INC = -I/afs/slac.stanford.edu/g/ki/software/gsl/1.15/include/gsl
-CFITSIO_LIB = -L/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
-CFITSIO_INC = -I/afs/slac.stanford.edu/u/ki/jderose/lib/cfitsio
+CFITSIO_LIB = -L/afs/slac/g/ki/software/cfitsio/3.29/lib
+CFITSIO_INC = -I/afs/slac/g/ki/software/cfitsio/3.29/include
 CCFITS_LIB = -L/afs/slac/g/ki/software/ccfits/2.4/lib
 CCFITS_INC = -I/afs/slac/g/ki/software/ccfits/2.4/include
 
@@ -82,7 +82,7 @@ endif
 
 INCL = -I. ${ANN_INC} ${NR_INC} ${KCORRECT_INC} ${GSL_INC} ${CCFITS_INC} ${CFITSIO_INC}
 LDFLAGS = ${ANN_LIB} ${NR_LIB} ${KCORRECT_LIB} ${GSL_LIB} ${CCFITS_LIB} ${CFITSIO_LIB}
-LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lCCfits
+LOADLIBES = -lANN -lrecipes -lkcorrect -lgsl -lgslcblas -lcfitsio -lCCfits
 
 endif
 
@@ -91,8 +91,8 @@ RM = rm -f
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-#catalog_type="BCC"
-catalog_type="adjust_colors"
+catalog_type="BCC"
+#catalog_type="adjust_colors"
 #catalog_type="SHAM_TEST"
 #catalog_type="snapshot"
 #catalog_type="just_colors"
@@ -120,7 +120,7 @@ CPPFLAGS += -DRED_FRACTION      #Try to force a modeled global red fraction
 CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
-CPPFLAGS += -DCATALOG
+#CPPFLAGS += -DCATALOG
 #OMPFLAG = -fopenmp
 endif
 
@@ -229,8 +229,8 @@ endif
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
 #CPPFLAGS += -DOUTPUTDENSITY
-#CPPFLAGS += -DMAKEMAGS
-CPPFLAGS += -DDEBUG_SHAPES
+CPPFLAGS += -DMAKEMAGS
+#CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST
 #CXX = mpic++
 
