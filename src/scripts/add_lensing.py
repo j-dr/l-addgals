@@ -59,7 +59,7 @@ def compute_lensing(g, shear, halos=False):
 
     #Get indices of multiply imaged galaxies
     miidx = np.arange(len(shear))
-    miidx = miidx[np.in1d(miidx,set(sidx))]
+    miidx = miidx[~np.in1d(miidx,sidx)]
     nmi = len(miidx)
 
     #number of multiply imaged galaxies should be difference in lengths
