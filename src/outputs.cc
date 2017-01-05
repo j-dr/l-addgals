@@ -369,6 +369,8 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
   while (firstrow<=size)
     {
+      if (firstrow + nrows > size)
+	nrows = size - firstrow + 1;
       fits_write_col(fptr, TINT, 1, firstrow, 1, 
 		     nrows, &id[firstrow-1], &status);
       fits_write_col(fptr, TINT, 2, firstrow, 1, 
@@ -716,6 +718,9 @@ void  write_bcc_catalogs_w_densities(
 
   while (firstrow<=size)
     {
+      if (firstrow + nrows > size)
+	nrows = size - firstrow + 1;
+      
       fits_write_col(fptr, TINT, 1, firstrow, 1, 
 		     nrows, &id[firstrow-1], &status);
       fits_write_col(fptr, TINT, 2, firstrow, 1, 
