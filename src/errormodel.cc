@@ -113,6 +113,7 @@ void observe_des_y5(vector<float> &mag, vector<float> &flux,
 }
 
 #ifndef CATALOG
+#ifndef MAKEMAGS
 int main(int argc, char *argv[])
 {
   int i, ngal;
@@ -165,4 +166,5 @@ int main(int argc, char *argv[])
 	} else magcut_file << " ";
     }
 }
+#endif
 #endif

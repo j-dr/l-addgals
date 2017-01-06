@@ -134,9 +134,7 @@ inline float evolve_mag(float mag, float z){
 }
 
 inline void EvolveGal(Galaxy*& pgalaxy){
-  Particle * p = pgalaxy->P();
-  
-  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),p->ZredReal()));
+  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->zGal()));
   /*
   if(evolution == BLAN)
     //pgalaxy->Mr(pgalaxy->Mr()+Q*(pgalaxy->Z()-0.1));

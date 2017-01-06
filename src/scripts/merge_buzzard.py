@@ -20,6 +20,7 @@ class buzzard_flat_cat(object):
         obsname   = 'Y1A1.',
         truthname = 'truth.',
         pzname    = 'Y1A1_bpz.',
+        debug     = False,
         simnum    = 0):
 
         self.maxrows=500000000
@@ -33,7 +34,7 @@ class buzzard_flat_cat(object):
         self.pzname    = pzname
         self.simnum    = str(simnum)
 
-        self.loop_cats()
+        self.loop_cats(debug=debug)
 
         return
 
@@ -44,8 +45,11 @@ class buzzard_flat_cat(object):
                              + [('ra','f4')]
                              + [('dec','f4')]
                              + [('redshift','f4')]
+                             + [('mag_g', 'f4')]
                              + [('mag_r', 'f4')]
-                             + [('mag_lim_r', 'f4')]
+                             + [('mag_i', 'f4')]
+                             + [('mag_z', 'f4')]
+                             + [('mag_y', 'f4')]
                              + [('flags_badregion','i8')] 
                              + [('flags_gold','i8')]
                              + [('hpix','i8')]
@@ -96,7 +100,6 @@ class buzzard_flat_cat(object):
                                           + [('weight', 'f8')]    
                                           + [('flags', 'f8')])
 
-
         lenst = 0
 
         gout = fio.FITS('Buzzard_v1.1_'+self.simnum+'_gold.fits.gz', 'rw') 
@@ -111,9 +114,8 @@ class buzzard_flat_cat(object):
             if not debug:
                 obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG'])
             else:
-                obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG', 'MAG_R', 'SIZE'])
+                obs    = fio.FITS(filename)[-1].read(columns=['RA','DEC','EPSILON1','EPSILON2','LSS_FLAG', 'WL_FLAG', 'MAG_G', 'MAG_R', 'MAG_I', 'MAG_Z', 'MAG_Y', 'SIZE'])
             pz     = fio.FITS(pzname)[-1].read(columns=['MEAN_Z','Z_MC'])
-
 
             sflag = obs['LSS_FLAG'] + 2 * obs['WL_FLAG']
             truth = truth[sflag>0]
@@ -132,7 +134,11 @@ class buzzard_flat_cat(object):
             gold['hpix'][lenst:lenst+len(truth)]              = hp.ang2pix(4096, np.pi/2.-np.radians(obs['DEC']),np.radians(obs['RA']), nest=True)
             gold['sample'][lenst:lenst+len(truth)]            = sflag
             if debug:
+                gold['mag_g'][lenst:lenst+len(truth)]         = obs['MAG_G']
                 gold['mag_r'][lenst:lenst+len(truth)]         = obs['MAG_R']
+                gold['mag_i'][lenst:lenst+len(truth)]         = obs['MAG_I']
+                gold['mag_z'][lenst:lenst+len(truth)]         = obs['MAG_Z']
+                gold['mag_y'][lenst:lenst+len(truth)]         = obs['MAG_Y']
 
             shape['coadd_objects_id'][lenst:lenst+len(truth)] = truth['ID']
             shape['e1'][lenst:lenst+len(truth)]               = obs['EPSILON1']

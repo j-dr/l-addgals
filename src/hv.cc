@@ -643,12 +643,12 @@ int main(void){
 #ifdef OUTPUTDENSITY
   cout << "nndist_percent " << nndist_percent[0] << endl;
   write_bcc_catalogs_w_densities(galaxies, particles, amag, tmag,
-				 mr, omag, deltam, omagerr, flux, ivar, e, s,
-				 idx, halos, id, coeff, dist8, nndist,
-				 nndist_percent, outgfn, outghfn);
+             mr, omag, omagerr, flux, ivar, deltam, e, s,
+             idx, halos, id, coeff, dist8, nndist,
+             nndist_percent, outgfn, outghfn);
 #else
   write_bcc_catalogs(galaxies, particles, amag, tmag, mr,
-		     omag, omagerr, deltam, flux, ivar, e, s,
+		     omag, omagerr, flux, ivar, deltam, e, s,
 		     idx, halos, id, coeff, outgfn,
 		     outghfn);
 #endif
