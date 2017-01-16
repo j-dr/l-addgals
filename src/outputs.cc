@@ -287,9 +287,11 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
-    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), haloid(keep), empty(keep,-1), cf(keep*5), am(keep*5), 
-    ecatid(keep), dm(keep);
+    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep),
+    empty(keep,-1), cf(keep*5), am(keep*5), dm(keep);
+
+  vector<int> central(keep), id(keep), haloid(keep), ecatid(keep);
+  
 
   //Go through the galaxies and get the info we want
   int count=0;
@@ -367,10 +369,10 @@ void  write_bcc_catalogs(vector<Galaxy *> &galaxies, vector<Particle *> &particl
 
   cout << "Writing columns" << endl;
 
-  while (firstrow<=size)
+  while (firstrow<=keep)
     {
-      if (firstrow + nrows > size)
-	nrows = size - firstrow + 1;
+      if (firstrow + nrows > keep)
+	nrows = keep - firstrow + 1;
       fits_write_col(fptr, TINT, 1, firstrow, 1, 
 		     nrows, &id[firstrow-1], &status);
       fits_write_col(fptr, TINT, 2, firstrow, 1, 
@@ -626,13 +628,12 @@ void  write_bcc_catalogs_w_densities(
 
   cout << "Extracting relevant galaxy information" << endl;
   vector<float> ra(keep), dec(keep), px(keep), py(keep), pz(keep),
-    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep), id(keep),
-    central(keep), empty(keep,-1), cf(keep*5),
-    am(keep*5), ecatid(keep), dist8k(keep), nndistk(keep),
-    nndist_percentk(keep), pdist8(keep), rhalo(keep),
+    vx(keep), vy(keep), vz(keep), sdssr(keep), z(keep),
+    empty(keep,-1), cf(keep*5), am(keep*5), dist8k(keep),
+    nndistk(keep), nndist_percentk(keep), pdist8(keep), rhalo(keep),
     rvir(keep), mvir(keep), dm(keep);
 
-  vector<int> hid(keep);
+  vector<int> hid(keep), central(keep), id(keep), ecatid(keep);
 
   //Go through the galaxies and get the info we want
   int count=0;
@@ -716,10 +717,10 @@ void  write_bcc_catalogs_w_densities(
 
   cout << "Writing columns" << endl;
 
-  while (firstrow<=size)
+  while (firstrow<=keep)
     {
-      if (firstrow + nrows > size)
-	nrows = size - firstrow + 1;
+      if (firstrow + nrows > keep)
+	nrows = keep - firstrow + 1;
       
       fits_write_col(fptr, TINT, 1, firstrow, 1, 
 		     nrows, &id[firstrow-1], &status);
@@ -757,6 +758,12 @@ void  write_bcc_catalogs_w_densities(
 		     nrows, &z[firstrow-1], &status);
       fits_write_col(fptr, TINT, 14, firstrow, 1, 
 		     nrows, &hid[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 15, firstrow, 1, 
+		     nrows, &rhalo[firstrow-1], &status);      
+      fits_write_col(fptr, TFLOAT, 16, firstrow, 1, 
+		     nrows, &mvir[firstrow-1], &status);
+      fits_write_col(fptr, TFLOAT, 18, firstrow, 1, 
+		     nrows, &rvir[firstrow-1], &status);      
       fits_write_col(fptr, TINT, 19, firstrow, 1, 
 		     nrows, &central[firstrow-1], &status);
 
