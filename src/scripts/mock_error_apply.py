@@ -171,12 +171,14 @@ def calc_nonuniform_errors(exptimes,limmags,mag_in,nonoise=False,zp=22.5,
             mag = zp-2.5*np.log10(flux/exptimes)
             mag_err = (2.5/np.log(10.))*(noise/flux)
 
-            bad = np.where(np.isfinite(mag)==False)
+            #temporarily changing to cut to 10-sigma detections in i,z
+            bad = np.where((np.isfinite(mag)==False))
             nbad = len(bad)
-            if (detonly):
+
+            if detonly:
                 mag[bad]=99.0
                 mag_err[bad]=99.0
-
+                
     return mag, mag_err
 
 
@@ -258,7 +260,7 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
                     ('FLUX',(np.float,nbands)),('MAGERR',(np.float,nbands)),
                     ('IVAR',(np.float,nbands))]
 
-    if not blind_obs:
+    if blind_obs:
         fields.extend([('M200', np.float), ('Z', np.float),
                         ('CENTRAL', np.int)])
 
@@ -273,8 +275,9 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                                 survey, magfile=None, usemags=None,
                                 nest=False, bands=None, all_obs_fields=True,
                                 dbase_style=True, use_lmag=True,
-                                sigpz=0.03, blind_obs=False):
-
+                                sigpz=0.03, blind_obs=False, filter_obs=True,
+                                refbands=None):
+    
     if magfile is not None:
         mags = fitsio.read(magfile)
         if use_lmag:
@@ -311,6 +314,16 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
         fnames  = ['FLUX_{0}'.format(b.upper()) for b in bands]
         fenames = ['IVAR_{0}'.format(b.upper()) for b in bands]
 
+        if filter_obs & (refbands is not None):
+            refnames = ['MAG_{}'.format(b.upper()) for b in refbands]
+        elif filter_obs:
+            refnames = mnames
+    else:
+        if filter_obs & (refbands is not None):
+            refnames = refbands
+        elif filter_obs:
+            refnames = range(len(usemags))
+        
 
     fs = fname.split('.')
     oname = "{0}/{1}_obs.{2}.fits".format(odir,obase,fs[-2])
@@ -367,11 +380,15 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
     pixind = d['HPIX'].searchsorted(pix[guse],side='right')
     pixind -= 1
 
+    oidx = np.zeros(len(omag), dtype=bool)
+    oidx[guse] = True
+
     for ind,i in enumerate(usemags):
 
         flux, fluxerr = calc_nonuniform_errors(d['EXPTIMES'][pixind,ind],
                                                d['LIMMAGS'][pixind,ind],
                                                omag[guse,i], fluxmode=True)
+
         if not dbase_style:
 
             obs['OMAG'][:,ind] = 99
@@ -398,6 +415,9 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
                 obs['OMAG'][guse[bad],ind] = 99.0
                 obs['OMAGERR'][guse[bad],ind] = 99.0
 
+            if filter_obs and (ind in refnames):
+                oidx &= obs['OMAG'][:,ind] < d['LIMMAGS'][pixind,ind]
+
         else:
             obs[mnames[ind]]  = 99.0
             obs[menames[ind]] = 99.0
@@ -412,7 +432,6 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             obs[mnames[ind]][guse[bad]] = 99.0
             obs[menames[ind]][guse[bad]] = 99.0
 
-
             r = np.random.rand(len(pixind))
 
             if len(d['FRACGOOD'].shape)>1:
@@ -422,6 +441,10 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
             if any(bad):
                 obs[mnames[ind]][guse[bad]]  = 99.0
                 obs[menames[ind]][guse[bad]] = 99.0
+
+            if (filter_obs) and (mnames[ind] in refnames):
+                oidx[guse] &= obs[mnames[ind]][guse] < d['LIMMAGS'][pixind,ind]
+                
 
     obs['RA']              = g['RA']
     obs['DEC']             = g['DEC']
@@ -437,6 +460,14 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
         obs['Z']       = g['Z']
 
     fitsio.write(oname, obs)
+
+    if filter_obs:
+        soname = oname.split('.')
+        soname[-3] += '_rmp'
+        roname = '.'.join(soname)
+        fitsio.write(roname, obs[oidx])
+
+    return oidx
 
 
 def apply_uniform_errormodel(g, oname, model, detonly=False, magname=None, usemags=None):
@@ -535,12 +566,22 @@ if __name__ == "__main__":
     if ('BlindObs' in cfg.keys()):
         blind_obs = bool(cfg['BlindObs'])
     else:
-        blind_obs = False
+        blind_obs = True
 
     if ('UseLMAG' in cfg.keys()):
         use_lmag = bool(cfg['UseLMAG'])
     else:
         use_lmag = False
+
+    if ('FilterObs' in cfg.keys()):
+        filter_obs = bool(cfg['FilterObs'])
+    else:
+        filter_obs = True
+
+    if ('RefBands' in cfg.keys()):
+        refbands = cfg['RefBands']
+    else:
+        refbands = None
 
     if rank==0:
         try:
@@ -595,14 +636,24 @@ if __name__ == "__main__":
             apply_uniform_errormodel(g, oname, model, magfile=mname,
                                         usemags=usemags)
         else:
-            apply_nonuniform_errormodel(g, oname, d, dhdr,
-                                            model, magfile=mname,
-                                            usemags=usemags,
-                                            nest=nest, bands=bands,
-                                            all_obs_fields=all_obs_fields,
-                                            dbase_style=dbstyle,
-                                            use_lmag=use_lmag,
-                                            blind_obs=blind_obs)
+            oidx = apply_nonuniform_errormodel(g, oname, d, dhdr,
+                                               model, magfile=mname,
+                                               usemags=usemags,
+                                               nest=nest, bands=bands,
+                                               all_obs_fields=all_obs_fields,
+                                               dbase_style=dbstyle,
+                                               use_lmag=use_lmag,
+                                               blind_obs=blind_obs,
+                                               filter_obs=filter_obs,
+                                               refbands=refbands)
+            g = g[oidx]
+            snfname = nfname.split('.')
+            snfname[-3] += '_rmp'
+            nfname = '.'.join(snfname)
+            
+            fitsio.write(nfname, g, clobber=True)
+
+        
 
     if rank==0:
         print("*******Rotation and error model complete!*******")
