@@ -96,7 +96,7 @@ vector <Halo*> ReadRockstarHalosHlist(void){
     if (file.eof()) break;
     rfile>>hid>>rdel;
     if(pid >= 0) continue;
-    if(mvir < BCG_Mass_lim) continue;
+    //if(mvir < BCG_Mass_lim) continue;
     zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
 
     Point vel(vx,vy,vz);
@@ -175,7 +175,7 @@ vector <Halo*> ReadRockstarHalos(void){
       cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", rdel = "<<rdel<<endl;
     }
 
-    if(m200c < BCG_Mass_lim) continue;
+    //if(m200c < BCG_Mass_lim) continue;
     if(pid >= 0) continue;
     Point vel(vx,vy,vz);
     float xx, yy, zz;
@@ -238,7 +238,7 @@ vector <Halo*> ReadGadgetHalos(void){
       }
 #endif
 
-      if(mvir < BCG_Mass_lim) continue;
+      //if(mvir < BCG_Mass_lim) continue;
       Point vel(vx,vy,vz);
       float xx, yy, zz;
 
