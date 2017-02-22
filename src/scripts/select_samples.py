@@ -74,7 +74,7 @@ def WL_cuts(obs, truth, pz, sys_map_vals,
 
 def LSS_cuts(obs, truth, pz, sys_map_vals, zcol):
 
-    if 'MEAN_Z' == zcol:
+    if 'Z_MEAN' == zcol:
         z = pz[zcol]
     else:
         z = truth[zcol]
