@@ -176,7 +176,7 @@ vector <Halo*> ReadRockstarHalos(void){
     }
 
     //if(m200c < BCG_Mass_lim) continue;
-    if(pid >= 0) continue;
+    //if(pid >= 0) continue;
     Point vel(vx,vy,vz);
     float xx, yy, zz;
 
@@ -186,6 +186,7 @@ vector <Halo*> ReadRockstarHalos(void){
 
     Point pos(xx, yy, zz);
     Halo * halo = new Halo(pos, vel, m200c, zred, ip, hid, vrms, r200c);
+    halo->Host(pid);
     halo->Dist8(rdel);
     //halo->Particle(0);
 
@@ -999,6 +1000,7 @@ vector <Particle *> ReadGadgetLCCell()
 	  rfile.read((char*) &buf, 4);
 	  rfile.read((char*) &buf, 4);
 	  rfile.read((char*) &buf, 4);
+	  cout << "number of densities in this file is " << buf/sizeof(float) << endl;
 
 	  // read in positions and densities
 	  long fpos = 0;

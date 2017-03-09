@@ -199,9 +199,9 @@ int main(void){
   PRNTV(sim.Boxsize());
 
   // Tabulate the redshift-distance relation
-  //cosmo.GetZofR(sim.OmegaM(), sim.OmegaL());
+  cosmo.GetZofR(sim.OmegaM(), sim.OmegaL());
   //do everything assuming a fiducial cosmological model
-  cosmo.GetZofR(0.3, 0.7);
+  //cosmo.GetZofR(0.286, 0.714);
 
   //Calculate the volume of the region.  Convert to radians and switch dec to standard spherical units
   float r_zmin = cosmo.RofZ(ZREDMIN);

@@ -1042,7 +1042,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 #else
 	    if (halos[i]->Host() >= 0 || halos[i]->M() < BCG_Mass_lim) {
 		halos[i]->Mr(99);
-		continue;
+		//continue;
             }
 #endif
 	    //assign through Sarah's power-law fit
@@ -1206,7 +1206,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		hID = haloD[hi].key;
 		hD = haloD[hi].value;
 		hMr = haloMr[hID].value;
-		if (hMr >= 0) continue;
+		//if (hMr >= 0) continue;
 
 		if (hi >= ibad) cout<<"Have halo properties.  Checking location."<<endl;
 		if(!(halos[hID]->InVol()))
