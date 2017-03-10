@@ -1045,6 +1045,8 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		//continue;
             }
 #endif
+	    if (halos[i]->Host() < 0 && halos[i]->M() >= BCG_Mass_lim) {
+
 	    //assign through Sarah's power-law fit
             /*
 	    double m200 = halos[i]->M();
@@ -1060,11 +1062,12 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 
 	    //use parameters read from table for Vale & Ostriker formula fit to SHAM
             //Parameters read from table do not include any passive evolution
-	    double m200 = halos[i]->M();
-	    double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
-	    //float scatter = 0.17;
-	    double mr = normal_random(mr0, 2.5*SCATTER);
-	    halos[i]->Mr(mr);
+	      double m200 = halos[i]->M();
+	      double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
+	      //float scatter = 0.17;
+	      double mr = normal_random(mr0, 2.5*SCATTER);
+	      halos[i]->Mr(mr);
+	    }
 #ifdef DEBUG
 	    if(i<10) cout<<"Halo "<<i<<": M200 = "<<m200<<", Mr = "<<mr<<endl;
 #endif
