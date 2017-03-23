@@ -1,3 +1,4 @@
+from mpi4py import MPI
 import numpy as np
 import fitsio as fio
 import healpy as hp
@@ -21,7 +22,7 @@ class buzzard_flat_cat(object):
         truthname = 'truth.',
         pzname    = 'Y1A1_bpz.',
         simname   = 'Buzzard_v1.1',
-        debug     = False,
+        debug     = True,
         nzcut     = True,
         simnum    = 0):
 
@@ -110,12 +111,11 @@ class buzzard_flat_cat(object):
 
         lenst = 0
 
-        gout = fio.FITS(self.simname+'_'+self.simnum+'_gold.fits.gz', 'rw') 
-        sout = fio.FITS(self.simname+'_'+self.simnum+'_shape.fits.gz', 'rw') 
-        pout = fio.FITS(self.simname+'_'+self.simnum+'_pz.fits.gz', 'rw')
+        for ifile,filename in enumerate(glob.glob(self.rootdir+'/'+self.obsdir+'*'+self.obsname+'*.fits')):
 
-        for ifile,filename in enumerate(glob.glob(self.rootdir+self.obsdir+'*'+self.obsname+'*.fits')):
-
+            gout = fio.FITS(self.simname+'_'+self.simnum+'_gold.fits', 'rw') 
+            sout = fio.FITS(self.simname+'_'+self.simnum+'_shape.fits', 'rw') 
+            pout = fio.FITS(self.simname+'_'+self.simnum+'_pz.fits', 'rw')
 
             tname = filename.replace(self.obsname, self.truthname).replace(self.obsdir, self.truthdir)
             pzname = filename.replace(self.obsname, self.pzname).replace(self.obsdir, self.pzdir)
@@ -133,8 +133,7 @@ class buzzard_flat_cat(object):
             sflag[obs['WL_FLAG']==1] = 2
 
             if self.nzcut:
-                sflag[obs['MAG_R'] > (20.30469938 + 2.97 * pz['Z_MEAN'])] = 0
-
+                sflag[obs['MAG_R'] > (22.0256181 + 1.43496827 * pz['Z_MEAN'])] = 0
 
             truth = truth[sflag>0]
             obs   = obs[sflag>0]
@@ -169,7 +168,7 @@ class buzzard_flat_cat(object):
             shape['m1'][lenst:lenst+len(truth)]               += 1.
             shape['m2'][lenst:lenst+len(truth)]               += 1.
             shape['weight'][lenst:lenst+len(truth)]           += 1.
-#            shape['size'][lenst:lenst+len(truth)]         = obs['SIZE']
+            shape['size'][lenst:lenst+len(truth)]         = obs['SIZE']
             if debug:
                 shape['size'][lenst:lenst+len(truth)]         = obs['SIZE']
 
@@ -188,11 +187,12 @@ class buzzard_flat_cat(object):
                 sout[-1].append(shape[lenst:lenst+len(truth)])
                 pout[-1].append(photoz[lenst:lenst+len(truth)])
 
-            lenst+=len(truth)
 
-        sout.close()
-        pout.close()
-        gout.close()
+            sout.close()
+            pout.close()
+            gout.close()
+                
+            lenst+=len(truth)
 
         return 
 
@@ -203,4 +203,9 @@ if __name__ == '__main__':
     with open(cfgfile, 'r') as fp:
         cfg = yaml.load(fp)
 
-    obj = buzzard_flat_cat(**cfg)
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    
+
+    if rank==0:
+        obj = buzzard_flat_cat(**cfg)
