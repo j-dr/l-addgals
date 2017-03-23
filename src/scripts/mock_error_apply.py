@@ -229,7 +229,7 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
         if bands is None:
             raise(ValueError("Need names of bands in order to use database formatting!"))
 
-        fields = [('INDEX', np.int), ('RA', np.float), ('DEC', np.float),
+        fields = [('ID', np.int), ('RA', np.float), ('DEC', np.float),
                     ('EPSILON1',np.float), ('EPSILON2', np.float),
                     ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float)]
 
@@ -241,14 +241,14 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
 
     if all_obs_fields & (not dbase_style):
 
-        fields = [('INDEX', np.int), ('RA', np.float), ('DEC', np.float),
+        fields = [('ID', np.int), ('RA', np.float), ('DEC', np.float),
                     ('EPSILON1',np.float), ('EPSILON2', np.float),
                     ('SIZE',np.float), ('PHOTOZ_GAUSSIAN', np.float),
                     ('MAG',(np.float,nbands)), ('FLUX',(np.float,nbands)),
                     ('MAGERR',(np.float,nbands)),('IVAR',(np.float,nbands))]
 
     if (not all_obs_fields) & dbase_style:
-        fields = [('INDEX',np.int)]
+        fields = [('ID',np.int)]
         for b in bands:
             fields.append(('MAG_{0}'.format(b.upper()),np.float))
             fields.append(('MAGERR_{0}'.format(b.upper()),np.float))
@@ -256,7 +256,7 @@ def make_output_structure(ngals, dbase_style=False, bands=None, nbands=None,
             fields.append(('IVAR_{0}'.format(b.upper()),np.float))
 
     if (not all_obs_fields) & (not dbase_style):
-        fields = [('INDEX', np.int), ('MAG',(np.float,nbands)),
+        fields = [('ID', np.int), ('MAG',(np.float,nbands)),
                     ('FLUX',(np.float,nbands)),('MAGERR',(np.float,nbands)),
                     ('IVAR',(np.float,nbands))]
 
@@ -448,7 +448,7 @@ def apply_nonuniform_errormodel(g, oname, d, dhdr,
 
     obs['RA']              = g['RA']
     obs['DEC']             = g['DEC']
-    obs['INDEX']           = g['INDEX']
+    obs['ID']           = g['ID']
     obs['EPSILON1']        = g['EPSILON'][:,0]
     obs['EPSILON2']        = g['EPSILON'][:,1]
     obs['SIZE']            = g['SIZE']
