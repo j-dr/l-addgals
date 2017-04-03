@@ -152,10 +152,11 @@ class buzzard_flat_cat(object):
             gold['lss-sample'][lenst:lenst+len(truth)]        = obs['LSS_FLAG']
             gold['wl-sample'][lenst:lenst+len(truth)]         = obs['WL_FLAG']
             gold['mag_r'][lenst:lenst+len(truth)]         = obs['MAG_R']
-#            gold['mag_i'][lenst:lenst+len(truth)]         = obs['MAG_I']
+
 
             if debug:
                 gold['mag_g'][lenst:lenst+len(truth)]         = obs['MAG_G']
+                gold['mag_i'][lenst:lenst+len(truth)]         = obs['MAG_I']
                 gold['mag_z'][lenst:lenst+len(truth)]         = obs['MAG_Z']
                 gold['mag_y'][lenst:lenst+len(truth)]         = obs['MAG_Y']
 
