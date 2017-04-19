@@ -134,6 +134,8 @@ inline float evolve_mag(float mag, float z){
 }
 
 inline void EvolveGal(Galaxy*& pgalaxy){
+  if (pgalaxy->Central()) return;
+  
   pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->Z()));
   /*
   if(evolution == BLAN)
