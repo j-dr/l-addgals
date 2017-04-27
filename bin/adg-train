@@ -13,14 +13,19 @@ for s in sim:
     ar = cfg['AbundanceMatch'].pop('run', True)
     rr = cfg['RdelModel'].pop('run', True)
 
+
     if ar:
+        startat  = cfg['AbundanceMatch'].pop('startat', None)
         s.abundanceMatch(lf, **cfg['AbundanceMatch'])
         
     if rr:
         parallel = cfg['RdelModel'].pop('parallel', False)
         debug    = cfg['RdelModel'].pop('debug', False)
         startat  = cfg['RdelModel'].pop('startat', None)
-
+        alpha    = cfg['AbundanceMatch'].pop('alpha', 0.7)
+        scatter    = cfg['AbundanceMatch'].pop('scatter', 0.7)
+        
         s.rdelMagDist(lf, parallel=parallel, debug=debug,
-                        startat=startat)
+                        startat=startat, alpha=alpha,
+                        scatter=scatter)
     

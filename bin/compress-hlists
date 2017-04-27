@@ -17,9 +17,16 @@ if __name__ == '__main__':
     fields   = sys.argv[3:]
 
     if len(fields)==0:
-        fields = ['vmax', 'mvir', 'rvir',
-                    'upid', 'x', 'y', 'z',
-                    'rs', 'b_to_a', 'c_to_a']
+        fields = {'vmax':(16,'f4'),
+                  'mvir':(10,'f4'),
+                  'rvir':(11,'f4'),
+                  'upid':(6,'f4'),
+                  'x':(17,'f4'),
+                  'y':(18,'f4'),
+                  'z':(19,'f4'),
+                  'rs':(12,'f4'), 
+                  'b_to_a':(46,'f4'),
+                  'c_to_a':(47,'f4')}
 
     hlists = glob(hlistdir)
 
