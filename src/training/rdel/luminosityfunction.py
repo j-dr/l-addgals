@@ -44,22 +44,9 @@ class DSGLuminosityFunction(LuminosityFunction):
     def __init__(self, params=None, name=None):
 
         if params is None:
-            params = np.zeros(8)
-            mstar = -20.44
-            mstar0 = -20.310
-
-            params[0] = 0.0156  #phistar1
-            params[1] = -0.166  #alpha1
-            params[2] = 0.00671 #phistar2
-            params[3] = -1.523  #alpha2
-            params[4] = -19.88  #mstar
-            params[5] = 3.08e-5 #phistar3
-            params[6] = -21.72  #M_hi
-            params[7] = 0.484   #sigma_hi
-
-            mr_shift = mstar - mstar0
-            params[4] += mr_shift
-            params[6] += mr_shift
+            params = np.array([  1.56000000e-02,  -1.66000000e-01,   6.71000000e-03,
+                                 -1.52300000e+00,  -2.00100000e+01,   3.08000000e-05,
+                                 -2.18500000e+01,   4.84000000e-01, -1, 0])
 
         LuminosityFunction.__init__(self,params,name='DSG')
         self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
@@ -67,12 +54,12 @@ class DSGLuminosityFunction(LuminosityFunction):
     def evolveParams(self, z):
         zp = copy(self.params)
 
-        phistar = 10 ** (-1.79574 + (-0.266409 * z))
-        phistar_rat = phistar/self.params[0]
-
-        zp[0] *= phistar_rat
-        zp[2] *= phistar_rat
-        zp[5] *= phistar_rat
+        zp[0] += self.params[-1] * (1/(z+1) - 1/1.1)
+        zp[2] += self.params[-1] * (1/(z+1) - 1/1.1)
+        zp[5] += self.params[-1] * (1/(z+1) - 1/1.1)
+        
+        zp[4] += self.params[-2] * (1/(z+1) - 1/1.1)
+        zp[6] += self.params[-2] * (1/(z+1) - 1/1.1)
 
         return zp
 
@@ -92,6 +79,7 @@ class DSGLuminosityFunction(LuminosityFunction):
             np.exp(-(lums - p[6]) ** 2 / (2 * p[7] ** 2))
 
         return lums, phi
+
 
 def read_tabulated_lf(filename):
 
@@ -136,7 +124,7 @@ class ReddickLuminosityFunction(LuminosityFunction):
 
         self.lf = load_abundance_function(log_phi=False)
         self.Q = Q
-        self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
 
         LuminosityFunction.__init__(self,Q,name='Reddick')
 

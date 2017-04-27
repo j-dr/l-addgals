@@ -16,7 +16,8 @@ class Simulation(object):
                    hfiles, rnnfiles, outdir, 
                    h, zs=None, zmin=None, zmax=None, 
                    zstep=None, nz=None, shamfiles=None,
-                   simtype='LGADGET2'):
+                   compressed_hlist=False, simtype='LGADGET2',
+                   scaleh=False, scaler=False, strscale=None):
 
         self.name     = name
         self.boxsize  = boxsize
@@ -26,6 +27,10 @@ class Simulation(object):
         self.rnnfiles = np.array(rnnfiles)
         self.outdir   = outdir
         self.simtype  = simtype
+        self.compressed_hlist = compressed_hlist
+        self.scaleh = scaleh
+        self.scaler = scaler
+        self.strscale  = strscale
 
         if shamfiles is not None:
             self.shamfiles = np.array(shamfiles)
@@ -47,30 +52,71 @@ class Simulation(object):
 
     def associateFiles(self):
 
-        hfn = np.array([float(h.split('_')[-1].split('.list')[0]) for h in self.hfiles])
-        crn = np.array([float(c.split('_')[-1]) for c in self.rnnfiles])
+        hfn = np.array([int(h.split('_')[-1].split('.')[0]) for h in self.hfiles])
+        hz = self.zs[hfn]
+        shz = self.strscale[hfn]
+
+        crn = np.array([int(c.split('_')[-1]) for c in self.rnnfiles])
+        cz = self.zs[crn]
+
+
+        if len(hfn) > len(crn):
+            inz = np.in1d(hfn, crn)
+            self.hfiles = self.hfiles[inz]
+            hfn = hfn[inz]
+            hz  = hz[inz]
+            shz = shz[inz]
+            inz = np.in1d(crn, hfn)
+            self.rnnfiles = self.rnnfiles[inz]
+            crn = crn[inz]
+            cz  = cz[inz]
+
+        else:
+            inz = np.in1d(crn, hfn)
+            self.rnnfiles = self.rnnfiles[inz]
+            crn = crn[inz]
+            cz  = cz[inz]
+            inz = np.in1d(hfn, crn)
+            self.hfiles = self.hfiles[inz]
+            hfn = hfn[inz]
+            hz  = hz[inz]
+            shz = shz[inz]
+
+        assert(len(self.hfiles)==len(self.rnnfiles))
 
         hidx = hfn.argsort()
         cidx = crn.argsort()
-        zidx = self.zs.argsort()
 
-        self.hfiles = self.hfiles[hidx[::-1]]
+        self.hfiles   = self.hfiles[hidx[::-1]]
         self.rnnfiles = self.rnnfiles[cidx[::-1]]
-        self.zs = self.zs[zidx]
+        self.zs       = hz[hidx[::-1]]
+        self.strscale    = shz[hidx[::-1]]
+        self.nums     = hfn[hidx[::-1]]
 
         print(self.hfiles)
         print(self.rnnfiles)
         print(self.zs)
 
-    def getSHAMFileName(self, hfname, alpha, scatter, lfname):
+    def getSHAMFileName(self, hfname, alpha, scatter, lfname, ind):
 
         fs = hfname.split('/')
+
+        if self.nums[ind]<10:
+            num  = '00{}'.format(self.nums[ind])
+        else:
+            num = '0{}'.format(self.nums[ind])
+
         fs[-1] = 'sham_{}_{}_{}_{}_{}'.format(self.name, 
                                                 lfname,
                                                 alpha,
                                                 scatter,
                                                 fs[-1])
-        return fs[-1]
+
+        print(fs[-1])
+        print(num)
+        fn = fs[-1].replace(num, '{}.list'.format(self.strscale[ind]))
+
+        return fn
 
     def abundanceMatch(self, lf, alpha=0.7, scatter=0.17, debug=False,
                        parallel=False, startat=None):
@@ -115,15 +161,34 @@ class Simulation(object):
                 pass
 
         for i, hf in enumerate(hfiles):
+            if startat is not None:
+                ind = startat + rank + i * size
+            else:
+                ind = startat + rank + i * size
 
-            halos = SimulationAnalysis.readHlist(hf,
-                                                    ['vmax',
-                                                     'mvir',
-                                                     'rvir',
-                                                     'upid',
-                                                     'x',
-                                                     'y',
-                                                     'z'])
+            sfname = self.getSHAMFileName(hf, alpha, scatter,
+                                                  lf.name, ind)
+
+            oname = '{0}/sham/{1}'.format(self.outdir, sfname)
+
+            if os.path.isfile(oname):
+                print('{} exists! Skipping this snapshot'.format(oname))
+                continue 
+
+            if not self.compressed_hlist:
+                halos = SimulationAnalysis.readHlist(hf,
+                                                     ['vmax',
+                                                      'mvir',
+                                                      'rvir',
+                                                      'upid',
+                                                      'x',
+                                                      'y',
+                                                      'z'])
+            else:
+                halos = fitsio.read(hf, columns=['vmax', 'mvir',
+                                                 'rvir',
+                                                 'upid',
+                                                 'x','y','z'])
 
             vvir  = (const.G * halos['mvir'] / halos['rvir']) ** 0.5
             proxy = vvir * (halos['vmax'] / vvir) ** alpha
@@ -156,28 +221,30 @@ class Simulation(object):
                                                         self.boxsize,
                                                         debug=debug)
 
-            sfname = self.getSHAMFileName(hf, alpha, scatter,
-                                            lf.name)
-
-            fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
+            try:
+                fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
+            except IOError as e:
+                print('File {} already exists, not writing new one!'.format('{0}/sham/{1}'.format(self.outdir, sfname)))
+                
 
     def getSHAMFiles(self, lf, alpha=0.7, scatter=0.17):
         
         shamfiles = []
         
-        for hf in self.hfiles:
-            shamfiles.append('{}/sham/{}'.format(self.outdir, self.getSHAMFileName(hf, alpha, scatter, lf.name)))
+        for i, hf in enumerate(self.hfiles):
+            shamfiles.append('{}/sham/{}'.format(self.outdir, self.getSHAMFileName(hf, alpha, scatter, lf.name, i)))
 
         self.shamfiles = np.array(shamfiles)
 
     def rdelMagDist(self, lf, debug=False, 
-                      startat=None, parallel=False):
+                      startat=None, parallel=False,
+                      alpha=0.7, scatter=0.17):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
 
         if self.shamfiles is None:
-            self.getSHAMFiles(lf)
+            self.getSHAMFiles(lf, alpha=alpha, scatter=scatter)
 
         if parallel:
             from mpi4py import MPI

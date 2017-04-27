@@ -4,6 +4,8 @@ import os
 import numpy as np
 from scipy.optimize import minimize
 from helpers.SimulationAnalysis import readHlist
+from helpers.readGadgetSnapshot import readGadgetSnapshot
+from halotools.sim_manager import TabularAsciiReader
 import fitsio
 
 def _get_fname(s, cut):
@@ -179,8 +181,9 @@ def load_abundance_function(proxy='l', sample_cut=18, \
     else:
         return af
 
-def hlist2bin(hlistname, fields, outdir):
+def hlist2bin(hlistname, field_dict, outdir):
 
+    reader = TabularAsciiReader(hlistname, field_dict)
     hs   = hlistname.split('/')
     hout = '{}/{}.fits.gz'.format(outdir, hs[-1])
     
@@ -188,10 +191,25 @@ def hlist2bin(hlistname, fields, outdir):
     if os.path.isfile(hout): return
 
     try:
-        halos = readHlist(hlistname, fields)
-    except UnicodeEncodeError as e:
+        halos = reader.read_ascii()
+        #readHlist(hlistname, fields)
+    except Exception as e:
         print(e)
         print('****Cannot compress file: {0}****'.format(hlistname))
         return
 
     fitsio.write(hout, halos, compress='gzip', clobber=True)
+
+#def downsample_snapshot(snapdir, downsample_frac=0.01):
+#
+#    blockfiles = glob('{}/snapshot*'.format(snapdir))
+#
+#    for bf in blockfiles:
+#        downsample_block(bf, downsample_frac=downsample_frac)
+
+
+#def downsample_block(blockfiles):
+
+    
+        
+        
