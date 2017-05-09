@@ -1,7 +1,9 @@
 from __future__ import print_function, division
 from helpers import SimulationAnalysis
+from astropy.cosmology import FlatLambdaCDM
+from halotools.sim_manager import TabularAsciiReader
 from itertools import izip
-import scipy.constants as const
+import astropy.constants as const
 import numpy as np
 import warnings
 import fitsio
@@ -14,7 +16,7 @@ class Simulation(object):
 
     def __init__(self, name, boxsize, snapdirs, 
                    hfiles, rnnfiles, outdir, 
-                   h, zs=None, zmin=None, zmax=None, 
+                   h, omega_m, zs=None, zmin=None, zmax=None, 
                    zstep=None, nz=None, shamfiles=None,
                    compressed_hlist=False, simtype='LGADGET2',
                    scaleh=False, scaler=False, strscale=None):
@@ -22,6 +24,8 @@ class Simulation(object):
         self.name     = name
         self.boxsize  = boxsize
         self.h        = h
+        self.omegam   = omega_m
+        self.cos      = FlatLambdaCDM(self.h * 100, self.omegam)
         self.snapdirs= np.array(snapdirs)
         self.hfiles   = np.array(hfiles)
         self.rnnfiles = np.array(rnnfiles)
@@ -118,8 +122,8 @@ class Simulation(object):
 
         return fn
 
-    def abundanceMatch(self, lf, alpha=0.7, scatter=0.17, debug=False,
-                       parallel=False, startat=None):
+    def abundanceMatch(self, lf, alpha=[0.7], scatter=[0.17], debug=False,
+                       parallel=False, startat=None, endat=None, grid=True):
         """
         Abundance match all of the hlists
         """
@@ -130,9 +134,22 @@ class Simulation(object):
                             ('AMPROXY', np.float),
                             ('VMAX', np.float),
                             ('MVIR', np.float),
-                            ('RVIR', np.float),
+                            ('MPEAK', np.float),
                             ('LUMINOSITY', np.float),
                             ('CENTRAL', np.int)])
+
+        if startat is None:
+            startat = 0
+        if endat is None:
+            endat = len(self.hfiles)
+
+        hfiles = self.hfiles[startat:endat]
+        zs = self.zs[startat:endat]
+
+        if not hasattr(alpha, '__iter__'):
+            alpha = [alpha]
+        if not hasattr(scatter, '__iter__'):
+            scatter = [scatter]
 
         if parallel:
             from mpi4py import MPI
@@ -140,19 +157,19 @@ class Simulation(object):
             comm = MPI.COMM_WORLD
             rank = comm.Get_rank()
             size = comm.Get_size()
-
-            hfiles = self.hfiles[rank::size]
-            zs     = self.zs[rank::size]
+            
+            if grid:
+                scatter = scatter[rank::size]
+            else:
+                hfiles = hfiles[rank::size]
+                zs     = zs[rank::size]
 
         else: 
             rank = 0
             hfiles = self.hfiles
             zs = self.zs
 
-        if startat is not None:
-            hfiles = hfiles[startat:]
-            zs = zs[startat:]
-            
+
         if rank == 0:
             try:
                 os.makedirs('{0}/sham/'.format(self.outdir))
@@ -161,49 +178,41 @@ class Simulation(object):
                 pass
 
         for i, hf in enumerate(hfiles):
-            if startat is not None:
+            if not grid:
                 ind = startat + rank + i * size
             else:
-                ind = startat + rank + i * size
+                ind = startat + i
 
-            sfname = self.getSHAMFileName(hf, alpha, scatter,
-                                                  lf.name, ind)
-
-            oname = '{0}/sham/{1}'.format(self.outdir, sfname)
-
-            if os.path.isfile(oname):
-                print('{} exists! Skipping this snapshot'.format(oname))
-                continue 
-
+            
             if not self.compressed_hlist:
-                halos = SimulationAnalysis.readHlist(hf,
-                                                     ['vmax',
-                                                      'mvir',
-                                                      'rvir',
-                                                      'upid',
-                                                      'x',
-                                                      'y',
-                                                      'z'])
+                fields = {'vmax':(71,'f4'),
+                          'mvir':(55,'f4'),
+                          'mvir_now':(10,'f4'),
+                          'mpeak_scale':(66,'f4'),
+                          'upid':(6,'f4'),
+                          'x':(17,'f4'),
+                          'y':(18,'f4'),
+                          'z':(19,'f4')}
+                
+                reader = TabularAsciiReader(hf, fields)
+                halos  = reader.read_ascii()
+
             else:
-                halos = fitsio.read(hf, columns=['vmax', 'mvir',
-                                                 'rvir',
+                #compressed hlists have vmax@vpeak stored as vmax already
+                halos = fitsio.read(hf, columns=['vmax', 'mpeak',
+                                                 'mpeak_scale',
                                                  'upid',
                                                  'x','y','z'])
 
-            vvir  = (const.G * halos['mvir'] / halos['rvir']) ** 0.5
-            proxy = vvir * (halos['vmax'] / vvir) ** alpha
+            Delta = self.calc_Delta_vir(self.omegam, a=halos['mpeak_scale'])
+            rho_c = self.cos.critical_density0.to('M_sun/km3').value
+            G     = const.G.to('km3/(s2*M_sun)').value
 
-            out = np.zeros(len(proxy), dtype=odtype)
+            print(halos[0])
 
-            out['PX'] = halos['x']
-            out['PY'] = halos['y']
-            out['PZ'] = halos['z']
-            out['VMAX'] = halos['vmax']
-            out['MVIR'] = halos['mvir']
-            out['RVIR'] = halos['rvir']
-            out['CENTRAL'][halos['upid']==-1] = 1
-            out['CENTRAL'][halos['upid']!=-1] = 0
-            out['AMPROXY'] = proxy
+            vvir  = (4 / 3 * np.pi * Delta * (rho_c * G ** 3)) ** (1/6) * halos['mvir'] ** (1/3)
+            print(vvir)
+            out = np.zeros(len(vvir), dtype=odtype)
 
             z = zs[i]
             lz = lf.genLuminosityFunctionZ(self.lums, z)
@@ -215,16 +224,40 @@ class Simulation(object):
                     conv = getattr(self, '{0}2{1}'.format(lf.unitmap[k], self.unitmap[k]))
                     lz[k] = conv(lz[k])
 
-            out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
-                                                        scatter,
-                                                        lz,
-                                                        self.boxsize,
-                                                        debug=debug)
+            for a in alpha:
+                for s in scatter:
 
-            try:
-                fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
-            except IOError as e:
-                print('File {} already exists, not writing new one!'.format('{0}/sham/{1}'.format(self.outdir, sfname)))
+                    sfname = self.getSHAMFileName(hf, a, s,
+                                                  lf.name, ind)
+
+                    oname = '{0}/sham/{1}'.format(self.outdir, sfname)
+
+                    if os.path.isfile(oname):
+                        print('{} exists! Skipping this snapshot'.format(oname))
+                        continue 
+
+                    proxy = vvir * (halos['vmax'] / vvir) ** a
+                    out['PX'] = halos['x']
+                    out['PY'] = halos['y']
+                    out['PZ'] = halos['z']
+                    out['VMAX'] = halos['vmax']
+                    out['MPEAK'] = halos['mvir']
+                    out['MVIR'] = halos['mvir_now']
+                    out['CENTRAL'][halos['upid']==-1] = 1
+                    out['CENTRAL'][halos['upid']!=-1] = 0
+                    out['AMPROXY'] = proxy
+
+
+                    out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
+                                                               s,
+                                                               lz,
+                                                               self.boxsize,
+                                                               debug=debug)
+
+                    try:
+                        fitsio.write('{0}/sham/{1}'.format(self.outdir, sfname), out)
+                    except IOError as e:
+                        print('File {} already exists, not writing new one!'.format('{0}/sham/{1}'.format(self.outdir, sfname)))
                 
 
     def getSHAMFiles(self, lf, alpha=0.7, scatter=0.17):
@@ -237,14 +270,23 @@ class Simulation(object):
         self.shamfiles = np.array(shamfiles)
 
     def rdelMagDist(self, lf, debug=False, 
-                      startat=None, parallel=False,
-                      alpha=0.7, scatter=0.17):
+                      startat=None, endat=None,
+                      parallel=False, alpha=0.7, 
+                      scatter=0.17):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
 
         if self.shamfiles is None:
             self.getSHAMFiles(lf, alpha=alpha, scatter=scatter)
+
+        if startat is None:
+            startat = 0
+        if endat is None:
+            endat = len(self.hfiles)
+
+        shamfiles = self.shamfiles[startat:endat]
+        rnnfiles = self.rnnfiles[startat:endat]
 
         if parallel:
             from mpi4py import MPI
@@ -253,25 +295,22 @@ class Simulation(object):
             rank = comm.Get_rank()
             size = comm.Get_size()
 
-            shamfiles = self.shamfiles[rank::size]
-            rnnfiles  = self.rnnfiles[rank::size]
+            shamfiles = shamfiles[rank::size]
+            rnnfiles  = rnnfiles[rank::size]
+
+            print('Rank {} assigned {} files'.format(rank, len(shamfiles)))
         else:
-            shamfiles = self.shamfiles
-            rnnfiles  = self.rnnfiles
             rank = 0
 
-        if startat is not None:
-            shamfiles = shamfiles[startat:]
-            rnnfiles = rnnfiles[startat:]
 
         if rank == 0:
             try:
                 os.makedirs('{}/rdel'.format(self.outdir))
             except OSError as e:
-                warnings.warn('Directory {}/rdel already exists!', Warning)
+                warnings.warn('Directory {}/rdel already exists!'.format(self.outdir), Warning)
 
         for sf, rf in izip(shamfiles, rnnfiles):
-            fitSnapshot(sf, rf, '{}/rdel/'.format(self.outdir), debug=debug)
+            fitSnapshot(sf, rf, '{}/rdel/'.format(self.outdir), self.boxsize, debug=debug)
 
         #read in all models, fit global model
 
@@ -283,3 +322,7 @@ class Simulation(object):
     def mpc3dex2hmpc3dex(self, phi):
 
         return phi / self.h ** 3
+
+    def calc_Delta_vir(self,Omega_M0, a=1.0):
+        x = 1.0/((1.0/Omega_M0-1.0)*a*a*a + 1.0) - 1.0
+        return 18.0*np.pi*np.pi + (82.0-39.0*x)*x

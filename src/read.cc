@@ -74,8 +74,11 @@ vector <Halo*> ReadHalos(void){
   //else if(sim.Type() == "GADGET2") halos = ReadGadgetHalos();
 #ifdef SHAM_TEST
   if(sim.Type() == "GADGET2") halos = ReadRockstarHalosHlist();
+  //#elif BCC 
 #else
   if((sim.Type() == "GADGET2") | (sim.Type() == "BCCGADGET2")) halos = ReadRockstarHalos();
+//#else
+//  if((sim.Type() == "GADGET2") | (sim.Type() == "BCCGADGET2")) halos = ReadRockstarHalosHlist();
 #endif
   else if(sim.Type() == "MGS") halos = ReadMGSHalos();
   else {cout<<"[ReadHalos] Wrong simulation type:"<<sim.Type()<<endl;exit(1);}

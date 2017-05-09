@@ -17,9 +17,9 @@ if __name__ == '__main__':
     fields   = sys.argv[3:]
 
     if len(fields)==0:
-        fields = {'vmax':(16,'f4'),
-                  'mvir':(10,'f4'),
-                  'rvir':(11,'f4'),
+        fields = {'vmax':(75,'f4'),
+                  'mvir':(61,'f4'),
+                  'mpeak_scale':(70,'f4'),
                   'upid':(6,'f4'),
                   'x':(17,'f4'),
                   'y':(18,'f4'),

@@ -1011,13 +1011,18 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	//set magnitudes based on halo mass
 	cout<<"Assigning BCG magnitudes..."<<endl;
 
+#ifdef DESCLF
         double sigma_L = 0.364;
         double lnLc0   = 24.554;
         double ALc     = 0.355;
         double BLc     = 0.936;
         double Mpiv    = 2.35*1e14;
 	double Msunr   = 4.67;
-	
+#else
+	float M0, Mc, a, b, k;
+	Read_L_BCG(M0, Mc, a, b, k);
+#endif 
+
 	for(int i=0;i<halos.size();i++)
 	  {
 #ifdef SHAM_TEST
@@ -1032,12 +1037,18 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
             }
 #endif
 	    if (halos[i]->Host() < 0 && halos[i]->M() >= BCG_Mass_lim) {
-
+#ifdef DESCLF
 	      //assign using power law fit to DES CLF
 	      double lnL0 = CalculateMeanBCGLum(lnLc0, ALc, Mpiv, BLc, halos[i]->M(), halos[i]->ZredReal());
 	      //add scatter
 	      double lnL  = normal_random(lnL0, sigma_L);
 	      double mr = -2.5 * log10(exp(lnL)) + Msunr;
+#else
+	      double m200 = halos[i]->M();
+	      double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
+	      //float scatter = 0.17;
+	      double mr = normal_random(mr0, 2.5*SCATTER);
+#endif
 	      halos[i]->Mr(mr);
 	      
 	    }

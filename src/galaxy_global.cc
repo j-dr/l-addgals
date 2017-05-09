@@ -568,7 +568,7 @@ vector <Galaxy *> GetGalaxies(double vol, float phi_rescale){
   float next = -23.0;
 
   //generate galaxies by looping over our magnitude bins
-  for(double mag=-23.7; mag <=-8; mag+=0.001){
+  for(double mag=-25; mag <=-8; mag+=0.001){
     if (mag > next){
       cout<<"Generating galaxy magnitudes "<<mag<<endl;
       next += 1;

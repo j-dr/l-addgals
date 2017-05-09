@@ -5,7 +5,7 @@ import yaml
 
 from .simulation import Simulation
 from .model      import Model
-from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction, ReddickLuminosityFunction
+from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction, ReddickLuminosityFunction, BBGSLuminosityFunction
 
 
 def readCfg(filename):
@@ -28,6 +28,10 @@ def setLF(cfg):
     elif cfg['LuminosityFunction']['type'] == 'Reddick':
         
         lf = ReddickLuminosityFunction(cfg['LuminosityFunction']['Q'])
+
+    elif cfg['LuminosityFunction']['type'] == 'BBGS':
+        
+        lf = BBGSLuminosityFunction(cfg['LuminosityFunction']['Q'], cfg['LuminosityFunction']['P'])
 
     return lf
                        
@@ -56,6 +60,7 @@ def parseConfig(cfg):
                                    rnn,
                                    simcfg['outdir'],
                                    simcfg['h'][i],
+                                   simcfg['omegam'][i],
                                    zs=zs,
                                    compressed_hlist=simcfg['compressed_hlist'],
                                    strscale=sa[:,1]))
@@ -68,6 +73,7 @@ def parseConfig(cfg):
                                    rnn,
                                    simcfg['outdir'],
                                    simcfg['h'][i],
+                                   simcfg['omegam'][i],
                                    zmin=simcfg['zmin'][i],
                                    zmax=simcfg['zmax'][i],
                                    nz=simcfg['nz'][i],

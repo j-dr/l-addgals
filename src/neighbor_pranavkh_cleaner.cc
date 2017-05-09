@@ -40,7 +40,11 @@ int CompareByDens (GalaxyPercent a, GalaxyPercent b)
 vector <float> GetNeighborPercents(vector <float> nndist, vector <Galaxy *> &galaxies)
 {
   vector <float> color_percent(galaxies.size());
+#ifndef SNAPSHOT
   int nColorBins = floor(zmax->GetVal()/ColorBinSize)+1;
+#else
+  int nColorBins = 1;
+#endif
   struct GalaxyPercent tGalaxyId(0.,0);
   vector <GalaxyPercent> GalaxyId;
 
