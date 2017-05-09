@@ -71,20 +71,44 @@ FiveTuple denspdf_params(float magnitude, float zred)
   float mag_ref= -20.5;
   //float dim_mag_lim = -19.0-mag_ref;
   float bright_mag_lim = -22.5-mag_ref;
+  float dim_mag_lim  = -18 - mag_ref;
   float mag = magnitude-mag_ref;
-  //if (mag > dim_mag_lim) mag = dim_mag_lim;
+  
+  //redshift evolution fit in terms of scale factor shifted 
+  //to make pivot close to mean scale factor of BCC boxes
+
+  float a   = 1 / (zred + 1) - 0.35;
+  if (mag > dim_mag_lim) mag = dim_mag_lim;
   if (mag < bright_mag_lim) mag = bright_mag_lim;
   float cm, cs, fm, fs, p;
-  cm = cm0 + cm1*mag + cm2*mag*mag + cm3*mag*mag*mag + cmz1*zred + cmz2*zred*zred;
-  cs = cs0 + cs1*mag + cs2*mag*mag + cs3*mag*mag*mag + csz1*zred + csz2*zred*zred;
-  fm = fm0 + fm1*mag + fm2*mag*mag + fmz1*zred;
-  fs = fs0 + fs1*mag + fs2*mag*mag + fs3*mag*mag*mag + fsz1*zred + fsz2*zred*zred;
-  p = p0 + p1*mag + p2*mag*mag + pz1*zred + pz2*zred*zred;
+
+  cm = cm0 + cm1*mag + cm2*mag*mag + cm3*mag*mag*mag + cm4*mag*mag*mag*mag + cmz1*a + cmz2*a*a
+         + cmz3*a*a*a + cmz4*a*a*a*a + cm1z1*mag*a + cm1z2*mag*a*a + cm2z1*mag*mag*a 
+         + cm2z2*mag*mag*a*a + cm3z1*mag*mag*mag*a + cm1z3*mag*a*a*a;
+  cs = cs0 + cs1*mag + cs2*mag*mag + cs3*mag*mag*mag + cs4*mag*mag*mag*mag + csz1*a + csz2*a*a
+         + csz3*a*a*a + csz4*a*a*a*a + cs1z1*mag*a + cs1z2*mag*a*a + cs2z1*mag*mag*a 
+         + cs2z2*mag*mag*a*a + cs3z1*mag*mag*mag*a + cs1z3*mag*a*a*a;
+  fm = fm0 + fm1*mag + fm2*mag*mag + fm3*mag*mag*mag + fm4*mag*mag*mag*mag + fmz1*a + fmz2*a*a
+         + fmz3*a*a*a + fmz4*a*a*a*a + fm1z1*mag*a + fm1z2*mag*a*a + fm2z1*mag*mag*a 
+         + fm2z2*mag*mag*a*a + fm3z1*mag*mag*mag*a + fm1z3*mag*a*a*a;
+  fs = fs0 + fs1*mag + fs2*mag*mag + fs3*mag*mag*mag + fs4*mag*mag*mag*mag + fsz1*a + fsz2*a*a
+         + fsz3*a*a*a + fsz4*a*a*a*a + fs1z1*mag*a + fs1z2*mag*a*a + fs2z1*mag*mag*a 
+         + fs2z2*mag*mag*a*a + fs3z1*mag*mag*mag*a + fs1z3*mag*a*a*a;
+  p = p0 + p1*mag + p2*mag*mag + p3*mag*mag*mag + p4*mag*mag*mag*mag + pz1*a + pz2*a*a
+         + pz3*a*a*a + pz4*a*a*a*a + p1z1*mag*a + p1z2*mag*a*a + p2z1*mag*mag*a 
+         + p2z2*mag*mag*a*a + p3z1*mag*mag*mag*a + p1z3*mag*a*a*a;
+
+  if (p<0) p=0;
+  if (p>1) p=1;
+  if (cs<0) cs=0;
+  if (fm<0) fm=0;
+  if (fs<0) fs=0;
 
   FiveTuple fp(cm,cs,fm,fs,p);
 
   return fp;
 }
+
 
 
 /*
@@ -112,6 +136,10 @@ den_ent define_prob(float magnitude, float redshift, float vol)
   //cout<<"Getting the denspdf parameters..."<<endl;
   FiveTuple fp = denspdf_params(magnitude+dmag, redshift);
   FiveTuple fpp = denspdf_params(magnitude-dmag, redshift);
+#ifdef DEBUG_DENSPDF
+  ofstream pdf_file("denspdf_param_test.ascii", std::ofstream::out | std::ofstream::app);
+  pdf_file<<magnitude+dmag << " "<< redshift << " "<< fp[0] << " "<< fp[1] << " "<< fp[2] << " "<< fp[3] << " "<< fp[4] << " "<< endl;
+#endif
   //if (magnitude+dmag > -19.0)
   //  fp = denspdf_params(-19.0, redshift);
   //if (magnitude-dmag > -19.0)

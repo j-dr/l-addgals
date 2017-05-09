@@ -46,11 +46,11 @@ extern float Z_REDFRACTION2;
 extern float SCATTER;
 extern int REDSHIFT_FIT;
 extern int GLOBAL_FIT;
-extern float cm0, cm1, cm2, cm3, cm4, cmz1, cmz2, cmz3;
-extern float cs0, cs1, cs2, cs3, csz1, csz2;
-extern float fm0, fm1, fm2, fm3, fmz1, fmz2;
-extern float fs0, fs1, fs2, fs3, fs4, fsz1, fsz2, fsz3;
-extern float p0, p1, p2, p3, pz1, pz2, pz3;
+extern float cm0, cm1, cm2, cm3, cm4, cmz1, cmz2, cmz3, cmz4, cm1z1, cm1z2, cm2z1, cm2z2, cm3z1, cm1z3;
+extern float cs0, cs1, cs2, cs3, cs4, csz1, csz2, csz3, csz4, cs1z1, cs1z2, cs2z1, cs2z2, cs3z1, cs1z3;
+extern float fm0, fm1, fm2, fm3, fm4, fmz1, fmz2, fmz3, fmz4, fm1z1, fm1z2, fm2z1, fm2z2, fm3z1, fm1z3;
+extern float fs0, fs1, fs2, fs3, fs4, fsz1, fsz2, fsz3, fsz4, fs1z1, fs1z2, fs2z1, fs2z2, fs3z1, fs1z3;
+extern float p0, p1, p2, p3, p4, pz1, pz2, pz3, pz4, p1z1, p1z2, p2z1, p2z2, p3z1, p1z3;
 #ifdef HEALPIX
 extern long nSide;
 extern long PixelNum;
