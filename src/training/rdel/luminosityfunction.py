@@ -3,7 +3,7 @@ from copy import copy
 import numpy as np
 
 from .util import load_abundance_function
-
+from .abundancematch import AbundanceFunction
 
 class LuminosityFunction(object):
 
@@ -81,7 +81,7 @@ class DSGLuminosityFunction(LuminosityFunction):
         return lums, phi
 
 
-def read_tabulated_lf(filename):
+def read_tabulated_loglf(filename):
 
     data = np.loadtxt(filename)
     lf = data[:,:2]
@@ -89,12 +89,46 @@ def read_tabulated_lf(filename):
 
     return lf
 
+def read_tabulated_lf(filename):
+
+    data = np.loadtxt(filename)
+    lf = data[:,:2]
+
+    return lf
+
+class BBGSLuminosityFunction(LuminosityFunction):
+    
+    def __init__(self, Q, P):
+        
+        self.lf = read_tabulated_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/BBGS/LF_r_z0.1.txt')
+        self.Q = Q
+        self.P = P
+        self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
+
+        LuminosityFunction.__init__(self,np.array([Q,P]),name='BBGS')
+
+    def evolveParams(self, z):
+        return self.params, z
+
+    def calcNumberDensity(self, p, lums):
+        Q = p[0][0]
+        P = p[0][1]
+        z = p[1]
+        if z > 0.45:
+            z = 0.45
+
+        mag  = self.lf[:,0] - Q * (z - 0.1)
+        phi  = self.lf[:,1] * 10 ** (0.4 * P * (z - 0.1))
+        af = AbundanceFunction(mag, phi, ext_range=(-26,10), nbin=2000, faint_end_fit_points=6)
+
+        return self.lf[:,0], af(self.lf[:,0])
+        
 
 class BernardiLuminosityFunction(LuminosityFunction):
 
     def __init__(self, Q):
 
-        self.lf = read_tabulated_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/bernardi-test/anc/LF_SerExp.dat')
+        self.lf = read_tabulated_loglf('/nfs/slac/g/ki/ki23/des/jderose/amatch/bernardi-test/anc/LF_SerExp.dat')
         print(self.lf[:,1])
         self.Q = Q
         self.unitmap = {'mag':'mag', 'phi':'mpc3dex'}
