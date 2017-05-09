@@ -15,17 +15,17 @@ for s in sim:
 
 
     if ar:
-        startat  = cfg['AbundanceMatch'].pop('startat', None)
         s.abundanceMatch(lf, **cfg['AbundanceMatch'])
         
     if rr:
         parallel = cfg['RdelModel'].pop('parallel', False)
         debug    = cfg['RdelModel'].pop('debug', False)
         startat  = cfg['RdelModel'].pop('startat', None)
+        endat  = cfg['RdelModel'].pop('endat', None)
         alpha    = cfg['AbundanceMatch'].pop('alpha', 0.7)
         scatter    = cfg['AbundanceMatch'].pop('scatter', 0.7)
         
         s.rdelMagDist(lf, parallel=parallel, debug=debug,
-                        startat=startat, alpha=alpha,
-                        scatter=scatter)
+                        startat=startat, endat=endat,
+                        alpha=alpha, scatter=scatter)
     
