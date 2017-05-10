@@ -1021,6 +1021,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 #else
 	float M0, Mc, a, b, k;
 	Read_L_BCG(M0, Mc, a, b, k);
+        Mc = pow(10, Mc);
 #endif 
 
 	for(int i=0;i<halos.size();i++)
@@ -1045,7 +1046,8 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 	      double mr = -2.5 * log10(exp(lnL)) + Msunr;
 #else
 	      double m200 = halos[i]->M();
-	      double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
+	      if (m200 > 1e15) m200 = 1e15;
+	      double mr0 = M0 - 2.5*(a*log10(m200/Mc) - b*log10(1.+pow(m200/Mc,k/b)));
 	      //float scatter = 0.17;
 	      double mr = normal_random(mr0, 2.5*SCATTER);
 #endif
