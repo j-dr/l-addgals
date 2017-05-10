@@ -1,11 +1,13 @@
 from __future__ import print_function, division
 from scipy.optimize import curve_fit, minimize
 from glob import glob
+from copy import copy
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import numpy as np
+import emcee
 import fitsio
 import os
 
@@ -36,31 +38,73 @@ def rdelModelDiag(rmean, p, muc, sigmac, muf, sigmaf):
 
 def lcenModel(mass, m0, mc, a, b, k):
 
-    return (m0 - 2.5 * ( a * np.log10(mass / mc) -
-              np.log10(1 + (mass/mc) ** (b * k)) / k))
+    return (m0 - 2.5 * ( a * np.log10(mass / (10 ** mc)) -
+              b * np.log10(1 + (mass/(10 ** mc)) ** (k / b) )))
 
-def lcenloss(x, lcmass, lcmassvar):
+def lnprob(x, lcmass, lcmassvar, z):
 
-    Mr0, Mc, a, b, k = x
+    if z<0.9:
+        M  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
+        Mmean = (M[1:] + M[:-1]) / 2
+    else:
+        M  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
+        Mmean = (M[1:] + M[:-1]) / 2
     
-    M  = np.logspace(np.log10(3e12), 15, 20)
-    Mmean = (M[1:] + M[:-1]) / 2
+    lcmhat = lcenModel(Mmean, *x)
+    ivar   = 1 / lcmassvar
     
-    lcen = lcenModel(Mmean, Mr0, Mc, a, b, k)
+    if not np.isfinite(lcmhat).any():
+        return -np.inf
     
-    chisq = np.sum((lcen - lcmass)** 2 / lcmassvar)
+    lnlike = -0.5 * np.nansum( ivar * (lcmhat - lcmass) ** 2 ) - np.abs(np.sum(x))
     
-    return chisq
+    if not np.isfinite(lnlike):
+        return -np.inf
+    else:
+        return lnlike
 
-def fitLcenMass(lcmass, lcmassvar):
+def fitLcenMass(lcmass, lcmassvar, z):
 
-    x0 = [-19.4484, 3.7e9, 29.78, 29.5, 0.0255]
+    x0 = [ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01]
 
-    loss = lambda x : lcenloss(x, lcmass, lcmassvar)
+    if z<0.9:
+        M  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
+        Mmean = (M[1:] + M[:-1]) / 2
+    else:
+        M  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
+        Mmean = (M[1:] + M[:-1]) / 2
+
+    vmean = np.nanmean(lcmassvar)
+
+    if vmean>0.07:
+        vmean = 0.07
+
+    gidx = lcmass == lcmass
+    Mmean = Mmean[gidx]
+    lcm = lcmass[gidx] 
+    lcmv = lcmassvar[gidx] 
     
-    opt = minimize(loss, x0, method='Nelder-Mead')
+    #make smallest errors a bit bigger
+    clcmv  = copy(lcmassvar)
+    clcmv[lcmassvar<vmean] = vmean
 
-    return opt['x']
+    try:
+        pm, cov = curve_fit(lcenModel, Mmean, lcm, p0=x0, sigma=1/np.log(Mmean), method='trf')
+    except:
+        pm = np.array([ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01])
+
+    ndim, nwalkers = 5, 50
+
+    x0 = [np.random.randn(ndim)*pm/4 + pm for i in range(nwalkers)]
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[lcmass, clcmv, z])
+    sampler.run_mcmc(x0, 5000)
+    
+    lnp = sampler.lnprobability.flatten()
+    pidx   = np.argmax(lnp)
+    bfpar  = sampler.flatchain[pidx,:]
+
+    return bfpar
 
 def rdelMagDist(rdel, mag, rbins, magcuts):
     """
@@ -281,9 +325,12 @@ def visLcenMassSnapshotFit(lcmass_params, lcmass,
     sax.set_ylabel(r'$M_{vir}\, [M_{sun}/h]$', fontsize=18, labelpad=20)
 
 
-    lcmasshat = lcenModel(mmean, *lcmass_params)
+    if lcmass_params is not None:
+        lcmasshat = lcenModel(mmean, *lcmass_params)
+        ax.plot(mmean, lcmasshat)
+
     ax.errorbar(mmean, lcmass, yerr=np.sqrt(lcmassvar))
-    ax.plot(mmean, lcmasshat)
+
     ax.set_xscale('log')
 
     try:
@@ -319,6 +366,8 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
 
     smname = shamfile.split('/')[-1].split('.')
     smname = '.'.join(smname[:-1])
+    scale  = float(smname.split('_')[-1].split('.list')[0])
+    z      = 1/scale - 1
 
     sham = fitsio.read(shamfile, columns=['LUMINOSITY', 'MVIR', 'PX', 'PY', 'PZ'])
     rdel = readHaloRdel(rnnfile)
@@ -328,8 +377,13 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     #set up bins
     rbins = np.logspace(-3., np.log10(15.), 50)
     mcuts = np.linspace(-24, -18, 20)
-    mbins = np.logspace(np.log10(3e12), 15, 20)
-    mmean = (mbins[1:] + mbins[:-1]) / 2
+
+    if z<0.9:
+        mbins  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
+        mmean = (mbins[1:] + mbins[:-1]) / 2
+    else:
+        mbins  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
+        mmean = (mbins[1:] + mbins[:-1]) / 2
 
     rmean = (rbins[1:] + rbins[:-1]) / 2
 
@@ -352,7 +406,10 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
 
     #fit model to lcen(M)
 
-    lcmass_params = fitLcenMass(lcmass, lcmassvar)
+    lcmass_params = fitLcenMass(lcmass, lcmassvar, z)
+    
+    if lcmass_params is None:
+        print('lc mass fitting failed for {}'.format(shamfile))
 
     saveRdelSnapshotFit(mphat, mpcovhat, rmdist, rmerr, smname, outdir)
 
