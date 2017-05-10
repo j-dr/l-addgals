@@ -96,11 +96,18 @@ def read_tabulated_lf(filename):
 
     return lf
 
+def read_tabulated_bbgs_lf(filename):
+
+    data = np.loadtxt(filename)
+    lf = data
+
+    return lf
+
 class BBGSLuminosityFunction(LuminosityFunction):
     
     def __init__(self, Q, P):
         
-        self.lf = read_tabulated_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/BBGS/LF_r_z0.1.txt')
+        self.lf = read_tabulated_bbgs_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/BBGS/LF_r_z0.1_bright_end_evol.txt')
         self.Q = Q
         self.P = P
         self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
@@ -114,11 +121,18 @@ class BBGSLuminosityFunction(LuminosityFunction):
         Q = p[0][0]
         P = p[0][1]
         z = p[1]
-        if z > 0.45:
-            z = 0.45
 
-        mag  = self.lf[:,0] - Q * (z - 0.1)
-        phi  = self.lf[:,1] * 10 ** (0.4 * P * (z - 0.1))
+        if z > 0.45:
+            pz = 0.45
+        elif z<=0.05:
+            pz = 0.05
+        else:
+            pz = z
+
+        phi  = self.lf[:,1] + (pz - 0.05) / 0.4 * self.lf[:,2]
+
+        mag  = self.lf[:,0] + Q * (1/(z + 1.0) - 1/1.1)
+        phi  = phi * 10 ** (0.4 * P * (pz - 0.1))
         af = AbundanceFunction(mag, phi, ext_range=(-26,10), nbin=2000, faint_end_fit_points=6)
 
         return self.lf[:,0], af(self.lf[:,0])
