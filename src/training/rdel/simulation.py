@@ -1,7 +1,11 @@
 from __future__ import print_function, division
 from helpers import SimulationAnalysis
 from astropy.cosmology import FlatLambdaCDM
-from halotools.sim_manager import TabularAsciiReader
+try:
+    from halotools.sim_manager import TabularAsciiReader
+    noht = False
+except:
+    noht = True
 from itertools import izip
 import astropy.constants as const
 import numpy as np
@@ -50,7 +54,6 @@ class Simulation(object):
         elif (zmin is not None) & (zmax is not None) & (nz is not None):
             self.zs = np.linspace(zmin, zmax, nz)
 
-        self.associateFiles()
         self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
 
 
@@ -127,7 +130,8 @@ class Simulation(object):
         """
         Abundance match all of the hlists
         """
-
+        print('amatch')
+        self.associateFiles()        
         odtype = np.dtype([('PX', np.float),
                             ('PY', np.float),
                             ('PZ', np.float),
@@ -276,7 +280,8 @@ class Simulation(object):
         """
         Compute rdel-magnitude distribution in SHAMs
         """
-
+        print('rdel')
+        self.associateFiles()
         if self.shamfiles is None:
             self.getSHAMFiles(lf, alpha=alpha, scatter=scatter)
 

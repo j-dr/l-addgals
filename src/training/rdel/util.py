@@ -5,7 +5,11 @@ import numpy as np
 from scipy.optimize import minimize
 from helpers.SimulationAnalysis import readHlist
 from helpers.readGadgetSnapshot import readGadgetSnapshot
-from halotools.sim_manager import TabularAsciiReader
+try:
+    from halotools.sim_manager import TabularAsciiReader
+    noht = False
+except:
+    noht = True
 import fitsio
 
 def _get_fname(s, cut):
