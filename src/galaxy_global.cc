@@ -679,7 +679,7 @@ void read_out_galaxy_info(vector<Galaxy *> &gal, vector<float> &mr,
     {
       p = gal[i]->P();
       mr[i] = gal[i]->Mr();
-      z[i] = p->ZredReal();
+      z[i] = p->Zred();
       sed_cat_id[i] = seds[sed_id[i]].CatId();
     }
 }
@@ -695,7 +695,7 @@ void read_out_galaxy_info_w_densities(vector<Galaxy *> &gal, vector<float> &mr, 
     {
       p = gal[i]->P();
       mr[i] = gal[i]->Mr();
-      z[i] = p->ZredReal();
+      z[i] = p->Zred();
       sed_cat_id[i] = seds[sed_id[i]].CatId();
       dist8[i] = gal[i]->Dist8();
     }

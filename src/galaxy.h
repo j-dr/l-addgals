@@ -123,13 +123,13 @@ inline float evolve_a(float mag, float z){
 
 inline float evolve_mag(float mag, float z){
   if(evolution == NOEV)
-    return mag;
+    return mag + 5 * log10(cosmo.LittleH());
   if(evolution == BLAN)
-    return evolve_blan(mag, z);
+    return evolve_blan(mag, z) + 5 * log10(cosmo.LittleH());
   if(evolution == FABER)
-    return evolve_faber(mag, z);
+    return evolve_faber(mag, z) + 5 * log10(cosmo.LittleH());
   if(evolution == TIME)
-    return evolve_a(mag, z);
+    return evolve_a(mag, z) + 5 * log10(cosmo.LittleH());
   return 0;
 }
 

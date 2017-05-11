@@ -849,7 +849,7 @@ void Read_L_BCG(float &M0, float &Mc, float &a, float &b, float &k)
 
   char line[200];
   //file>>line;
-  file.getline(line, 200);
+  //  file.getline(line, 200);
   cout<<"Line: "<<endl;
   file>>M0>>Mc>>a>>b>>k;
   cout<<M0<<" "<<Mc<<" "<<a<<" "<<b<<" "<<k<<endl;
