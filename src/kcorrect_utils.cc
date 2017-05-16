@@ -308,7 +308,7 @@ long readNRowsFits(std::string filename)
 }
 
 //void readSEDInfoFITS(std::string filename, std::vector< valarray<float> > &coeffs, std::vector<float> &sdss_mag_r)
-void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift)
+void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift, std::vector<int> &id)
 {
   using namespace CCfits;
 
@@ -323,6 +323,7 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
   //read sdss mag, kcorrect coeffs, and redshifts
   table.column("MAG_R").read(sdss_mag_r,1,nrows);
   table.column("Z").read(redshift,1,nrows);
+  table.column("ECATID").read(id,1,nrows);
 
   vector<float>::iterator itr=coeffs.begin();
   vector< valarray<float> >::iterator titr;
@@ -579,9 +580,11 @@ int main(int argc, char *argv[])
   std::vector<float> coeffs(nrows*ntemp);
   std::vector<float> sdss_mag_r(nrows);
   std::vector<float> redshift(nrows);
+  std::vector<int> id(nrows);
 
-  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift);
+  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift, id);
 
+  match_coeff(id, &coeffs[0]);
   //Loop over surveys
   for (i=5;i<argc;i++)
     {
@@ -685,10 +688,10 @@ int main(int argc, char *argv[])
       t2 = clock();
       cout << "cfitsio wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
 
-      t1 = clock();      
-      write_colors(amag, omag, coeff_norm, nk, outname, survey);
-      t2 = clock();
-      cout << "ccfits wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
+      //      t1 = clock();      
+      //      write_colors(amag, omag, coeff_norm, nk, outname, survey);
+      //      t2 = clock();
+      //      cout << "ccfits wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
     }
 }
 
