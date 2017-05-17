@@ -218,6 +218,8 @@ vector <Halo*> ReadRockstarHalos(void){
     zz = zMpc;
 
     Point pos(xx, yy, zz);
+    if ((RMIN_REAL > pos.R()) || (pos.R() > RMAX_REAL)) continue;
+
     Halo * halo = new Halo(pos, vel, m200c, zred, ip, hid, vrms, r200c);
     halo->Host(pid);
     halo->Dist8(rdel);
