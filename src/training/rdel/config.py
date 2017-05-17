@@ -53,6 +53,7 @@ def parseConfig(cfg):
             a = np.loadtxt(simcfg['snaptimes'][i])
             sa = np.loadtxt(simcfg['snaptimes'][i], dtype=str)
             zs = 1/a[:,1] - 1.
+            print('appending sim')
             sims.append(Simulation(simcfg['name'][i],
                                    simcfg['boxsize'][i],
                                    snapdirs,
@@ -64,6 +65,7 @@ def parseConfig(cfg):
                                    zs=zs,
                                    compressed_hlist=simcfg['compressed_hlist'],
                                    strscale=sa[:,1]))
+            print('done')
 
         else:
             sims.append(Simulation(simcfg['name'][i],

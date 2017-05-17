@@ -277,7 +277,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			densities[i].key = i;
 			magnitudes[i].key = i;
 			densities[i].value = log10((*inputIterator).Dens());
-			magnitudes[i].value = (*inputIterator).MR(); 
+			magnitudes[i].value = (*inputIterator).MR();
 		}
 		//cout<<"Starting magnitude sort"<<endl;
 		MergeSort(magnitudes,size);
