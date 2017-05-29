@@ -45,7 +45,7 @@ class DSGLuminosityFunction(LuminosityFunction):
 
         if params is None:
             params = np.array([  1.56000000e-02,  -1.66000000e-01,   6.71000000e-03,
-                                 -1.52300000e+00,  -2.00100000e+01,   3.08000000e-05,
+                                 -1.52300000e+00,  -2.00100000e+01,   2*3.08000000e-05,
                                  -2.18500000e+01,   4.84000000e-01, -1, 0])
 
         LuminosityFunction.__init__(self,params,name='DSG')
