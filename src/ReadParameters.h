@@ -44,6 +44,8 @@ extern float REDFRACTION2;
 extern float Z_REDFRACTION1;
 extern float Z_REDFRACTION2;
 extern float SCATTER;
+extern int EVOLVECEN;
+extern float QBASELINE;
 extern int REDSHIFT_FIT;
 extern int GLOBAL_FIT;
 extern float cm0, cm1, cm2, cm3, cm4, cmz1, cmz2, cmz3, cmz4, cm1z1, cm1z2, cm2z1, cm2z2, cm3z1, cm1z3;

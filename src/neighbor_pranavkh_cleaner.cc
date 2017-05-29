@@ -383,7 +383,8 @@ vector <int> GetSEDs(vector <Galaxy *> &galaxies, vector <float> &nndist, vector
 #ifdef DEBUG
     if(gi%20000==0) {cout<<gi<<endl; system("date");}
 #endif
-    mr = galaxies[gi]->Mr();
+    //Get rid of passive evolution
+    mr = galaxies[gi]->Mr() - QBASELINE * (1/(galaxies[gi]->zGal()+0.1)-1/1.1);
     sed_ids[gi] = findCloseGalaxies2(galseds, mr, nndist[gi], galaxies[gi]->Z(), galaxies[gi]->Central());
     if (gi==0)
       {

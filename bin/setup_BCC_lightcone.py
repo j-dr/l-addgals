@@ -19,6 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('--rdmodelfile')
     parser.add_argument('--evol')
     parser.add_argument('--Q')
+    parser.add_argument('--QBASELINE')
+    parser.add_argument('--EVOLVECEN')
     parser.add_argument('--z_redfraction1')
     parser.add_argument('--z_redfraction2')
     parser.add_argument('--redfraction1')
@@ -81,6 +83,24 @@ if __name__ == '__main__':
 
             #params['value'][psidx] = (float(params['value'][psidx]) + 1.618 * (1/(1 + zmin) - 1/1.1))
 
+        if args.QBASELINE is not None:
+            if 'QBASELINE' in params['param']:
+                params['value'][params['param']=='QBASELINE'] = args.QBASELINE
+            else:
+                qbarr = np.zeros(1, dtype=dt)
+                qbarr['param'][0] = 'QBASELINE'
+                qbarr['value'][0] = args.QBASELINE
+                params = np.hstack([params, qbarr])
+
+        if args.EVOLVECEN is not None:
+            if 'EVOLVECEN' in params['param']:
+                params['value'][params['param']=='EVOLVECEN'] = args.EVOLVECEN
+            else:
+                qbarr = np.zeros(1, dtype=dt)
+                qbarr['param'][0] = 'EVOLVECEN'
+                qbarr['value'][0] = args.EVOLVECEN
+                params = np.hstack([params, qbarr])
+                
         if args.Q is not None:
             params['value'][params['param']=='Q'] = args.Q
         if args.evol is not None:

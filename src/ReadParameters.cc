@@ -14,6 +14,8 @@
  string denspdffile ;
  string lbcgfile ;
  string colortrdir;
+ int EVOLVECEN;
+ float QBASELINE;
  float DECMIN ;
  float DECMAX;
  float RAMIN ;
@@ -95,7 +97,11 @@ void fillParameters(ParameterDatabase* pd)
         Z_REDFRACTION1 = pd->findParameterValue("Z_REDFRACTION1");
         Z_REDFRACTION2 = pd->findParameterValue("Z_REDFRACTION2");
         SCATTER = pd->findParameterValue("SCATTER");
+	EVOLVECEN = pd->findParameterValue("EVOLVECEN");
+	QBASELINE = pd->findParameterValue("QBASELINE");
 	REDSHIFT_FIT = 0;
+	if (QBASELINE==-1) QBASELINE = 0;
+	if (EVOLVECEN==-1) EVOLVECEN = 1;
         //REDSHIFT_FIT = pd->findParameterValue("GlobalFit");
 #ifdef BCC
 	LCNUM = pd->findParameterValue("LCNUM");
