@@ -369,7 +369,7 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     scale  = float(smname.split('_')[-1].split('.list')[0])
     z      = 1/scale - 1
 
-    sham = fitsio.read(shamfile, columns=['LUMINOSITY', 'MVIR', 'PX', 'PY', 'PZ'])
+    sham = fitsio.read(shamfile, columns=['LUMINOSITY', 'MVIR', 'PX', 'PY', 'PZ', 'CENTRAL'])
     rdel = readHaloRdel(rnnfile)
 
     mag  = sham['LUMINOSITY']
@@ -388,8 +388,9 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     rmean = (rbins[1:] + rbins[:-1]) / 2
 
     #measure lcen of M
-    lcmass, lcmassvar, jlcmass = lcenMassDist(sham['PX'], sham['PY'], sham['PZ'], mag, 
-                                              sham['MVIR'], mbins, lbox, njackside=5)
+    cidx = sham['CENTRAL']==1
+    lcmass, lcmassvar, jlcmass = lcenMassDist(sham['PX'][cidx], sham['PY'][cidx], sham['PZ'][cidx], mag[cidx], 
+                                              sham['MVIR'][cidx], mbins, lbox, njackside=5)
 
     #cludge to temporarily deal with calcrnn leaving out last halo
     if len(mag)==(len(rdel)+1):

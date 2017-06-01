@@ -53,6 +53,9 @@ extern float cs0, cs1, cs2, cs3, cs4, csz1, csz2, csz3, csz4, cs1z1, cs1z2, cs2z
 extern float fm0, fm1, fm2, fm3, fm4, fmz1, fmz2, fmz3, fmz4, fm1z1, fm1z2, fm2z1, fm2z2, fm3z1, fm1z3;
 extern float fs0, fs1, fs2, fs3, fs4, fsz1, fsz2, fsz3, fsz4, fs1z1, fs1z2, fs2z1, fs2z2, fs3z1, fs1z3;
 extern float p0, p1, p2, p3, p4, pz1, pz2, pz3, pz4, p1z1, p1z2, p2z1, p2z2, p3z1, p1z3;
+#ifdef RED_FRACTION
+extern float fq0, fq1, fq2, fq3, fqz1, fqz2, fqz3, fq1z1, fq1z2, fq2z1;
+#endif
 #ifdef HEALPIX
 extern long nSide;
 extern long PixelNum;

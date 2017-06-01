@@ -253,15 +253,13 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 
 #ifdef RED_FRACTION
-	float red_fraction = REDFRACTION1;
-	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
-	float intercept = REDFRACTION1 - slope*Z_REDFRACTION1;
-	if (ThisZ > Z_REDFRACTION1 && ThisBCG == 0)
-	  {
-	    red_fraction = slope*ThisZ + intercept;
-	    if (red_fraction < REDFRACTION2)
-	      red_fraction = REDFRACTION2;
-	  } 
+	float mv = mag + 20.0;
+	float zv = 1 / (ThisZ + 1) - 0.47;
+	float red_fraction = fq0 + fqz1 * zv + fqz2 * zv*zv + fqz3 * zv*zv*zv + 
+	                       fq1 * mv + fq2 * mv*mv + fq3 * mv*mv*mv +
+	                       fq1z1 * mv*zv + fq1z2 * mv*zv*zv + fq2z1*mv*mv*zv;
+	if (red_fraction > 1.0) red_fraction = 1.0;
+	if (red_fraction < 0.0) red_fraction = 0.0;
 #endif
 
 	if( sorted != 1)
@@ -373,7 +371,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		  exit(1);
 		}
 
-		rffile << red_fraction << " " << local_red_fraction << " " << target_local_red_fraction << endl;
+		rffile << red_fraction << " " << local_red_fraction << " " << target_local_red_fraction << " " << ntot << endl;
 #endif
 	        int is_red = 1;
         	float ran = drand48();
