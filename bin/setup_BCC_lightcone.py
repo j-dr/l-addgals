@@ -21,10 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--Q')
     parser.add_argument('--QBASELINE')
     parser.add_argument('--EVOLVECEN')
-    parser.add_argument('--z_redfraction1')
-    parser.add_argument('--z_redfraction2')
-    parser.add_argument('--redfraction1')
-    parser.add_argument('--redfraction2')
+    parser.add_argument('--rfmodelfile')
     parser.add_argument('--scatter')
     parser.add_argument('--lbcgname')
     parser.add_argument('--hv')
@@ -44,6 +41,7 @@ if __name__ == '__main__':
     
     zidx       = np.argsort(zs)
     lbcgmodels = lbcgmodels[zidx]
+    print(lbcgmodels)
     zs         = zs[zidx]
     
     paramfiles = glob(addgalsnames)
@@ -56,6 +54,11 @@ if __name__ == '__main__':
         rdelparams = np.genfromtxt(args.rdmodelfile, dtype=dt)
     else:
         rdelparams = None
+
+    if args.rfmodelfile is not None:
+        rfparams = np.genfromtxt(args.rfmodelfile, dtype=dt)
+    else:
+        rfparams = None
 
     for f in paramfiles:
         base = f.split('/')
@@ -83,6 +86,25 @@ if __name__ == '__main__':
 
             #params['value'][psidx] = (float(params['value'][psidx]) + 1.618 * (1/(1 + zmin) - 1/1.1))
 
+        if rfparams is not None:
+            print(rfparams['param'])
+            if rfparams['param'][0] in params['param']:
+                print(params['param']==rfparams['value'][0])
+                print(rfparams['value'][0])
+                psidx, = np.where(params['param']==rfparams['param'][0])
+                peidx, = np.where(params['param']==rfparams['param'][-1])
+                psidx  = psidx[0]
+                peidx  = peidx[0]
+                params = np.hstack([params[:psidx+1], rfparams, params[peidx:]])
+            elif 'REDFRACTION1' in params['param']:
+                psidx, = np.where(params['param']=='REDFRACTION1')
+                peidx, = np.where(params['param']=='Z_REDFRACTION2')
+                psidx  = psidx[0]
+                peidx  = peidx[0]
+                params = np.hstack([params[:psidx], rfparams, params[peidx+1:]])
+            else:
+                params = np.hstack([params, rfparams])
+            
         if args.QBASELINE is not None:
             if 'QBASELINE' in params['param']:
                 params['value'][params['param']=='QBASELINE'] = args.QBASELINE
@@ -105,14 +127,6 @@ if __name__ == '__main__':
             params['value'][params['param']=='Q'] = args.Q
         if args.evol is not None:
             params['value'][params['param']=='evolution'] = args.evol
-        if args.z_redfraction1 is not None:
-            params['value'][params['param']=='Z_REDFRACTION1'] = args.z_redfraction1
-        if args.z_redfraction2 is not None:
-            params['value'][params['param']=='Z_REDFRACTION2'] = args.z_redfraction2
-        if args.redfraction2 is not None:
-            params['value'][params['param']=='REDFRACTION2'] = args.redfraction2
-        if args.redfraction2 is not None:
-            params['value'][params['param']=='REDFRACTION2'] = args.redfraction2
         if args.scatter is not None:
             params['value'][params['param']=='SCATTER'] = args.scatter
 
