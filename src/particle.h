@@ -57,7 +57,7 @@ class Particle{
   void VelPrint()const{cout<<Vx()<<" "<<Vy()<<" "<<Vz()<<endl;};
   void Print() const;
   void Write(ofstream &file)const{
-    file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Vx()<<" "<<Vy()<<" "<<Vz()<<" "<<" "<<Zred()<<" "<<Pid()<<endl;
+    file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Vx()<<" "<<Vy()<<" "<<Vz()<<" "<<" "<<Zred()<<" "<<Den()<<" "<<Pid()<<endl;
   }
   void Pos2Write(ofstream &file)const{
     file<<X()<<" "<<Y()<<" "<<Z()<<" "<<Ra()<<" "<<Dec()<<" "<<Zred()<<endl;

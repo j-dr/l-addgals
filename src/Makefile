@@ -91,10 +91,10 @@ RM = rm -f
 
 #-------------> for Catalog Production <------------#
 #catalog_type="classic"
-catalog_type="BCC"
+#catalog_type="BCC"
 #catalog_type="adjust_colors"
 #catalog_type="SHAM_TEST"
-#catalog_type="snapshot"
+catalog_type="snapshot"
 #catalog_type="just_colors"
 #catalog_type="snapshot_colors"
 
@@ -121,6 +121,7 @@ CPPFLAGS += -DLONG64_IDS     #are particle IDs 64-bit integers?
 CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 CPPFLAGS += -DBCC
 CPPFLAGS += -DCATALOG
+#CPPFLAGS += -DDESCLF
 #OMPFLAG = -fopenmp
 endif
 
@@ -220,7 +221,7 @@ endif
 #CPPFLAGS += -DHEALPIX        #do a healpix domain-type decomposition?
 #CPPFLAGS += -DSHAM_TEST      #add Consuelo SHAM galaxies back to Consuelo
 #CPPFLAGS += -DSIXPARAMS                #fit for a skewed lognormal distribution in the field objects
-#CPPFLAGS += -DDEBUG
+#CPPFLAGS += -DDEBUGLC
 #CPPFLAGS += -DOLDPDF
 #CPPFLAGS += -DDEBUG_PDF
 #CPPFLAGS += -DDEBUG_PASSIGN    #Debug particle assignment
@@ -228,7 +229,9 @@ endif
 #CPPFLAGS += -DCOLORTEST
 #CPPFLAGS += -DTESTREADPART
 #CPPFLAGS += -DDEBUG_PIXLC
+CPPFLAGS += -DBOX_VOLUME
 CPPFLAGS += -DOUTPUTDENSITY
+CPPFLAGS += -DDEBUG_DENSPDF
 #CPPFLAGS += -DMAKEMAGS
 #CPPFLAGS += -DDEBUG_SHAPES
 #CPPFLAGS += -DRF_TEST

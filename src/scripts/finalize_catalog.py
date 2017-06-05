@@ -104,8 +104,10 @@ idoff = np.array([0, 1e8, 1e9], dtype=np.int)
 
 def update_halo_id(ids, boxl):
     idoff = np.array([0, 1e8, 1e9], dtype=np.int)
+    nzidx = ids > 0
+    ids[nzidx] += idoff[bsizeenum[boxl]]
 
-    return ids + idoff[bsizeenum[boxl]]
+    return ids 
 
 
 def finalize_catalogs(basepath, prefix, suffix, outpath, halopaths, ztrans,

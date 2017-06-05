@@ -3,7 +3,7 @@ from copy import copy
 import numpy as np
 
 from .util import load_abundance_function
-
+from .abundancematch import AbundanceFunction
 
 class LuminosityFunction(object):
 
@@ -44,22 +44,9 @@ class DSGLuminosityFunction(LuminosityFunction):
     def __init__(self, params=None, name=None):
 
         if params is None:
-            params = np.zeros(8)
-            mstar = -20.44
-            mstar0 = -20.310
-
-            params[0] = 0.0156  #phistar1
-            params[1] = -0.166  #alpha1
-            params[2] = 0.00671 #phistar2
-            params[3] = -1.523  #alpha2
-            params[4] = -19.88  #mstar
-            params[5] = 3.08e-5 #phistar3
-            params[6] = -21.72  #M_hi
-            params[7] = 0.484   #sigma_hi
-
-            mr_shift = mstar - mstar0
-            params[4] += mr_shift
-            params[6] += mr_shift
+            params = np.array([  1.56000000e-02,  -1.66000000e-01,   6.71000000e-03,
+                                 -1.52300000e+00,  -2.00100000e+01,   2*3.08000000e-05,
+                                 -2.18500000e+01,   4.84000000e-01, -1, 0])
 
         LuminosityFunction.__init__(self,params,name='DSG')
         self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
@@ -67,12 +54,12 @@ class DSGLuminosityFunction(LuminosityFunction):
     def evolveParams(self, z):
         zp = copy(self.params)
 
-        phistar = 10 ** (-1.79574 + (-0.266409 * z))
-        phistar_rat = phistar/self.params[0]
-
-        zp[0] *= phistar_rat
-        zp[2] *= phistar_rat
-        zp[5] *= phistar_rat
+        zp[0] += self.params[-1] * (1/(z+1) - 1/1.1)
+        zp[2] += self.params[-1] * (1/(z+1) - 1/1.1)
+        zp[5] += self.params[-1] * (1/(z+1) - 1/1.1)
+        
+        zp[4] += self.params[-2] * (1/(z+1) - 1/1.1)
+        zp[6] += self.params[-2] * (1/(z+1) - 1/1.1)
 
         return zp
 
@@ -93,7 +80,8 @@ class DSGLuminosityFunction(LuminosityFunction):
 
         return lums, phi
 
-def read_tabulated_lf(filename):
+
+def read_tabulated_loglf(filename):
 
     data = np.loadtxt(filename)
     lf = data[:,:2]
@@ -101,12 +89,60 @@ def read_tabulated_lf(filename):
 
     return lf
 
+def read_tabulated_lf(filename):
+
+    data = np.loadtxt(filename)
+    lf = data[:,:2]
+
+    return lf
+
+def read_tabulated_bbgs_lf(filename):
+
+    data = np.loadtxt(filename)
+    lf = data
+
+    return lf
+
+class BBGSLuminosityFunction(LuminosityFunction):
+    
+    def __init__(self, Q, P):
+        
+        self.lf = read_tabulated_bbgs_lf('/home/jderose/projects/l-addgals/src/training/rdel/LF_r_z0.1_bright_end_evol.txt')
+        self.Q = Q
+        self.P = P
+        self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
+
+        LuminosityFunction.__init__(self,np.array([Q,P]),name='BBGS')
+
+    def evolveParams(self, z):
+        return self.params, z
+
+    def calcNumberDensity(self, p, lums):
+        Q = p[0][0]
+        P = p[0][1]
+        z = p[1]
+
+        if z > 0.45:
+            pz = 0.45
+        elif z<=0.05:
+            pz = 0.05
+        else:
+            pz = z
+
+        phi  = self.lf[:,1] + (pz - 0.05) / 0.4 * self.lf[:,2]
+
+        mag  = self.lf[:,0] + Q * (1/(z + 1.0) - 1/1.1)
+        phi  = phi * 10 ** (0.4 * P * (pz - 0.1))
+        af = AbundanceFunction(mag, phi, ext_range=(-26,10), nbin=2000, faint_end_fit_points=6)
+
+        return self.lf[:,0], af(self.lf[:,0])
+        
 
 class BernardiLuminosityFunction(LuminosityFunction):
 
     def __init__(self, Q):
 
-        self.lf = read_tabulated_lf('/nfs/slac/g/ki/ki23/des/jderose/amatch/bernardi-test/anc/LF_SerExp.dat')
+        self.lf = read_tabulated_loglf('/nfs/slac/g/ki/ki23/des/jderose/amatch/bernardi-test/anc/LF_SerExp.dat')
         print(self.lf[:,1])
         self.Q = Q
         self.unitmap = {'mag':'mag', 'phi':'mpc3dex'}
@@ -136,7 +172,7 @@ class ReddickLuminosityFunction(LuminosityFunction):
 
         self.lf = load_abundance_function(log_phi=False)
         self.Q = Q
-        self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
 
         LuminosityFunction.__init__(self,Q,name='Reddick')
 

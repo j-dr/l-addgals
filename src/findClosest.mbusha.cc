@@ -253,15 +253,13 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 
 #ifdef RED_FRACTION
-	float red_fraction = REDFRACTION1;
-	float slope = (REDFRACTION1 - REDFRACTION2)/(Z_REDFRACTION1-Z_REDFRACTION2);
-	float intercept = REDFRACTION1 - slope*Z_REDFRACTION1;
-	if (ThisZ > Z_REDFRACTION1 && ThisBCG == 0)
-	  {
-	    red_fraction = slope*ThisZ + intercept;
-	    if (red_fraction < REDFRACTION2)
-	      red_fraction = REDFRACTION2;
-	  } 
+	float mv = mag + 20.0;
+	float zv = 1 / (ThisZ + 1) - 0.47;
+	float red_fraction = fq0 + fqz1 * zv + fqz2 * zv*zv + fqz3 * zv*zv*zv + 
+	                       fq1 * mv + fq2 * mv*mv + fq3 * mv*mv*mv +
+	                       fq1z1 * mv*zv + fq1z2 * mv*zv*zv + fq2z1*mv*mv*zv;
+	if (red_fraction > 1.0) red_fraction = 1.0;
+	if (red_fraction < 0.0) red_fraction = 0.0;
 #endif
 
 	if( sorted != 1)
@@ -277,7 +275,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 			densities[i].key = i;
 			magnitudes[i].key = i;
 			densities[i].value = log10((*inputIterator).Dens());
-			magnitudes[i].value = (*inputIterator).MR(); 
+			magnitudes[i].value = (*inputIterator).MR();
 		}
 		//cout<<"Starting magnitude sort"<<endl;
 		MergeSort(magnitudes,size);
@@ -373,7 +371,7 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 		  exit(1);
 		}
 
-		rffile << red_fraction << " " << local_red_fraction << " " << target_local_red_fraction << endl;
+		rffile << red_fraction << " " << local_red_fraction << " " << target_local_red_fraction << " " << ntot << endl;
 #endif
 	        int is_red = 1;
         	float ran = drand48();
@@ -849,7 +847,7 @@ void Read_L_BCG(float &M0, float &Mc, float &a, float &b, float &k)
 
   char line[200];
   //file>>line;
-  file.getline(line, 200);
+  //  file.getline(line, 200);
   cout<<"Line: "<<endl;
   file>>M0>>Mc>>a>>b>>k;
   cout<<M0<<" "<<Mc<<" "<<a<<" "<<b<<" "<<k<<endl;
@@ -957,7 +955,13 @@ void LinkHalosParticles(vector <Particle *> &P, vector <Halo *> &H)
   cout<<"Finished Linking Halo Particles."<<endl;
 
 }
-	  
+
+double CalculateMeanBCGLum(double lnLc0, double ALc, double Mpiv, double BLc, double MVir, double z)
+{
+
+  return lnLc0 + ALc * log(MVir / Mpiv) + BLc * log(1 + z);
+
+}
 
 void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vector <Halo *> &halos)
 {
@@ -1002,36 +1006,22 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 
 	LinkHalosParticles(particles, halos);
 	
-	//parameters for setting BCG magnitudes
-	float Mc = 3.7e9;
-	float a = 29.78;
-	float b = 29.5;
-	float k = 0.0255;
-	float L0 = 2.8e9;
-        float M0 = 0;
-	//L0 *= (2.0/3.0); //correction fudge to get sat fraction right
-	//L0 *= (5./8.);  // correction fudge factor to get Sarah's plot correct
-	//float L0 = 3.36e9; //recalculated to match sham
-	L0 *= 7.80e-11;  //Convert from solar to L*
-	L0 *= 0.9; //An additional fudge factor
-	L0 *= 1.74; //Re-added when LF changed from Montero-Dorta to my fit.  
-
-
-        //read in our BCG parameters from a file
-        Read_L_BCG(M0, Mc, a, b, k); 
-	//M0 += 0.31; //fudge factor to match Sarah's Lbcg plots
-	cout<<"Using BCG parameters:  "<<M0<<" "<<Mc<<" "<<a<<" "<<b<<" "<<k<<endl;
-
-	/*
-	//These fit parameters are set for abundance matching
-	double fit_00 = -10.8998;
-	double fit_01 = 1.17409;
-	double fit_10 = -0.818732;
-	double fit_11 =  -0.115187;
-	*/
-
 	//set magnitudes based on halo mass
 	cout<<"Assigning BCG magnitudes..."<<endl;
+
+#ifdef DESCLF
+        double sigma_L = 0.364;
+        double lnLc0   = 24.554;
+        double ALc     = 0.355;
+        double BLc     = 0.936;
+        double Mpiv    = 2.35*1e14;
+	double Msunr   = 4.67;
+#else
+	float M0, Mc, a, b, k;
+	Read_L_BCG(M0, Mc, a, b, k);
+        Mc = pow(10, Mc);
+#endif 
+
 	for(int i=0;i<halos.size();i++)
 	  {
 #ifdef SHAM_TEST
@@ -1042,29 +1032,26 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 #else
 	    if (halos[i]->Host() >= 0 || halos[i]->M() < BCG_Mass_lim) {
 		halos[i]->Mr(99);
-		continue;
+		//continue;
             }
 #endif
-	    //assign through Sarah's power-law fit
-            /*
-	    double m200 = halos[i]->M();
-	    double loglum = log10(L0) + a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k));
-	    double lum = pow(10., loglum);
-	    double lum_before = lum;
-	    lum = pow(10.0,normal_random(log10(lum),0.15));
-	    double mr = -2.5*log10(lum) + Mstar;
-	    //un-passively evolve the halo
-	    mr = deevolve_mag(mr, halos[i]->Zred());
-	    halos[i]->Mr(mr);
-	    */
-
-	    //use parameters read from table for Vale & Ostriker formula fit to SHAM
-            //Parameters read from table do not include any passive evolution
-	    double m200 = halos[i]->M();
-	    double mr0 = M0 - 2.5*(a*log10(m200/Mc) - (1./k)*log10(1.+pow(m200/Mc,b*k)));
-	    //float scatter = 0.17;
-	    double mr = normal_random(mr0, 2.5*SCATTER);
-	    halos[i]->Mr(mr);
+	    if (halos[i]->Host() < 0 && halos[i]->M() >= BCG_Mass_lim) {
+#ifdef DESCLF
+	      //assign using power law fit to DES CLF
+	      double lnL0 = CalculateMeanBCGLum(lnLc0, ALc, Mpiv, BLc, halos[i]->M(), halos[i]->ZredReal());
+	      //add scatter
+	      double lnL  = normal_random(lnL0, sigma_L);
+	      double mr = -2.5 * log10(exp(lnL)) + Msunr;
+#else
+	      double m200 = halos[i]->M();
+	      if (m200 > 1e15) m200 = 1e15;
+	      double mr0 = M0 - 2.5*(a*log10(m200/Mc) - b*log10(1.+pow(m200/Mc,k/b)));
+	      //float scatter = 0.17;
+	      double mr = normal_random(mr0, 2.5*SCATTER);
+#endif
+	      halos[i]->Mr(mr);
+	      
+	    }
 #ifdef DEBUG
 	    if(i<10) cout<<"Halo "<<i<<": M200 = "<<m200<<", Mr = "<<mr<<endl;
 #endif
@@ -1206,7 +1193,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		hID = haloD[hi].key;
 		hD = haloD[hi].value;
 		hMr = haloMr[hID].value;
-		if (hMr >= 0) continue;
+		//if (hMr >= 0) continue;
 
 		if (hi >= ibad) cout<<"Have halo properties.  Checking location."<<endl;
 		if(!(halos[hID]->InVol()))

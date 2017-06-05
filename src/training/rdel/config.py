@@ -5,7 +5,7 @@ import yaml
 
 from .simulation import Simulation
 from .model      import Model
-from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction, ReddickLuminosityFunction
+from .luminosityfunction import LuminosityFunction, DSGLuminosityFunction, BernardiLuminosityFunction, ReddickLuminosityFunction, BBGSLuminosityFunction
 
 
 def readCfg(filename):
@@ -29,6 +29,10 @@ def setLF(cfg):
         
         lf = ReddickLuminosityFunction(cfg['LuminosityFunction']['Q'])
 
+    elif cfg['LuminosityFunction']['type'] == 'BBGS':
+        
+        lf = BBGSLuminosityFunction(cfg['LuminosityFunction']['Q'], cfg['LuminosityFunction']['P'])
+
     return lf
                        
         
@@ -39,15 +43,17 @@ def parseConfig(cfg):
     sims = []
 
     for i, s in enumerate(simcfg['hlistbase']):
-        hlists = glob('{0}/hlist*list'.format(s))
-        rnn    = glob('{0}/snapdir_*/rnn*[0-9]'.format(simcfg['rnnbase'][i]))
-        snapdirs  = glob('{0}/snapdir_*/'.format(simcfg['snapbase'][i]))
+        hlists = glob('{0}/hlist*_0[0-9]*'.format(s))
+        rnn    = glob('{0}/snapdir*/rnn*[0-9]'.format(simcfg['rnnbase'][i]))
+        snapdirs  = glob('{0}/snapdir*/'.format(simcfg['snapbase'][i]))
         
         #snaptimes should always be provided in order that snapshots
         #were output in (in order of increasing time)
         if 'snaptimes' in simcfg:
             a = np.loadtxt(simcfg['snaptimes'][i])
+            sa = np.loadtxt(simcfg['snaptimes'][i], dtype=str)
             zs = 1/a[:,1] - 1.
+            print('appending sim')
             sims.append(Simulation(simcfg['name'][i],
                                    simcfg['boxsize'][i],
                                    snapdirs,
@@ -55,7 +61,11 @@ def parseConfig(cfg):
                                    rnn,
                                    simcfg['outdir'],
                                    simcfg['h'][i],
-                                   zs=zs))
+                                   simcfg['omegam'][i],
+                                   zs=zs,
+                                   compressed_hlist=simcfg['compressed_hlist'],
+                                   strscale=sa[:,1]))
+            print('done')
 
         else:
             sims.append(Simulation(simcfg['name'][i],
@@ -65,9 +75,12 @@ def parseConfig(cfg):
                                    rnn,
                                    simcfg['outdir'],
                                    simcfg['h'][i],
+                                   simcfg['omegam'][i],
                                    zmin=simcfg['zmin'][i],
                                    zmax=simcfg['zmax'][i],
-                                   nz=simcfg['nz'][i]))
+                                   nz=simcfg['nz'][i],
+                                   compressed_hlist=simcfg['compressed_hlist']))
+
 
     lf = setLF(cfg)
     m  = Model(sims)

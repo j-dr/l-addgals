@@ -75,29 +75,54 @@ vector <Halo*> ReadRockstarHalosHlist(void){
   }
 
   string tmps;
-  for(int i=0;i<43;i++){
-  getline(file, tmps);
-  cout<<tmps<<endl;
+  streampos oldpos;
+  while(true){
+  //  for(int i=0;i<43;i++){
+    oldpos = file.tellg();  // stores the position
+    getline(file, tmps);
+    cout<<tmps<<endl;
+    if (tmps[0]!='#') break;
   }
+  file.seekg (oldpos);
   getline(rfile, tmps);
   cout<<tmps<<endl;
 
-  int hid = 0;
+  while(true){
+  //  for(int i=0;i<43;i++){
+    oldpos = rfile.tellg();  // stores the position
+    getline(rfile, tmps);
+    cout<<tmps<<endl;
+    if (tmps[0]!='0') break;
+  }
+  rfile.seekg (oldpos);
+
   int hcount = 0;
+  int tcount = 0;
+
   while(file){
+    int hid = 0;
     float xMpc,yMpc,zMpc,vx,vy,vz,mvir, rvir, vmax, vrms, rs, zred, rdel;
-    float scale, dscale, sam_mvir, macc, mpeak, vacc, vpeak, last_mm;
-    int ip, hid, pid, did, nprog, upid, desc_pid, phantom, mmp;
+    float scale, dscale, sam_mvir, macc, mpeak, vacc, vpeak, last_mm, dummy;
+    int ip, pid, did, nprog, upid, desc_pid, phantom, mmp, dummy_i;
     ip = 0;
+    rdel=1;
     //file>>scale>>hid>>dscale>>did>>nprog>>pid>>upid>>desc_pid>>phantom>>m200c>>omvir>>r200c>>rs>>vrms>>mmp>>last_mm>>vmax>>xMpc>>yMpc>>zMpc>>vx>>vy>>vz>>macc>>mpeak>>vacc>>vpeak;
     getline(file, tmps);
+
     std::stringstream line_data(tmps);
-    line_data>>scale>>hid>>dscale>>did>>nprog>>pid>>upid>>desc_pid>>phantom>>sam_mvir>>mvir>>rvir>>rs>>vrms>>mmp>>last_mm>>vmax>>xMpc>>yMpc>>zMpc>>vx>>vy>>vz>>macc>>mpeak>>vacc>>vpeak;
+    line_data>>scale>>hid>>dscale>>did>>nprog>>pid>>upid>>desc_pid>>phantom>>sam_mvir>>mvir>>rvir>>rs>>vrms>>mmp>>last_mm>>vmax>>xMpc>>yMpc>>zMpc>>vx>>vy>>vz;
     if (file.eof()) break;
-    rfile>>hid>>rdel;
-    if(pid >= 0) continue;
-    if(mvir < BCG_Mass_lim) continue;
+
+    getline(rfile, tmps);
+    sscanf(tmps.c_str(), "%d, %f", &hid, &rdel);
+    //std::stringstream rline_data(tmps);
+    //rline_data>>hid;
+    //rline_data>>rdel;
+    //cout<<hid<<rdel<<endl;
+    //    if(pid >= 0) continue;
+    //if(mvir < BCG_Mass_lim) continue;
     zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
+
 
     Point vel(vx,vy,vz);
     float xx, yy, zz;
@@ -105,6 +130,14 @@ vector <Halo*> ReadRockstarHalosHlist(void){
     xx = xMpc;
     yy = yMpc;
     zz = zMpc;
+
+    if (tcount<10)
+      {
+	cout << tmps << endl;
+	cout << endl;
+	cout << endl;
+	cout << "xx, yy, zz, mvir, pid, hid, rvir, rdel: " << xMpc << " " << yMpc << " "<< zMpc << " "<< mvir << " "<< pid << " "<< hid << " "<< rvir << " "<< " " << rdel <<endl;
+      }
 
     Point pos(xx, yy, zz);
     Halo * halo = new Halo(pos, vel, mvir, zred, ip, hid, vrms, rvir);
@@ -124,7 +157,7 @@ vector <Halo*> ReadRockstarHalosHlist(void){
     halos.push_back(halo);
     hcount++;
 #endif
-
+    tcount++;
   }
   file.close();
   cout<<"[ReadRockstarHalosHlist] Read "<<halos.size()<<" halos."<<endl;
@@ -171,9 +204,9 @@ vector <Halo*> ReadRockstarHalos(void){
     rfile>>hid>>rdel;
     zred = cosmo.ZofR(sqrt(xMpc*xMpc + yMpc*yMpc + zMpc*zMpc));
 
-    if (hcount < 5){
-      cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", rdel = "<<rdel<<endl;
-    }
+    //    if (hcount < 5){
+    //      cout<<"Halo Position "<<hid<<" = "<<xMpc<<" "<<yMpc<<" "<<zMpc<<", rdel = "<<rdel<<endl;
+    //    }
 
     if(m200c < BCG_Mass_lim) continue;
     if(pid >= 0) continue;
@@ -185,7 +218,10 @@ vector <Halo*> ReadRockstarHalos(void){
     zz = zMpc;
 
     Point pos(xx, yy, zz);
+    //    if ((RMIN_REAL > pos.R()) || (pos.R() > RMAX_REAL)) continue;
+
     Halo * halo = new Halo(pos, vel, m200c, zred, ip, hid, vrms, r200c);
+    halo->Host(pid);
     halo->Dist8(rdel);
     //halo->Particle(0);
 
@@ -238,7 +274,7 @@ vector <Halo*> ReadGadgetHalos(void){
       }
 #endif
 
-      if(mvir < BCG_Mass_lim) continue;
+      //if(mvir < BCG_Mass_lim) continue;
       Point vel(vx,vy,vz);
       float xx, yy, zz;
 
@@ -684,8 +720,11 @@ vector <Particle *> ReadGadgetParticles(int &nread){
   // Reserve max number of particles to avoid memory difficulties
   particles.reserve(MAXSIZE);
 
+
   int nfiles = ReadGadgetnFiles();
+#ifdef BCC
   if (RAMAX > 90.0 && nfiles > 2) nfiles *= 2;
+#endif
 
   cout<<"Reading "<<nfiles<<" gadget files."<<endl;
 
@@ -999,6 +1038,7 @@ vector <Particle *> ReadGadgetLCCell()
 	  rfile.read((char*) &buf, 4);
 	  rfile.read((char*) &buf, 4);
 	  rfile.read((char*) &buf, 4);
+	  cout << "number of densities in this file is " << buf/sizeof(float) << endl;
 
 	  // read in positions and densities
 	  long fpos = 0;
@@ -1123,6 +1163,7 @@ vector <Particle *> ReadGadgetLCCell()
        << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
   cout << "Cut quantities are RAMIN, RAMAX, DECMIN, DECMAX: " << RAMIN << " " << RAMAX << " " << DECMIN
        << " " << DECMAX << endl;
+  
 #endif
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());

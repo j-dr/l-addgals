@@ -13,8 +13,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <CCfits/CCfits>
-#include "fitsio.h"
 #include <valarray>
+#include "fitsio.h"
 #define FILESIZE 2000
 #define FREEVEC(a) {if((a)!=NULL) free((char *) (a)); (a)=NULL;}
 
@@ -38,7 +38,6 @@ istream & operator>>(istream & is, magtuple & in)
   return is;
 }
 
-
 #ifdef MAKEMAGS
 string colortrdir;
 #endif
@@ -46,8 +45,8 @@ string colortrdir;
 string colortrdir = "/nfs/slac/g/ki/ki23/des/jderose/SkyFactory-config/Addgals";
 #endif
 
-void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin, 
-			 float zmax, float band_shift, char filterfile[], float *maggies)
+void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin_this,
+			 float zmax_this, float band_shift, char filterfile[], float *maggies)
 {
   cout<<"Reconstructing maggies"<<endl;
 
@@ -59,7 +58,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
   strcpy(vfile,"vmatrix.default.dat");
   strcpy(lfile,"lambda.default.dat");
   sprintf(path,"%s/data/templates",getenv("KCORRECT_DIR"));
-  
+
   sprintf(vmatrixfile, "%s/%s", path, vfile);
   sprintf(lambdafile, "%s/%s", path, lfile);
 
@@ -86,7 +85,7 @@ void reconstruct_maggies(float *coeff, float *redshift, int ngal, float zmin,
 
   cout<<"Creating projection table"<<endl;
   for(i=0;i<nz;i++)
-    zvals[i]=zmin+(zmax-zmin)*((float)i+0.5)/(float)nz;
+    zvals[i]=zmin_this+(zmax_this-zmin_this)*((float)i+0.5)/(float)nz;
   k_projection_table(rmatrix,nk,nv,vmatrix,lambda,nl,zvals,nz,filter_n,
 		     filter_lambda,filter_pass,band_shift,maxn);
 
@@ -124,13 +123,81 @@ void match_coeff(vector<int> &sed_ids, float* coeffs)
 	<<sdsscoeffs[0].bands[n]<<", ";
   }
   cout<<endl;
-  
+
   for (it = sed_ids.begin(); it!=sed_ids.end(); it++)
     {
       for (n=0; n<ntemps; ++n) {
 	coeffs[(it-sed_ids.begin())*ntemps+n] = sdsscoeffs[*it-1].bands[n];
       }
     }
+}
+
+void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
+			    float zmin_this, float zmax_this, float band_shift,
+			    int nband, char filterfile[], vector<float> &omag,
+			    vector<float> &amag)
+{
+  cout<<"Calculating magnitudes"<<endl;
+  int i;
+  int ngal = redshift.size();
+  float zeropoint = 22.5;
+  vector<float> kcorrection(omag.size());
+  vector<float> rf_z(ngal);
+  fill(rf_z.begin(), rf_z.end(), band_shift);
+
+  //observer frame maggies
+  reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin_this,
+		      zmax_this, 0.0, filterfile, &omag[0]);
+
+  //rest frame maggies
+  reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin_this,
+		      zmax_this, 0.0, filterfile, &amag[0]);
+
+  cout<<"Calculating kcorrections"<<endl;
+  //calculate k-correction in mags
+  transform(amag.begin(), amag.end(), omag.begin(),
+	    kcorrection.begin(), magop<float>());
+
+  cout<<"First few kcorrections: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<kcorrection[i]<<", ";
+  }
+  cout<<endl;
+
+  cout<<"Calculating apparent magnitudes"<<endl;
+  //calculate apparent magnitudes
+  transform(omag.begin(), omag.end(), omag.begin(),
+	    bind2nd(appmagnitude<float>(),zeropoint));
+
+  cout<<"First few apparent mags: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<omag[i]<<", ";
+  }
+  cout<<endl;
+
+  cout<<"Calculating absolute magnitudes"<<endl;
+  //calculate absolute magnitudes without kcorrection
+
+  vector<float>::iterator it;
+  absmagnitude<float> absmagn;
+  for (it=redshift.begin(); it!=redshift.end(); it++){
+    for (i=0; i<nband; i++){
+      amag[nband*(it-redshift.begin())+i] = absmagn(omag[nband*(it-redshift.begin())+i],*it);
+    }
+  }
+
+  cout<<"Subtracting kcorrection"<<endl;
+  //add k-correction to absolute magnitudes
+  transform(amag.begin(), amag.end(), kcorrection.begin(),
+	    amag.begin(), minus<float>());
+
+  cout<<"First few absolute mags: "<<endl;
+  for (i=0; i<nband; i++){
+    cout<<amag[i]<<", ";
+  }
+  cout<<endl;
+
+  cout<<"Done calculating magnitudes"<<endl;
 }
 
 void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
@@ -206,7 +273,7 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
       coeff[(it-deltam.begin())*ntemp+i] *= pow(10.0, *it/-2.5);
   }
 
-  #ifdef COLORTEST
+    #ifdef COLORTEST
   ofstream amag_file("./des_amagtest.txt");
   vector<float>::iterator ditr;
 
@@ -218,65 +285,9 @@ void assign_colors(vector<float> &reference_mag, vector<float> &coeff,
 	  amag_file << "\n";
 	} else amag_file << " ";
     }
-  #endif
+    #endif
 
 }
-
-void k_calculate_magnitudes(vector<float> &coeff, vector<float> &redshift,
-			    float zmin, float zmax, float band_shift,
-			    int nband, char filterfile[], vector<float> &omag,
-			    vector<float> &amag)
-{
-  cout<<"Calculating magnitudes"<<endl;
-  int i;
-  int ngal = redshift.size();
-  float zeropoint = 22.5;
-  vector<float> kcorrection(omag.size());
-  vector<float> rf_z(ngal);
-  fill(rf_z.begin(), rf_z.end(), band_shift);
-
-  //observer frame maggies
-  reconstruct_maggies(&coeff[0], &redshift[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &omag[0]);
-
-  //rest frame maggies
-  reconstruct_maggies(&coeff[0], &rf_z[0], ngal, zmin,
-                      zmax, 0.0, filterfile, &amag[0]);
-
-  cout<<"Converting magnitudes to fluxes"<<endl;
-  //calculate apparent magnitudes
-  transform(omag.begin(), omag.end(), omag.begin(),
-	    bind2nd(appmagnitude<float>(),zeropoint));
-
-  transform(amag.begin(), amag.end(), amag.begin(),
-	    bind2nd(appmagnitude<float>(),zeropoint));  
-
-  cout<<"First few apparent mags: "<<endl;
-  for (i=0; i<nband; i++){
-    cout<<omag[i]<<", ";
-  }
-  cout<<endl;
-
-  cout<<"Calculating absolute magnitudes"<<endl;
-  //calculate absolute magnitudes without kcorrection
-  
-  vector<float>::iterator it;
-  absmagnitude<float> absmagn;
-  for (it=redshift.begin(); it!=redshift.end(); it++){
-    for (i=0; i<nband; i++){
-      amag[nband*(it-redshift.begin())+i] = absmagn(amag[nband*(it-redshift.begin())+i],*it);
-    }
-  }
-
-  cout<<"First few absolute mags: "<<endl;
-  for (i=0; i<nband; i++){
-    cout<<amag[i]<<", ";
-  }
-  cout<<endl;
-
-  cout<<"Done calculating magnitudes"<<endl;
-}
-
 
 long readNRowsFits(std::string filename)
 {
@@ -297,7 +308,7 @@ long readNRowsFits(std::string filename)
 }
 
 //void readSEDInfoFITS(std::string filename, std::vector< valarray<float> > &coeffs, std::vector<float> &sdss_mag_r)
-void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift)
+void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift, std::vector<int> &id)
 {
   using namespace CCfits;
 
@@ -312,6 +323,7 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
   //read sdss mag, kcorrect coeffs, and redshifts
   table.column("MAG_R").read(sdss_mag_r,1,nrows);
   table.column("Z").read(redshift,1,nrows);
+  table.column("ECATID").read(id,1,nrows);
 
   vector<float>::iterator itr=coeffs.begin();
   vector< valarray<float> >::iterator titr;
@@ -568,9 +580,11 @@ int main(int argc, char *argv[])
   std::vector<float> coeffs(nrows*ntemp);
   std::vector<float> sdss_mag_r(nrows);
   std::vector<float> redshift(nrows);
+  std::vector<int> id(nrows);
 
-  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift);
+  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift, id);
 
+  match_coeff(id, &coeffs[0]);
   //Loop over surveys
   for (i=5;i<argc;i++)
     {
@@ -674,10 +688,10 @@ int main(int argc, char *argv[])
       t2 = clock();
       cout << "cfitsio wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
 
-      t1 = clock();      
-      write_colors(amag, omag, coeff_norm, nk, outname, survey);
-      t2 = clock();
-      cout << "ccfits wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
+      //      t1 = clock();      
+      //      write_colors(amag, omag, coeff_norm, nk, outname, survey);
+      //      t2 = clock();
+      //      cout << "ccfits wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
     }
 }
 

@@ -109,7 +109,6 @@ class Galaxy{
 
 inline float evolve_blan(float mag, float z){
   return mag+Q*(z-0.1);
-  //return mag - 2.0*(1 - 1*(z-0.1))*(z-0.1);
 }
 
 inline float evolve_faber(float mag, float z){
@@ -127,14 +126,18 @@ inline float evolve_mag(float mag, float z){
   if(evolution == BLAN)
     return evolve_blan(mag, z);
   if(evolution == FABER)
-    return evolve_faber(mag, z);
+    return evolve_faber(mag, z); 
   if(evolution == TIME)
     return evolve_a(mag, z);
   return 0;
 }
 
 inline void EvolveGal(Galaxy*& pgalaxy){
-  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->zGal()));
+  if (!EVOLVECEN){
+    if (pgalaxy->Central()) return;
+  }
+  
+  pgalaxy->Mr(evolve_mag(pgalaxy->Mr(),pgalaxy->Z()));
   /*
   if(evolution == BLAN)
     //pgalaxy->Mr(pgalaxy->Mr()+Q*(pgalaxy->Z()-0.1));
