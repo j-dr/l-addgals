@@ -209,7 +209,7 @@ vector <Halo*> ReadRockstarHalos(void){
     //    }
 
     if(m200c < BCG_Mass_lim) continue;
-    if(pid >= 0) continue;
+    //    if(pid >= 0) continue;
     Point vel(vx,vy,vz);
     float xx, yy, zz;
 

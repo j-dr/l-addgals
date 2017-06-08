@@ -572,7 +572,7 @@ int main(void){
   MSG("Evolving galaxies now");
   for_each(galaxies.begin(),galaxies.end(),EvolveGal);
   system("date");
-
+  
   t2 = clock();
   double TimeColor = (t2-t1)/CLOCKS_PER_SEC;
   cout<<"Assigned galaxy SEDs in "<<TimeColor<<" seconds."<<endl;
