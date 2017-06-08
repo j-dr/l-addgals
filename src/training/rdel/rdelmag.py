@@ -41,14 +41,14 @@ def lcenModel(mass, m0, mc, a, b, k):
     return (m0 - 2.5 * ( a * np.log10(mass / (10 ** mc)) -
               b * np.log10(1 + (mass/(10 ** mc)) ** (k / b) )))
 
-def lnprob(x, lcmass, lcmassvar, z):
+def lnprob(x, Mmean, lcmass, lcmassvar, z):
 
-    if z<0.9:
-        M  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
-        Mmean = (M[1:] + M[:-1]) / 2
-    else:
-        M  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
-        Mmean = (M[1:] + M[:-1]) / 2
+#    if z<0.9:
+#        M  = np.logspace(np.log10(3e12), 15, 20)
+#        Mmean = (M[1:] + M[:-1]) / 2
+#    else:
+#        M  = np.logspace(np.log10(1e13), 15, 20)
+#        Mmean = (M[1:] + M[:-1]) / 2
     
     lcmhat = lcenModel(Mmean, *x)
     ivar   = 1 / lcmassvar
@@ -65,39 +65,36 @@ def lnprob(x, lcmass, lcmassvar, z):
 
 def fitLcenMass(lcmass, lcmassvar, z):
 
-    x0 = [ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01]
+    #x0 = [ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01]
+    x0 = np.ones(5)
 
     if z<0.9:
-        M  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
+        M  = np.logspace(np.log10(3e12), 15, 20)
         Mmean = (M[1:] + M[:-1]) / 2
     else:
-        M  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
+        M  = np.logspace(np.log10(1e13), 15, 20)
         Mmean = (M[1:] + M[:-1]) / 2
-
-    vmean = np.nanmean(lcmassvar)
-
-    if vmean>0.07:
-        vmean = 0.07
 
     gidx = lcmass == lcmass
     Mmean = Mmean[gidx]
     lcm = lcmass[gidx] 
     lcmv = lcmassvar[gidx] 
     
-    #make smallest errors a bit bigger
-    clcmv  = copy(lcmassvar)
-    clcmv[lcmassvar<vmean] = vmean
-
     try:
-        pm, cov = curve_fit(lcenModel, Mmean, lcm, p0=x0, sigma=1/np.log(Mmean), method='trf')
+        pm, cov = curve_fit(lcenModel, Mmean, lcm, p0=x0, sigma=1/np.log(Mmean))
     except:
-        pm = np.array([ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01])
+        try:
+            x0 = [ -22, 14,   3.97470333e-01, 2, 3.97359445e-01]
+            pm, cov = curve_fit(lcenModel, Mmean, lcm, p0=x0, sigma=1/np.log(Mmean))
+        except:
+            pm = np.array([ -23, np.log10(3.61750000e+14),   3.97470333e-01, 2, 3.97359445e-01])
 
     ndim, nwalkers = 5, 50
 
-    x0 = [np.random.randn(ndim)*pm/4 + pm for i in range(nwalkers)]
+    x0 = [np.random.randn(ndim)*pm/8 + pm for i in range(nwalkers)]
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[lcmass, clcmv, z])
+#    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[lcmass, clcmv, z])
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[Mmean, lcm, lcmv, z])
     sampler.run_mcmc(x0, 5000)
     
     lnp = sampler.lnprobability.flatten()
@@ -379,10 +376,10 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     mcuts = np.linspace(-24, -18, 20)
 
     if z<0.9:
-        mbins  = np.logspace(np.log10(3e12), np.log10(5e15), 20)
+        mbins  = np.logspace(np.log10(3e12), 15, 20)
         mmean = (mbins[1:] + mbins[:-1]) / 2
     else:
-        mbins  = np.logspace(np.log10(1e13), np.log10(5e15), 20)
+        mbins  = np.logspace(np.log10(1e13), 15, 20)
         mmean = (mbins[1:] + mbins[:-1]) / 2
 
     rmean = (rbins[1:] + rbins[:-1]) / 2
@@ -392,7 +389,7 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     lcmass, lcmassvar, jlcmass = lcenMassDist(sham['PX'][cidx], sham['PY'][cidx], sham['PZ'][cidx], mag[cidx], 
                                               sham['MVIR'][cidx], mbins, lbox, njackside=5)
 
-    #cludge to temporarily deal with calcrnn leaving out last halo
+    #kludge to temporarily deal with calcrnn leaving out last halo
     if len(mag)==(len(rdel)+1):
         mag = mag[:-1]
 
@@ -406,7 +403,6 @@ def fitSnapshot(shamfile, rnnfile, outdir, lbox, debug=False):
     mphat, mpcovhat = fitRdelDist(rmdist, rmerr, rmean)
 
     #fit model to lcen(M)
-
     lcmass_params = fitLcenMass(lcmass, lcmassvar, z)
     
     if lcmass_params is None:
