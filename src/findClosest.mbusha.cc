@@ -254,6 +254,8 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 
 #ifdef RED_FRACTION
 	float emag = evolve_mag(mag, ThisZ);
+	if (emag < -22) emag = -22;
+	if (emag > -18) emag = -18;
 	float mv = emag + 20.0;
 	float zv = 1 / (ThisZ + 1) - 0.47;
 	float red_fraction = fq0 + fqz1 * zv + fqz2 * zv*zv + fqz3 * zv*zv*zv + 
