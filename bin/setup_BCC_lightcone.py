@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--scatter')
     parser.add_argument('--lbcgname')
     parser.add_argument('--hv')
+    parser.add_argument('--Magmin_dens')
 
     args = parser.parse_args()
     addgalsnames = args.addgalsnames
@@ -94,8 +95,8 @@ if __name__ == '__main__':
                 psidx, = np.where(params['param']==rfparams['param'][0])
                 peidx, = np.where(params['param']==rfparams['param'][-1])
                 psidx  = psidx[0]
-                peidx  = peidx[0]
-                params = np.hstack([params[:psidx+1], rfparams, params[peidx:]])
+                peidx  = peidx[-1]
+                params = np.hstack([params[:psidx], rfparams, params[peidx+1:]])
             elif 'REDFRACTION1' in params['param']:
                 psidx, = np.where(params['param']=='REDFRACTION1')
                 peidx, = np.where(params['param']=='Z_REDFRACTION2')
@@ -114,6 +115,15 @@ if __name__ == '__main__':
                 qbarr['value'][0] = args.QBASELINE
                 params = np.hstack([params, qbarr])
 
+        if args.Magmin_dens is not None:
+            if 'Magmin_dens' in params['param']:
+                params['value'][params['param']=='Magmin_dens'] = args.Magmin_dens
+            else:
+                qbarr = np.zeros(1, dtype=dt)
+                qbarr['param'][0] = 'Magmin_dens'
+                qbarr['value'][0] = args.Magmin_dens
+                params = np.hstack([params, qbarr])
+                
         if args.EVOLVECEN is not None:
             if 'EVOLVECEN' in params['param']:
                 params['value'][params['param']=='EVOLVECEN'] = args.EVOLVECEN
