@@ -7,7 +7,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import numpy as np
-import emcee
+try:
+    import emcee
+except:
+    pass
 import fitsio
 import os
 

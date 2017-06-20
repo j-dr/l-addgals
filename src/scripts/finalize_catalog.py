@@ -554,8 +554,8 @@ def join_halofiles(basepath, omega_m, omega_l, mmin=5e12, lbox=None):
     print('Adding fields')
     adtype = [np.dtype([('LUMTOT',np.float)]), np.dtype([('LUM20',np.float)]), np.dtype([('LBCG', np.float)]),
               np.dtype([('NGALS',np.int)]), np.dtype([('N18',np.int)]), np.dtype([('N19',np.int)]), np.dtype([('N20',np.int)]),
-              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA',np.int)]),
-              np.dtype([('DEC',np.int)])]
+              np.dtype([('N21',np.int)]), np.dtype([('N22',np.int)]), np.dtype([('Z', np.float)]), np.dtype([('RA',np.float)]),
+              np.dtype([('DEC',np.float)])]
     data = [np.zeros(len(hlist)) for i in range(len(adtype)-3)]
     data.append(redshift)
     data.append(ra)

@@ -97,7 +97,7 @@ void generate_shapes(vector<float>& mag, vector<bool>& idx, vector<double>& e,
     {
       mymag = mag[nelem - 1 + i * vl];
       if (i==0) cout << "calculating s params" << endl;
-      if (isnan(mymag))
+      if ((isnan(mymag)) | (mymag!=mymag) | (mymag<0))
 	{
 	  s[i] = -99;
 	  continue;
@@ -105,11 +105,20 @@ void generate_shapes(vector<float>& mag, vector<bool>& idx, vector<double>& e,
       calcsparams(mymag, &sparams, prefs);
 #ifdef DEBUG_SHAPES
       s_file << sparams.xi << " " << sparams.alpha << " "
-	     << sparams.kappa << " " << sparams.zero << " ";
+	     << sparams.kappa << " " << sparams.zero << " "
+	     << mymag << std::endl;
       s_file.flush();
 #endif
       if (i==0) cout << "drawing s" << endl;
-      s[i] = ran_gno(myrng, &sparams);
+      if ((!isnan(mymag)) & (mymag==mymag) | (mymag>0))
+	{
+	  s[i] = ran_gno(myrng, &sparams);
+	} else
+	{ 
+	  s_file << "bad" << std::endl; 
+	  s[i] = -99;
+	}
+
 #ifdef DEBUG_SHAPES
       s_file << s[i] << endl;
 #endif      
