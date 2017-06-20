@@ -1,6 +1,6 @@
 #include "galaxy.h"
 #include "particle.h"
-//#include "galaxy.h"
+#include "galaxy.h"
 #include "halo.h"
 #include "color.h"
 #include "stl_util.h"
@@ -253,7 +253,10 @@ int findCloseGalaxies2(vector <GalSED> &v, float mag, float dens, float ThisZ, i
 	//cout<<"Searching for SED for galaxy with mag = "<<mag<<" dens = "<<dens<<endl;
 
 #ifdef RED_FRACTION
-	float mv = mag + 20.0;
+	float emag = evolve_mag(mag, ThisZ);
+	if (emag < -22) emag = -22;
+	if (emag > -18) emag = -18;
+	float mv = emag + 20.0;
 	float zv = 1 / (ThisZ + 1) - 0.47;
 	float red_fraction = fq0 + fqz1 * zv + fqz2 * zv*zv + fqz3 * zv*zv*zv + 
 	                       fq1 * mv + fq2 * mv*mv + fq3 * mv*mv*mv +
@@ -1030,12 +1033,14 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
 		continue;
             }
 #else
-	    if (halos[i]->Host() >= 0 || halos[i]->M() < BCG_Mass_lim) {
+	    //	    if (halos[i]->Host() >= 0 || halos[i]->M() < BCG_Mass_lim) {
+	    if (halos[i]->M() < BCG_Mass_lim) {	    
 		halos[i]->Mr(99);
 		//continue;
             }
 #endif
-	    if (halos[i]->Host() < 0 && halos[i]->M() >= BCG_Mass_lim) {
+	    //	    if (halos[i]->Host() < 0 && halos[i]->M() >= BCG_Mass_lim) {	
+	    if (halos[i]->M() >= BCG_Mass_lim) {    
 #ifdef DESCLF
 	      //assign using power law fit to DES CLF
 	      double lnL0 = CalculateMeanBCGLum(lnLc0, ALc, Mpiv, BLc, halos[i]->M(), halos[i]->ZredReal());
