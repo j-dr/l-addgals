@@ -65,7 +65,6 @@ void generate_shapes(vector<float>& mag, vector<bool>& idx, vector<double>& e,
   //for now, nthreads always 1, fix iam
   iam = 0;
 
-
   //Might consider using OMP here?
   for (i=0; i<s.size(); i++)
     {
@@ -115,7 +114,6 @@ void generate_shapes(vector<float>& mag, vector<bool>& idx, vector<double>& e,
 	  s[i] = ran_gno(myrng, &sparams);
 	} else
 	{ 
-	  s_file << "bad" << std::endl; 
 	  s[i] = -99;
 	}
 
