@@ -40,12 +40,17 @@ struct ToRing : public std::unary_function<long,long> {
 
 bool comparez(Particle *lhs, Particle *rhs)
 {
-  return lhs->Zred() < rhs->Zred();
+  return lhs->ZredReal() < rhs->ZredReal();
 }
 
 bool comparera(Particle *lhs, Particle *rhs)
 {
   return lhs->Ra() < rhs->Ra();
+}
+
+bool comparer(Particle *lhs, Particle *rhs)
+{
+  return lhs->R() < rhs->R();
 }
 
 bool comparedec(Particle *lhs, Particle *rhs)
@@ -1152,15 +1157,17 @@ vector <Particle *> ReadGadgetLCCell()
   assert( accum == nparts );
 #ifdef DEBUG_PIXLC
   vector<Particle*>::iterator maxzpp = std::max_element(parts.begin(), parts.end(), comparez);
+  vector<Particle*>::iterator maxrp = std::max_element(parts.begin(), parts.end(), comparer);
   vector<Particle*>::iterator maxrap = std::max_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator maxdecp = std::max_element(parts.begin(), parts.end(), comparedec);
-  cout << "Maximum particle redshift, ra, dec before cut is : " << parts[maxzpp-parts.begin()]->Zred()
-       << " " << parts[maxrap-parts.begin()]->Ra() << " " << parts[maxdecp-parts.begin()]->Dec() << endl;
+  cout << "Maximum particle redshift, r, ra, dec before cut is : " << parts[maxzpp-parts.begin()]->ZredReal() << " "
+       << parts[maxrp-parts.begin()]->R() << " " << parts[maxrap-parts.begin()]->Ra() << " " << parts[maxdecp-parts.begin()]->Dec() << endl;
   vector<Particle*>::iterator minzpp = std::min_element(parts.begin(), parts.end(), comparez);
+  vector<Particle*>::iterator minrp = std::min_element(parts.begin(), parts.end(), comparer);
   vector<Particle*>::iterator minrap = std::min_element(parts.begin(), parts.end(), comparera);
   vector<Particle*>::iterator mindecp = std::min_element(parts.begin(), parts.end(), comparedec);
-  cout << "Minimum particle redshift, ra, dec before cut is : " << parts[minzpp-parts.begin()]->Zred()
-       << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
+  cout << "Minimum particle redshift, r, ra, dec before cut is : " << parts[minzpp-parts.begin()]->ZredReal() << " " 
+       << parts[minrp-parts.begin()]->R() << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
   cout << "Cut quantities are RAMIN, RAMAX, DECMIN, DECMAX: " << RAMIN << " " << RAMAX << " " << DECMIN
        << " " << DECMAX << endl;
   
@@ -1168,11 +1175,44 @@ vector <Particle *> ReadGadgetLCCell()
   //Get rid of particles that fall outside of redshift range
   parts.erase( std::remove_if( parts.begin(), parts.end(), notInVolume ), parts.end());
 
+#ifdef DEBUG_PIXLC
+  cout << "First few particles in volume?: ";
+  for (i=0; i<5; i++)
+    {
+      cout << notInVolume(parts[i]) << " ";
+    }
+
+  for (i=0; i<5; i++)
+    {
+      cout << parts[i]->R() << " ";
+    }
+
+  cout << endl;
+#endif
+#ifdef DEBUG_PIXLC
+  maxzpp = std::max_element(parts.begin(), parts.end(), comparez);
+  maxrp = std::max_element(parts.begin(), parts.end(), comparer);
+  maxrap = std::max_element(parts.begin(), parts.end(), comparera);
+  maxdecp = std::max_element(parts.begin(), parts.end(), comparedec);
+  cout << "Maximum particle redshift, r, ra, dec after cut is : " << parts[maxzpp-parts.begin()]->ZredReal() << " "
+       << parts[maxrp-parts.begin()]->R() << " " << parts[maxrap-parts.begin()]->Ra() << " " << parts[maxdecp-parts.begin()]->Dec() << endl;
+  minzpp = std::min_element(parts.begin(), parts.end(), comparez);
+  minrp = std::min_element(parts.begin(), parts.end(), comparer);
+  minrap = std::min_element(parts.begin(), parts.end(), comparera);
+  mindecp = std::min_element(parts.begin(), parts.end(), comparedec);
+  cout << "Minimum particle redshift, r, ra, dec after cut is : " << parts[minzpp-parts.begin()]->ZredReal() << " "
+       << parts[minrp-parts.begin()]->R() << " " << parts[minrap-parts.begin()]->Ra() << " " << parts[mindecp-parts.begin()]->Dec() << endl;
+  cout << "Cut quantities are RAMIN, RAMAX, DECMIN, DECMAX: " << RAMIN << " " << RAMAX << " " << DECMIN
+       << " " << DECMAX << endl;
+  
+#endif
+
+
   //Get maximum redshift
   vector<Particle*>::iterator maxzp = std::max_element(parts.begin(), parts.end(), comparez);
 
-  cout << "Maximum particle redshift is : " << parts[maxzp-parts.begin()]->Zred() << endl;
-  zmax->SetVal(parts[maxzp-parts.begin()]->Zred());
+  cout << "Maximum particle redshift is : " << parts[maxzp-parts.begin()]->ZredReal() << endl;
+  zmax->SetVal(parts[maxzp-parts.begin()]->ZredReal());
 
   tend = clock();
 
