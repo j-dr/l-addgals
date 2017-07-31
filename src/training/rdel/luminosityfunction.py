@@ -137,6 +137,31 @@ class BBGSLuminosityFunction(LuminosityFunction):
 
         return self.lf[:,0], af(self.lf[:,0])
         
+class CapozziLuminosityFunction(LuminosityFunction):
+
+    def __init__(self, params=None):
+
+        if params is None:
+ 
+            self.phi0   = 39.4e-4 / 0.7**3
+            self.mstar0 = -21.63 - 5 * np.log10(0.7)
+            self.Q      = 2.9393
+            self.P      = [-0.00480474, -0.06140413]
+
+    def evolveParams(self, z):
+        zp = copy([self.phi0, -1.2, self.mstar0])
+
+        zp[0]  += self.P[0] * (1/(z+1) - 1/1.1) + self.P[1] * (1/(z+1) - 1/1.1) ** 2
+        zp[-1] += self.Q * (1/(z+1) - 1/1.1)
+
+        return zp
+
+    def calcNumberDensity(self, p, lums):
+        phi = (0.4 * np.log(10) * np.exp(-10**(-0.4 * (lums - p[2]))) * 
+               (p[0] * 10 ** (-0.4 * (lums - p[2])*(p[1]+1))))
+        
+        return phi
+
 
 class BernardiLuminosityFunction(LuminosityFunction):
 

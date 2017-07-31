@@ -140,7 +140,10 @@ class Simulation(object):
                             ('MVIR', np.float),
                             ('MPEAK', np.float),
                             ('LUMINOSITY', np.float),
-                            ('CENTRAL', np.int)])
+                            ('CENTRAL', np.int),
+                            ('UPID', np.int),
+                            ('ID',np.int),
+                            ('RVIR', np.float)])
 
         if startat is None:
             startat = 0
@@ -193,10 +196,12 @@ class Simulation(object):
                           'mvir':(55,'f4'),
                           'mvir_now':(10,'f4'),
                           'mpeak_scale':(66,'f4'),
-                          'upid':(6,'f4'),
+                          'upid':(6,'i4'),
                           'x':(17,'f4'),
                           'y':(18,'f4'),
-                          'z':(19,'f4')}
+                          'z':(19,'f4'),
+                          'rvir':(11,'f4'),
+                          'id':(1,'i4')}
                 
                 reader = TabularAsciiReader(hf, fields)
                 halos  = reader.read_ascii()
@@ -205,7 +210,7 @@ class Simulation(object):
                 #compressed hlists have vmax@vpeak stored as vmax already
                 halos = fitsio.read(hf, columns=['vmax', 'mpeak',
                                                  'mpeak_scale',
-                                                 'upid',
+                                                 'upid', 'id'
                                                  'x','y','z'])
 
             Delta = self.calc_Delta_vir(self.omegam, a=halos['mpeak_scale'])
@@ -250,6 +255,9 @@ class Simulation(object):
                     out['CENTRAL'][halos['upid']==-1] = 1
                     out['CENTRAL'][halos['upid']!=-1] = 0
                     out['AMPROXY'] = proxy
+                    out['RVIR'] = halos['rvir']
+                    out['UPID'] = halos['upid']
+                    out['ID']   = halos['id']
 
 
                     out['LUMINOSITY'] = abundanceMatchSnapshot(proxy,
