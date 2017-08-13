@@ -802,7 +802,7 @@ void Assignment(vector <Particle *> &particles, vector <Galaxy *> &galaxies)
 	cout<<endl;
 }
 
-void Read_L_BCG(float &M0, float &Mc, float &a, float &b, float &k)
+void Read_L_BCG(double &M0, double &Mc, double &a, double &b, double &k)
 {
   string filename = lbcgfile;
 /*
@@ -1020,7 +1020,7 @@ void AssignBCGs(vector <Particle *> &particles, vector <Galaxy *> &galaxies, vec
         double Mpiv    = 2.35*1e14;
 	double Msunr   = 4.67;
 #else
-	float M0, Mc, a, b, k;
+	double M0, Mc, a, b, k;
 	Read_L_BCG(M0, Mc, a, b, k);
         Mc = pow(10, Mc);
 #endif 

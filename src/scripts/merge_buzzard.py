@@ -24,6 +24,7 @@ class buzzard_flat_cat(object):
         simname   = 'Buzzard_v1.1',
         debug     = True,
         nzcut     = True,
+        merge     = False,
         simnum    = 0):
 
         self.maxrows=500000000
@@ -180,9 +181,9 @@ class buzzard_flat_cat(object):
             photoz['weight'][lenst:lenst+len(truth)]           += 1.
 
             if ifile == 0:
-                gout.write(gold[lenst:lenst+len(truth)])
-                sout.write(shape[lenst:lenst+len(truth)])
-                pout.write(photoz[lenst:lenst+len(truth)])
+                gout.write(gold[lenst:lenst+len(truth)], overwrite=True)
+                sout.write(shape[lenst:lenst+len(truth)], overwrite=True)
+                pout.write(photoz[lenst:lenst+len(truth)], overwrite=True)
             else:
                 gout[-1].append(gold[lenst:lenst+len(truth)])
                 sout[-1].append(shape[lenst:lenst+len(truth)])
@@ -204,9 +205,11 @@ if __name__ == '__main__':
     with open(cfgfile, 'r') as fp:
         cfg = yaml.load(fp)
 
+    if 'merge' in cfg:
+        cfg = cfg['merge']
+
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    
 
     if rank==0:
         obj = buzzard_flat_cat(**cfg)
