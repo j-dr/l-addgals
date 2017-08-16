@@ -333,7 +333,7 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
       for (i=0;i<5;i++)
 	{
 	  coeffs[(titr-temp.begin())*5+i] = (*titr)[i];
-	}
+  	}
     }
 }
 
@@ -444,6 +444,7 @@ void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std:
   char *tform[]   = {cff, cff, cff, cff, cff, cff};
 
   int size = amag.size()/nbands;
+  int i;
   long nrows;
 
   //Write truth file
@@ -471,14 +472,24 @@ void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std:
       fits_report_error(stderr, status);
     }
 
+  cout << "Writing " <<  nrows << " at a time." << endl;
+
   cout << "Writing columns" << endl;
 
   while (firstrow<size)
     {
-      fits_write_col(fptr, TFLOAT, 1, firstrow, firstelem, 
-		     nrows, &amag[0], &status);
-      fits_write_col(fptr, TFLOAT, 2, firstrow, firstelem, 
-		     nrows, &omag[0], &status);
+      if (firstrow + nrows > size)
+	nrows = size - firstrow + 1;
+
+      for (i=0;i<nbands;i++)
+	{
+	  fits_write_col(fptr, TFLOAT, 1, ((firstrow-1)*nbands + nrows*i) / nbands + 1, firstelem, 
+			 nrows, &amag[(firstrow-1)*nbands + nrows*i], &status);
+	  fits_write_col(fptr, TFLOAT, 2, ((firstrow-1)*nbands + nrows*i) / nbands + 1, firstelem, 
+			 nrows, &omag[(firstrow-1)*nbands + nrows*i], &status);
+	 
+	  firstelem = ( firstelem - 1 + nrows % nbands ) % nbands + 1;
+	}
       firstrow += nrows;
     }
 
@@ -756,7 +767,7 @@ int main(int argc, char **argv)
   match_coeff(sed_ids, &coeff[0]);
   assign_colors(refmag, coeff, redshift, zmin, zmax,
 		band_shift, nbands, filterfile, omag,
-		amag,coeff_norm,abcorr,false);
+		amag,coeff_norm,abcorr);
 
   //write out magnitudes
   ofstream omag_file("./des_omagtest.txt");
