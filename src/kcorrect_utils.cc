@@ -308,7 +308,7 @@ long readNRowsFits(std::string filename)
 }
 
 //void readSEDInfoFITS(std::string filename, std::vector< valarray<float> > &coeffs, std::vector<float> &sdss_mag_r)
-void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift, std::vector<int> &id)
+void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vector<float> &sdss_mag_r, std::vector<float> &redshift, std::vector<int> &id, std::vector<float> &mu)
 {
   using namespace CCfits;
 
@@ -321,10 +321,12 @@ void readSEDInfoFITS(std::string filename, std::vector<float> &coeffs, std::vect
   ExtHDU& table = pInfile->extension(1);
 
   //read sdss mag, kcorrect coeffs, and redshifts
+
   table.column("MAG_R").read(sdss_mag_r,1,nrows);
   table.column("Z").read(redshift,1,nrows);
   table.column("ECATID").read(id,1,nrows);
-
+  table.column("MU").read(mu,1,nrows);
+  
   vector<float>::iterator itr=coeffs.begin();
   vector< valarray<float> >::iterator titr;
   table.column("COEFFS").readArrays(temp, 1, nrows);
@@ -415,7 +417,7 @@ void write_colors(std::vector<float> amag, std::vector<float> omag, std::vector<
 
 
 
-void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std::vector<float> coeff_norm,
+void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std::vector<float> lmag,
 		  const int nbands, std::string outname, std::string surveyname)
 {
   
@@ -439,9 +441,9 @@ void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std:
   char *cff =  (char *)malloc(cf.size() + 1);
   memcpy(cff, cf.c_str(), cf.size() + 1);
 
-  char *ttype[]    = {"AMAG", "TMAG", "OMAG", "OMAGERR", "FLUX", "IVAR"};
-  char *tcolunit[] = {"mag", "mag", "mag", "mag", "nmgy", "nmgy^{-2}"};
-  char *tform[]   = {cff, cff, cff, cff, cff, cff};
+  char *ttype[]    = {"AMAG", "TMAG", "LMAG", "OMAG", "OMAGERR", "FLUX", "IVAR"};
+  char *tcolunit[] = {"mag", "mag", "mag", "mag", "mag", "nmgy", "nmgy^{-2}"};
+  char *tform[]   = {cff, cff, cff, cff, cff, cff, cff};
 
   int size = amag.size()/nbands;
   int i;
@@ -487,7 +489,8 @@ void write_colors_cfitsio(std::vector<float> amag, std::vector<float> omag, std:
 			 nrows, &amag[(firstrow-1)*nbands + nrows*i], &status);
 	  fits_write_col(fptr, TFLOAT, 2, ((firstrow-1)*nbands + nrows*i) / nbands + 1, firstelem, 
 			 nrows, &omag[(firstrow-1)*nbands + nrows*i], &status);
-	 
+	  fits_write_col(fptr, TFLOAT, 3, ((firstrow-1)*nbands + nrows*i) / nbands + 1, firstelem, 
+			 nrows, &lmag[(firstrow-1)*nbands + nrows*i], &status);
 	  firstelem = ( firstelem - 1 + nrows % nbands ) % nbands + 1;
 	}
       firstrow += nrows;
@@ -592,8 +595,9 @@ int main(int argc, char *argv[])
   std::vector<float> sdss_mag_r(nrows);
   std::vector<float> redshift(nrows);
   std::vector<int> id(nrows);
+  std::vector<float> mu(nrows);
 
-  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift, id);
+  readSEDInfoFITS(filename, coeffs, sdss_mag_r, redshift, id, mu);
 
   match_coeff(id, &coeffs[0]);
   //Loop over surveys
@@ -666,6 +670,7 @@ int main(int argc, char *argv[])
       cout<<"Number of filters in "<<filterfile<<": "<<nk<<endl;
 
       std::vector<float> omag(nrows*nk);
+      std::vector<float> lmag(nrows*nk);
       std::vector<float> amag(nrows*nk);
       std::vector<float> coeff_norm(nrows);
 
@@ -694,8 +699,15 @@ int main(int argc, char *argv[])
       outname = outdir + "/" + outbase + "_" + survey + "." + *(psplt.end()-2) + ".fits";
       cout << "Writing to " << outname << endl;
 
+      for (i=0;i<nrows;i++)
+	{
+	  for (j=0;j<nk;j++)
+	    {
+	      lmag[i*nk+j] = omag[i*nk+j] - 2.5 * log10(mu[i]);
+	    }
+	}
       t1 = clock();      
-      write_colors_cfitsio(amag, omag, coeff_norm, nk, outname, survey);
+      write_colors_cfitsio(amag, omag, lmag, nk, outname, survey);
       t2 = clock();
       cout << "cfitsio wrote outputs in " << (t2-t1)/CLOCKS_PER_SEC << "seconds" << endl;      
 
