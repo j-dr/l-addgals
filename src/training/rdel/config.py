@@ -34,7 +34,6 @@ def setLF(cfg):
         lf = BBGSLuminosityFunction(cfg['LuminosityFunction']['Q'], cfg['LuminosityFunction']['P'])
 
     return lf
-                       
         
 
 def parseConfig(cfg):
@@ -53,7 +52,6 @@ def parseConfig(cfg):
             a = np.loadtxt(simcfg['snaptimes'][i])
             sa = np.loadtxt(simcfg['snaptimes'][i], dtype=str)
             zs = 1/a[:,1] - 1.
-            print('appending sim')
             sims.append(Simulation(simcfg['name'][i],
                                    simcfg['boxsize'][i],
                                    snapdirs,
@@ -64,8 +62,8 @@ def parseConfig(cfg):
                                    simcfg['omegam'][i],
                                    zs=zs,
                                    compressed_hlist=simcfg['compressed_hlist'],
-                                   strscale=sa[:,1]))
-            print('done')
+                                   strscale=sa[:,1],
+                                   snapnums=a[:,0]))
 
         else:
             sims.append(Simulation(simcfg['name'][i],

@@ -23,7 +23,8 @@ class Simulation(object):
                    h, omega_m, zs=None, zmin=None, zmax=None, 
                    zstep=None, nz=None, shamfiles=None,
                    compressed_hlist=False, simtype='LGADGET2',
-                   scaleh=False, scaler=False, strscale=None):
+                   scaleh=False, scaler=False, strscale=None,
+                   snapnums=None):
 
         self.name     = name
         self.boxsize  = boxsize
@@ -39,6 +40,7 @@ class Simulation(object):
         self.scaleh = scaleh
         self.scaler = scaler
         self.strscale  = strscale
+        self.snapnums  = snapnums
 
         if shamfiles is not None:
             self.shamfiles = np.array(shamfiles)
@@ -60,12 +62,11 @@ class Simulation(object):
     def associateFiles(self):
 
         hfn = np.array([int(h.split('_')[-1].split('.')[0]) for h in self.hfiles])
-        hz = self.zs[hfn]
-        shz = self.strscale[hfn]
+        hz = self.zs[self.snapnums.searchsorted(hfn)]
+        shz = self.strscale[self.snapnums.searchsorted(hfn)]
 
         crn = np.array([int(c.split('_')[-1]) for c in self.rnnfiles])
-        cz = self.zs[crn]
-
+        cz = self.zs[self.snapnums.searchsorted(crn)]
 
         if len(hfn) > len(crn):
             inz = np.in1d(hfn, crn)
@@ -121,7 +122,8 @@ class Simulation(object):
 
         print(fs[-1])
         print(num)
-        fn = fs[-1].replace(num, '{}.list'.format(self.strscale[ind]))
+        fn = fs[-1].replace(num, self.strscale[ind])
+        fn = fn.replace('.list', '.fits')
 
         return fn
 
@@ -192,19 +194,35 @@ class Simulation(object):
 
             
             if not self.compressed_hlist:
-                fields = {'vmax':(71,'f4'),
-                          'mvir':(55,'f4'),
-                          'mvir_now':(10,'f4'),
-                          'mpeak_scale':(66,'f4'),
-                          'upid':(6,'i4'),
-                          'x':(17,'f4'),
-                          'y':(18,'f4'),
-                          'z':(19,'f4'),
-                          'rvir':(11,'f4'),
-                          'id':(1,'i4')}
+                try:
+                    fields = {'vmax':(71,'f4'),
+                              'mvir':(55,'f4'),
+                              'mvir_now':(10,'f4'),
+                              'mpeak_scale':(66,'f4'),
+                              'upid':(6,'i4'),
+                              'x':(17,'f4'),
+                              'y':(18,'f4'),
+                              'z':(19,'f4'),
+                              'rvir':(11,'f4'),
+                              'id':(1,'i4')}
                 
-                reader = TabularAsciiReader(hf, fields)
-                halos  = reader.read_ascii()
+                    reader = TabularAsciiReader(hf, fields)
+                    halos  = reader.read_ascii()
+                except:
+                    fields = {'vmax':(66,'f4'),
+                              'mvir':(50,'f4'),
+                              'mvir_now':(10,'f4'),
+                              'mpeak_scale':(61,'f4'),
+                              'upid':(6,'i4'),
+                              'x':(17,'f4'),
+                              'y':(18,'f4'),
+                              'z':(19,'f4'),
+                              'rvir':(11,'f4'),
+                              'id':(1,'i4')}
+                
+                    reader = TabularAsciiReader(hf, fields)
+                    halos  = reader.read_ascii()
+
 
             else:
                 #compressed hlists have vmax@vpeak stored as vmax already

@@ -526,7 +526,8 @@ enum string_code
   VISTA,
   WFIRST,
   WISE,
-  DESY3
+  DESY3,
+  DESY3STD
 };
 
 string_code hashit (std::string const& inString)
@@ -538,6 +539,7 @@ string_code hashit (std::string const& inString)
   if (inString == "SDSS") return SDSS;
   if (inString == "DECAM") return DECAM;
   if (inString == "DESY3") return DESY3;
+  if (inString == "DESY3STD") return DESY3STD;
   if (inString == "Euclid") return Euclid;
   if (inString == "FLAMEX") return FLAMEX;
   if (inString == "HSC") return HSC;
@@ -633,6 +635,10 @@ int main(int argc, char *argv[])
 	  break;
         case DESY3:
 	  strcpy(filterfile, (colortrdir+"des_y3_filters.txt").c_str());
+	  band_shift = 0.1;
+	  break;
+        case DESY3STD:
+	  strcpy(filterfile, (colortrdir+"des_y3std_filters.txt").c_str());
 	  band_shift = 0.1;
 	  break;
 	case Euclid:
