@@ -6,7 +6,6 @@ try:
     noht = False
 except:
     noht = True
-from itertools import izip
 import astropy.constants as const
 import numpy as np
 import warnings
@@ -340,7 +339,7 @@ class Simulation(object):
             except OSError as e:
                 warnings.warn('Directory {}/rdel already exists!'.format(self.outdir), Warning)
 
-        for sf, rf in izip(shamfiles, rnnfiles):
+        for sf, rf in zip(shamfiles, rnnfiles):
             fitSnapshot(sf, rf, '{}/rdel/'.format(self.outdir), self.boxsize, debug=debug)
 
         #read in all models, fit global model
