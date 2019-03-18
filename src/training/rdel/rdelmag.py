@@ -5,7 +5,7 @@ from copy import copy
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import cPickle as pickle
+import pickle
 import numpy as np
 try:
     import emcee
