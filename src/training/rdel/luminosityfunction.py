@@ -57,7 +57,7 @@ class DSGLuminosityFunction(LuminosityFunction):
         zp[0] += self.params[-1] * (1/(z+1) - 1/1.1)
         zp[2] += self.params[-1] * (1/(z+1) - 1/1.1)
         zp[5] += self.params[-1] * (1/(z+1) - 1/1.1)
-        
+
         zp[4] += self.params[-2] * (1/(z+1) - 1/1.1)
         zp[6] += self.params[-2] * (1/(z+1) - 1/1.1)
 
@@ -104,9 +104,9 @@ def read_tabulated_bbgs_lf(filename):
     return lf
 
 class BBGSLuminosityFunction(LuminosityFunction):
-    
+
     def __init__(self, Q, P):
-        
+
         self.lf = read_tabulated_bbgs_lf('/u/ki/jderose/ki23/l-addgals/src/training/rdel/LF_r_z0.1_bright_end_evol.txt')
         self.Q = Q
         self.P = P
@@ -136,13 +136,13 @@ class BBGSLuminosityFunction(LuminosityFunction):
         af = AbundanceFunction(mag, phi, ext_range=(-26,10), nbin=2000, faint_end_fit_points=6)
 
         return self.lf[:,0], af(self.lf[:,0])
-        
+
 class CapozziLuminosityFunction(LuminosityFunction):
 
     def __init__(self, params=None):
 
         if params is None:
- 
+
             self.phi0   = 39.4e-4 / 0.7**3
             self.mstar0 = -21.63 - 5 * np.log10(0.7)
             self.Q      = 2.9393
@@ -157,9 +157,9 @@ class CapozziLuminosityFunction(LuminosityFunction):
         return zp
 
     def calcNumberDensity(self, p, lums):
-        phi = (0.4 * np.log(10) * np.exp(-10**(-0.4 * (lums - p[2]))) * 
+        phi = (0.4 * np.log(10) * np.exp(-10**(-0.4 * (lums - p[2]))) *
                (p[0] * 10 ** (-0.4 * (lums - p[2])*(p[1]+1))))
-        
+
         return phi
 
 
@@ -196,6 +196,59 @@ class ReddickLuminosityFunction(LuminosityFunction):
     def __init__(self, Q):
 
         self.lf = load_abundance_function(log_phi=False)
+        self.Q = Q
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
+
+        LuminosityFunction.__init__(self,Q,name='Reddick')
+
+    def evolveParams(self, z):
+        return self.Q, z
+
+    def calcNumberDensity(self, p, lums):
+        """
+        Shift the tabulated Bernardi 2013 luminosity function
+        p -- Q, h  and z
+        lums -- Null
+        """
+        Q = p[0]
+        z = p[1]
+
+        self.lf[:,0] += Q*(1/(1+z)-1/1.1)
+
+        return self.lf[:,0], self.lf[:,1]
+
+
+class ReddickLuminosityFunction(LuminosityFunction):
+
+    def __init__(self, Q):
+
+        self.lf = load_abundance_function(log_phi=False)
+        self.Q = Q
+        self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
+
+        LuminosityFunction.__init__(self,Q,name='Reddick')
+
+    def evolveParams(self, z):
+        return self.Q, z
+
+    def calcNumberDensity(self, p, lums):
+        """
+        Shift the tabulated Bernardi 2013 luminosity function
+        p -- Q, h  and z
+        lums -- Null
+        """
+        Q = p[0]
+        z = p[1]
+
+        self.lf[:,0] += Q*(1/(1+z)-1/1.1)
+
+        return self.lf[:,0], self.lf[:,1]
+
+class ReddickStellarMassFunction(LuminosityFunction):
+
+    def __init__(self, Q):
+
+        self.lf = load_abundance_function(log_phi=False, proxy='s', sample_cut=9.8)
         self.Q = Q
         self.unitmap = {'mag':'magh', 'phi':'hmpc3dex'}
 
