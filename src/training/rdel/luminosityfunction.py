@@ -107,7 +107,7 @@ class BBGSLuminosityFunction(LuminosityFunction):
     
     def __init__(self, Q, P):
         
-        self.lf = read_tabulated_bbgs_lf('/home/jderose/projects/l-addgals/src/training/rdel/LF_r_z0.1_bright_end_evol.txt')
+        self.lf = read_tabulated_bbgs_lf('/u/ki/jderose/ki23/l-addgals/src/training/rdel/LF_r_z0.1_bright_end_evol.txt')
         self.Q = Q
         self.P = P
         self.unitmap = {'mag':'mag', 'phi':'hmpc3dex'}

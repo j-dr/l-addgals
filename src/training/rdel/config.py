@@ -45,6 +45,12 @@ def parseConfig(cfg):
         hlists = glob('{0}/hlist*_0[0-9]*'.format(s))
         rnn    = glob('{0}/snapdir*/rnn*[0-9]'.format(simcfg['rnnbase'][i]))
         snapdirs  = glob('{0}/snapdir*/'.format(simcfg['snapbase'][i]))
+
+        print(hlists)
+        print(rnn)
+        print(snapdirs)
+
+        ctrees_version = simcfg.pop('ctrees_version', 1)
         
         #snaptimes should always be provided in order that snapshots
         #were output in (in order of increasing time)
@@ -63,7 +69,8 @@ def parseConfig(cfg):
                                    zs=zs,
                                    compressed_hlist=simcfg['compressed_hlist'],
                                    strscale=sa[:,1],
-                                   snapnums=a[:,0]))
+                                   snapnums=a[:,0],
+                                   ctrees_version=ctrees_version))
 
         else:
             sims.append(Simulation(simcfg['name'][i],
@@ -77,7 +84,8 @@ def parseConfig(cfg):
                                    zmin=simcfg['zmin'][i],
                                    zmax=simcfg['zmax'][i],
                                    nz=simcfg['nz'][i],
-                                   compressed_hlist=simcfg['compressed_hlist']))
+                                   compressed_hlist=simcfg['compressed_hlist'],
+                                   ctrees_version=ctrees_version))
 
 
     lf = setLF(cfg)

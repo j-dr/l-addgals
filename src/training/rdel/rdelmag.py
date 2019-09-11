@@ -438,6 +438,7 @@ def loadSnapshotFits(inbase, smbase):
     for m in modelfiles:
         ms = m.split('hlist_')[-1]
         mss = ms.split('.list')
+#        mss = ms.split('_rdelmodel')
         scales.append(float(mss[0]))
         
     scales = np.array(scales)

@@ -23,7 +23,7 @@ class Simulation(object):
                    zstep=None, nz=None, shamfiles=None,
                    compressed_hlist=False, simtype='LGADGET2',
                    scaleh=False, scaler=False, strscale=None,
-                   snapnums=None):
+                   snapnums=None, ctrees_version=1):
 
         self.name     = name
         self.boxsize  = boxsize
@@ -40,6 +40,8 @@ class Simulation(object):
         self.scaler = scaler
         self.strscale  = strscale
         self.snapnums  = snapnums
+        self.files_associated = False
+        self.ctrees_version = ctrees_version
 
         if shamfiles is not None:
             self.shamfiles = np.array(shamfiles)
@@ -59,6 +61,7 @@ class Simulation(object):
 
 
     def associateFiles(self):
+        if self.files_associated: return 
 
         hfn = np.array([int(h.split('_')[-1].split('.')[0]) for h in self.hfiles])
         hz = self.zs[self.snapnums.searchsorted(hfn)]
@@ -103,6 +106,7 @@ class Simulation(object):
         print(self.hfiles)
         print(self.rnnfiles)
         print(self.zs)
+        self.files_associated = True
 
     def getSHAMFileName(self, hfname, alpha, scatter, lfname, ind):
 
@@ -193,34 +197,63 @@ class Simulation(object):
 
             
             if not self.compressed_hlist:
-                try:
-                    fields = {'vmax':(71,'f4'),
-                              'mvir':(55,'f4'),
-                              'mvir_now':(10,'f4'),
-                              'mpeak_scale':(66,'f4'),
-                              'upid':(6,'i4'),
-                              'x':(17,'f4'),
-                              'y':(18,'f4'),
-                              'z':(19,'f4'),
-                              'rvir':(11,'f4'),
-                              'id':(1,'i4')}
+
+                if self.ctrees_version == 1:
+                    try:
+                        fields = {'vmax':(71,'f4'),
+                                  'mvir':(55,'f4'),
+                                  'mvir_now':(10,'f4'),
+                                  'mpeak_scale':(66,'f4'),
+                                  'upid':(6,'i4'),
+                                  'x':(17,'f4'),
+                                  'y':(18,'f4'),
+                                  'z':(19,'f4'),
+                                  'rvir':(11,'f4'),
+                                  'id':(1,'i4')}
                 
-                    reader = TabularAsciiReader(hf, fields)
-                    halos  = reader.read_ascii()
-                except:
-                    fields = {'vmax':(66,'f4'),
-                              'mvir':(50,'f4'),
-                              'mvir_now':(10,'f4'),
-                              'mpeak_scale':(61,'f4'),
-                              'upid':(6,'i4'),
-                              'x':(17,'f4'),
-                              'y':(18,'f4'),
-                              'z':(19,'f4'),
-                              'rvir':(11,'f4'),
-                              'id':(1,'i4')}
+                        reader = TabularAsciiReader(hf, fields)
+                        halos  = reader.read_ascii()
+                    except:
+                        fields = {'vmax':(66,'f4'),
+                                  'mvir':(50,'f4'),
+                                  'mvir_now':(10,'f4'),
+                                  'mpeak_scale':(61,'f4'),
+                                  'upid':(6,'i4'),
+                                  'x':(17,'f4'),
+                                  'y':(18,'f4'),
+                                  'z':(19,'f4'),
+                                  'rvir':(11,'f4'),
+                                  'id':(1,'i4')}
                 
-                    reader = TabularAsciiReader(hf, fields)
-                    halos  = reader.read_ascii()
+                        reader = TabularAsciiReader(hf, fields)
+                        halos  = reader.read_ascii()
+                elif self.ctrees_version == 2:
+                        fields = {'vmax':(77,'f4'),
+                                  'mvir':(61,'f4'),
+                                  'mvir_now':(10,'f4'),
+                                  'mpeak_scale':(72,'f4'),
+                                  'upid':(6,'i4'),
+                                  'x':(17,'f4'),
+                                  'y':(18,'f4'),
+                                  'z':(19,'f4'),
+                                  'rvir':(11,'f4'),
+                                  'id':(1,'i4')}
+
+                elif self.ctrees_version == 3:
+                        fields = {'vmax':(69,'f4'),
+                                  'mvir':(55,'f4'),
+                                  'mvir_now':(10,'f4'),
+                                  'mpeak_scale':(64,'f4'),
+                                  'upid':(6,'i4'),
+                                  'x':(17,'f4'),
+                                  'y':(18,'f4'),
+                                  'z':(19,'f4'),
+                                  'rvir':(11,'f4'),
+                                  'id':(1,'i4')}
+                
+                        reader = TabularAsciiReader(hf, fields)
+                        halos  = reader.read_ascii()
+                    
 
 
             else:
@@ -324,6 +357,8 @@ class Simulation(object):
             comm = MPI.COMM_WORLD
             rank = comm.Get_rank()
             size = comm.Get_size()
+
+            comm.Barrier()
 
             shamfiles = shamfiles[rank::size]
             rnnfiles  = rnnfiles[rank::size]
